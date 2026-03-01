@@ -190,8 +190,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container tall"><canvas id="chartIngresos"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Balance Mensual</div>
-      <div class="chart-subtitle">Ingresos vs Gastos vs Balance</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Totales Mensuales</div>
+      <div class="chart-subtitle">Ingresos USD vs Pesos por Mes</div>
       <div class="chart-container"><canvas id="chartBalance"></canvas></div>
     </div>
     <div class="chart-card">
@@ -326,14 +326,14 @@ function renderKPIs(){
   const d=getFilteredResumen();
   const isUSD=currency==='usd';
   const totalIngresos=d.reduce((s,r)=>s+(isUSD?r.Ingresos_USD:r.Ingresos_Pesos),0);
-  const totalFinal=d.reduce((s,r)=>s+(isUSD?r.Total_Final_USD:r.Total_Final_Pesos),0);
-  const totalGastos=d.reduce((s,r)=>s+Math.abs(r.Gastos_Fijos_USD||0),0);
+  const totalUnificado=d.reduce((s,r)=>s+(isUSD?r.Total_Unificado_USD:r.Total_Unificado_Pesos),0);
+  const totalIngresosPesos=d.reduce((s,r)=>s+(r.Ingresos_Pesos||0),0);
   const cotProm=d.reduce((s,r)=>s+(r.Cotizacion_Dolar||0),0)/Math.max(d.length,1);
 
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Ingresos Totales ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalIngresos)}</div><div class="kpi-sub">${d.length} meses</div></div>
-    <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalFinal)}</div><div class="kpi-sub">Después de gastos</div></div>
-    <div class="kpi"><div class="kpi-label">Gastos Fijos USD</div><div class="kpi-value">${fmtFull(totalGastos)}</div><div class="kpi-sub">Inversiones y gastos</div></div>
+    <div class="kpi"><div class="kpi-label">Ingresos USD</div><div class="kpi-value">${fmtFull(d.reduce((s,r)=>s+(r.Ingresos_USD||0),0))}</div><div class="kpi-sub">${d.length} meses</div></div>
+    <div class="kpi"><div class="kpi-label">Ingresos Pesos</div><div class="kpi-value">${fmtFull(totalIngresosPesos)}</div><div class="kpi-sub">${d.length} meses</div></div>
+    <div class="kpi"><div class="kpi-label">Total Unificado ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalUnificado)}</div><div class="kpi-sub">Ambas monedas combinadas</div></div>
     <div class="kpi"><div class="kpi-label">Cotización Dólar</div><div class="kpi-value">$${cotProm.toFixed(0)}</div><div class="kpi-sub">Promedio del período</div></div>
   `;
 }
@@ -348,7 +348,7 @@ function renderChartIngresos(){
       labels:d.map(r=>r.Mes),
       datasets:[
         {label:isUSD?'Ingresos USD':'Ingresos Pesos',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6},
-        {label:isUSD?'Total Final USD':'Total Final Pesos',data:d.map(r=>isUSD?r.Total_Final_USD:r.Total_Final_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
+        {label:isUSD?'Total Unificado USD':'Total Unificado Pesos',data:d.map(r=>isUSD?r.Total_Unificado_USD:r.Total_Unificado_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
@@ -356,7 +356,7 @@ function renderChartIngresos(){
 }
 
 function renderChartBalance(){
-  const d=allData.panel;
+  const d=allData.resumen;
   const isUSD=currency==='usd';
   if(charts.balance)charts.balance.destroy();
   charts.balance=new Chart(document.getElementById('chartBalance'),{
@@ -364,9 +364,9 @@ function renderChartBalance(){
     data:{
       labels:d.map(r=>r.Mes),
       datasets:[
-        {label:isUSD?'Totales USD':'Totales Pesos',data:d.map(r=>isUSD?r.Totales_USD:r.Totales_Pesos),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.5},
-        {label:'Gastos USD',data:d.map(r=>Math.abs(r.Gastos_USD||0)),backgroundColor:'rgba(248,113,113,.6)',borderRadius:4,barPercentage:.5},
-        {label:'Balance',data:d.map(r=>isUSD?r.Balance_USD:(r.Totales_Pesos-(Math.abs(r.Gastos_USD||0)*1500))),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
+        {label:'Ingresos USD',data:d.map(r=>r.Ingresos_USD||0),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.4},
+        {label:'Ingresos Pesos (÷1000)',data:d.map(r=>(r.Ingresos_Pesos||0)/1000),backgroundColor:'rgba(212,168,83,.6)',borderRadius:4,barPercentage:.4},
+        {label:isUSD?'Total Unificado USD':'Total Unificado Pesos',data:d.map(r=>isUSD?(r.Total_Unificado_USD||0):(r.Total_Unificado_Pesos||0)),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}

@@ -186,12 +186,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="charts">
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
-      <div class="chart-subtitle">Evolución de ingresos por mes — 2026</div>
+      <div class="chart-subtitle">Ingresos vs Gastos Fijos (DASHBOARD) — 2026</div>
       <div class="chart-container tall"><canvas id="chartIngresos"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Totales Mensuales</div>
-      <div class="chart-subtitle">Ingresos USD vs Pesos por Mes</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Balance Mensual</div>
+      <div class="chart-subtitle">Ingresos vs Gastos Fijos vs Balance</div>
       <div class="chart-container"><canvas id="chartBalance"></canvas></div>
     </div>
     <div class="chart-card">
@@ -284,12 +284,20 @@ function populateFilters(){
   vends.forEach(v=>{sel2.innerHTML+=`<option value="${v}">${v}</option>`;});
 }
 
-function fmt(n,isCurrency=true){
+function fmt(n,prefix='$'){
   if(n===undefined||n===null||isNaN(n))return'—';
-  if(Math.abs(n)>=1000000)return(isCurrency?'$':'')+( n/1000000).toFixed(1)+'M';
-  if(Math.abs(n)>=1000)return(isCurrency?'$':'')+( n/1000).toFixed(1)+'K';
-  return(isCurrency?'$':'')+Number(n).toFixed(0);
+  if(Math.abs(n)>=1000000)return prefix+(n/1000000).toFixed(1)+'M';
+  if(Math.abs(n)>=1000)return prefix+(n/1000).toFixed(1)+'K';
+  return prefix+Number(n).toFixed(0);
 }
+
+function fmtUSD(n){return fmtFullP(n,'U\u0024D ');}
+function fmtPesos(n){return fmtFullP(n,'$ ');}
+function fmtFullP(n,prefix){
+  if(n===undefined||n===null||isNaN(n))return'—';
+  return prefix+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+function fmtCur(n){return currency==='usd'?fmtUSD(n):fmtPesos(n);}
 
 function fmtFull(n){
   if(n===undefined||n===null||isNaN(n))return'—';
@@ -325,16 +333,18 @@ function getFilteredVendedor(){
 function renderKPIs(){
   const d=getFilteredResumen();
   const isUSD=currency==='usd';
-  const totalIngresos=d.reduce((s,r)=>s+(isUSD?r.Ingresos_USD:r.Ingresos_Pesos),0);
-  const totalUnificado=d.reduce((s,r)=>s+(isUSD?r.Total_Unificado_USD:r.Total_Unificado_Pesos),0);
+  const totalIngresosUSD=d.reduce((s,r)=>s+(r.Ingresos_USD||0),0);
   const totalIngresosPesos=d.reduce((s,r)=>s+(r.Ingresos_Pesos||0),0);
+  const totalGastos=d.reduce((s,r)=>s+(r.Gastos_Fijos_USD||0),0);
+  const totalFinalUSD=d.reduce((s,r)=>s+(r.Total_Final_USD||0),0);
+  const totalFinalPesos=d.reduce((s,r)=>s+(r.Total_Final_Pesos||0),0);
   const cotProm=d.reduce((s,r)=>s+(r.Cotizacion_Dolar||0),0)/Math.max(d.length,1);
 
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Ingresos USD</div><div class="kpi-value">${fmtFull(d.reduce((s,r)=>s+(r.Ingresos_USD||0),0))}</div><div class="kpi-sub">${d.length} meses</div></div>
-    <div class="kpi"><div class="kpi-label">Ingresos Pesos</div><div class="kpi-value">${fmtFull(totalIngresosPesos)}</div><div class="kpi-sub">${d.length} meses</div></div>
-    <div class="kpi"><div class="kpi-label">Total Unificado ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalUnificado)}</div><div class="kpi-sub">Ambas monedas combinadas</div></div>
-    <div class="kpi"><div class="kpi-label">Cotización Dólar</div><div class="kpi-value">$${cotProm.toFixed(0)}</div><div class="kpi-sub">Promedio del período</div></div>
+    <div class="kpi"><div class="kpi-label">Ingresos Totales USD</div><div class="kpi-value">${fmtUSD(totalIngresosUSD)}</div><div class="kpi-sub">${d.length} meses</div></div>
+    <div class="kpi"><div class="kpi-label">Gastos Fijos e Inversiones</div><div class="kpi-value">${fmtUSD(totalGastos)}</div><div class="kpi-sub">Columna J - DASHBOARD</div></div>
+    <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(totalFinalUSD):fmtPesos(totalFinalPesos)}</div><div class="kpi-sub">Después de gastos</div></div>
+    <div class="kpi"><div class="kpi-label">Cotización Dólar</div><div class="kpi-value">$ ${cotProm.toFixed(0)}</div><div class="kpi-sub">Promedio del período</div></div>
   `;
 }
 
@@ -342,16 +352,18 @@ function renderChartIngresos(){
   const d=allData.resumen;
   const isUSD=currency==='usd';
   if(charts.ingresos)charts.ingresos.destroy();
+  const pre=isUSD?'U$D ':'$ ';
   charts.ingresos=new Chart(document.getElementById('chartIngresos'),{
     type:'bar',
     data:{
       labels:d.map(r=>r.Mes),
       datasets:[
-        {label:isUSD?'Ingresos USD':'Ingresos Pesos',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6},
-        {label:isUSD?'Total Unificado USD':'Total Unificado Pesos',data:d.map(r=>isUSD?r.Total_Unificado_USD:r.Total_Unificado_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
+        {label:isUSD?'Ingresos U$D':'Ingresos $',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:isUSD?'Gastos Fijos U$D':'Gastos Fijos U$D',data:d.map(r=>Math.abs(r.Gastos_Fijos_USD||0)),backgroundColor:'rgba(248,113,113,.5)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:isUSD?'Balance Final U$D':'Balance Final $',data:d.map(r=>isUSD?r.Total_Final_USD:r.Total_Final_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -364,12 +376,12 @@ function renderChartBalance(){
     data:{
       labels:d.map(r=>r.Mes),
       datasets:[
-        {label:'Ingresos USD',data:d.map(r=>r.Ingresos_USD||0),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.4},
-        {label:'Ingresos Pesos (÷1000)',data:d.map(r=>(r.Ingresos_Pesos||0)/1000),backgroundColor:'rgba(212,168,83,.6)',borderRadius:4,barPercentage:.4},
-        {label:isUSD?'Total Unificado USD':'Total Unificado Pesos',data:d.map(r=>isUSD?(r.Total_Unificado_USD||0):(r.Total_Unificado_Pesos||0)),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
+        {label:isUSD?'Ingresos U$D':'Ingresos $',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.5},
+        {label:'Gastos Fijos U$D',data:d.map(r=>Math.abs(r.Gastos_Fijos_USD||0)),backgroundColor:'rgba(248,113,113,.6)',borderRadius:4,barPercentage:.5},
+        {label:isUSD?'Balance U$D':'Balance $',data:d.map(r=>isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0)),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -413,7 +425,7 @@ function renderChartVendedores(){
   charts.vendedores=new Chart(document.getElementById('chartVendedores'),{
     type:'bar',
     data:{labels:meses,datasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,isUSD?'U$D ':'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -430,10 +442,10 @@ function renderRankings(){
   const sPesos=Object.entries(aggPesos).sort((a,b)=>b[1]-a[1]);
 
   document.getElementById('rankUSD').innerHTML=sUSD.map(([k,v],i)=>
-    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--gold)">U$D ${fmt(v,false)}</span></li>`
+    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--gold)">${fmtUSD(v)}</span></li>`
   ).join('');
   document.getElementById('rankPesos').innerHTML=sPesos.map(([k,v],i)=>
-    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--green)">$ ${fmt(v,false)}</span></li>`
+    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--green)">${fmtPesos(v)}</span></li>`
   ).join('');
 }
 
@@ -448,20 +460,24 @@ function renderModules(){
     if(filterMes!=='all')rows=rows.filter(r=>r.Mes===filterMes);
     const totalUSD=rows.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const totalPesos=rows.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
-    const inv=rows[0]?rows[0].Inversion_USD:0;
-    const resta=rows[0]?rows[0].Resta_Cobrar_USD:0;
-    const caja=rows[0]?rows[0].Caja_Actual_USD:0;
-    const recovery=resta>0&&(totalUSD+Math.abs(inv||0))>0?Math.min(100,((totalUSD)/(totalUSD+resta))*100):0;
+    const invUSD=rows[0]?(rows[0].Inversion_USD||0):0;
+    const invPesos=rows[0]?(rows[0].Inversion_Pesos||0):0;
+    const restaUSD=rows[0]?(rows[0].Resta_Cobrar_USD||0):0;
+    const restaPesos=rows[0]?(rows[0].Resta_Cobrar_Pesos||0):0;
+    const caja=rows[0]?(rows[0].Caja_Actual_USD||0):0;
+    const recovery=restaUSD>0&&(totalUSD+Math.abs(invUSD))>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
 
     container.innerHTML+=`
       <div class="module-card">
         <div class="module-name"><span class="icon">${icons[idx%icons.length]}</span>${mod}</div>
         <div class="module-stats">
-          <div class="module-stat"><span class="lbl">Ganancia USD</span><span class="val ${totalUSD>=0?'positive':'negative'}">U$D ${fmtFull(totalUSD)}</span></div>
-          <div class="module-stat"><span class="lbl">Ganancia Pesos</span><span class="val ${totalPesos>=0?'positive':'negative'}">$ ${fmtFull(totalPesos)}</span></div>
-          <div class="module-stat"><span class="lbl">Inversión USD</span><span class="val ${inv>=0?'positive':'negative'}">U$D ${fmtFull(inv)}</span></div>
-          <div class="module-stat"><span class="lbl">Resta Cobrar</span><span class="val">U$D ${fmtFull(resta)}</span></div>
-          <div class="module-stat"><span class="lbl">Caja Actual</span><span class="val ${caja>=0?'positive':'negative'}">U$D ${fmtFull(caja)}</span></div>
+          <div class="module-stat"><span class="lbl">Ganancia U$D</span><span class="val ${totalUSD>=0?'positive':'negative'}">${fmtUSD(totalUSD)}</span></div>
+          <div class="module-stat"><span class="lbl">Ganancia $</span><span class="val ${totalPesos>=0?'positive':'negative'}">${fmtPesos(totalPesos)}</span></div>
+          <div class="module-stat"><span class="lbl">Inversión U$D</span><span class="val ${invUSD>=0?'positive':'negative'}">${fmtUSD(invUSD)}</span></div>
+          ${invPesos?`<div class="module-stat"><span class="lbl">Inversión $</span><span class="val ${invPesos>=0?'positive':'negative'}">${fmtPesos(invPesos)}</span></div>`:''}
+          <div class="module-stat"><span class="lbl">Resta Cobrar U$D</span><span class="val">${fmtUSD(restaUSD)}</span></div>
+          ${restaPesos?`<div class="module-stat"><span class="lbl">Resta Cobrar $</span><span class="val">${fmtPesos(restaPesos)}</span></div>`:''}
+          <div class="module-stat"><span class="lbl">Caja Actual U$D</span><span class="val ${caja>=0?'positive':'negative'}">${fmtUSD(caja)}</span></div>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${recovery.toFixed(0)}%"></div></div>
         <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación: ${recovery.toFixed(0)}%</div>
@@ -484,7 +500,7 @@ function renderChartDolar(){
         tension:.4,fill:true,borderWidth:2
       }]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5c5a65',font:{size:11}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:11},callback:v=>'$'+v},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5c5a65',font:{size:11}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:11},callback:v=>'$ '+v},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -496,7 +512,7 @@ function renderSidebarStats(){
   document.getElementById('sidebarStats').innerHTML=`
     <div class="sidebar-stat"><span class="label">Meses con datos</span><span class="val">${mesesConDatos}</span></div>
     <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
-    <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">U$D ${fmt(promMensual,false)}</span></div>
+    <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">${fmtUSD(promMensual)}</span></div>
   `;
 }
 

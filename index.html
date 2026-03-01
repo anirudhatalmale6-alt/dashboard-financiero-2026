@@ -603,37 +603,44 @@ function renderModuleDetails(){
 
 function extractCuotasData(){
   if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[]};
-  // Find "Cuotas a Cobrar" section by scanning for marker text
-  let startRow=-1;
+  // Find rows by scanning for marker text in DASHBOARD raw data
+  let cobrarUSDTotalRow=-1,compromisoRow=-1,cobrarPesosTotalRow=-1;
   for(let i=0;i<dashRaw.length;i++){
     const row=dashRaw[i];
-    if(row){
-      for(let j=0;j<row.length;j++){
-        if(row[j]&&typeof row[j]==='string'&&row[j].toLowerCase().includes('cuotas a cobrar')){
-          startRow=i;break;
+    if(!row)continue;
+    for(let j=0;j<row.length;j++){
+      if(!row[j]||typeof row[j]!=='string')continue;
+      const v=row[j].toLowerCase();
+      if(v.includes('ingresos de cuotas en dolares')){
+        // Total row is the row before the next section header, scan down for 'Total'
+        for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
+          if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
+        }
+      }
+      if(v.includes('compromisos de cuotas mensuales')){compromisoRow=i;}
+      if(v.includes('ingresos de cuotas en pesos')){
+        for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
+          if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}
         }
       }
     }
-    if(startRow>=0)break;
   }
-  if(startRow<0)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[]};
-  // Data rows are below the header row
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const labels=[],cobrarUSD=[],pagarUSD=[],cobrarPesos=[];
-  for(let i=startRow+1;i<Math.min(startRow+25,dashRaw.length);i++){
-    const row=dashRaw[i];
-    if(!row)continue;
-    // Check if col E (index 4) has a month name
-    const monthCell=row[4];
-    if(monthCell&&typeof monthCell==='string'){
-      const m=meses.find(ms=>monthCell.toLowerCase().includes(ms.toLowerCase()));
-      if(m){
-        labels.push(m);
-        cobrarUSD.push(typeof row[5]==='number'?row[5]:0); // F = cuotas a cobrar USD
-        pagarUSD.push(typeof row[6]==='number'?row[6]:0);  // G = a pagar USD
-        cobrarPesos.push(typeof row[9]==='number'?row[9]:0); // J = cuotas a cobrar Pesos
-      }
-    }
+  const labels=meses.slice();
+  function getNum(row,col){
+    if(!dashRaw[row])return 0;
+    const v=dashRaw[row][col];
+    if(typeof v==='number')return v;
+    if(typeof v==='string'){const n=parseFloat(v.replace(/[^\d.\-]/g,''));return isNaN(n)?0:n;}
+    return 0;
+  }
+  // Cols: 4=Enero, 5=Feb, ..., 15=Dec (indices for 12 months of 2026)
+  const cobrarUSD=[],pagarUSD=[],cobrarPesos=[];
+  for(let m=0;m<12;m++){
+    const col=4+m;
+    cobrarUSD.push(cobrarUSDTotalRow>=0?getNum(cobrarUSDTotalRow,col):0);
+    pagarUSD.push(compromisoRow>=0?Math.abs(getNum(compromisoRow,col)):0);
+    cobrarPesos.push(cobrarPesosTotalRow>=0?getNum(cobrarPesosTotalRow,col):0);
   }
   return{labels,cobrarUSD,pagarUSD,cobrarPesos};
 }

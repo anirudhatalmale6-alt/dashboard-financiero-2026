@@ -114,18 +114,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-title em{font-style:normal;color:var(--gold)}
 
 /* Module Detail Tables */
-.module-detail{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
-.module-detail-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.module-detail-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--gold-dim);color:var(--gold)}
-.module-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-.module-table thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-size:10px;padding:10px 12px;text-align:right;border-bottom:1px solid var(--border)}
-.module-table thead th:first-child{text-align:left;border-radius:8px 0 0 0}
-.module-table thead th:last-child{border-radius:0 8px 0 0}
-.module-table tbody td{padding:8px 12px;border-bottom:1px solid rgba(42,43,58,.4);text-align:right;color:var(--text)}
-.module-table tbody td:first-child{text-align:left;color:var(--text2);font-weight:500}
+.module-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px}
+.module-detail{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.3s}
+.module-detail:hover{border-color:var(--gold);transform:translateY(-2px)}
+.module-detail-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.module-detail-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
+.module-table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
+.module-table thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
+.module-table thead th:first-child{text-align:left;border-radius:6px 0 0 0}
+.module-table thead th:last-child{border-radius:0 6px 0 0}
+.module-table tbody td{padding:4px 8px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px}
+.module-table tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
 .module-table tbody tr:hover{background:var(--surface2)}
 .module-table tbody tr:last-child td{border-bottom:none}
-.module-table .total-row td{font-weight:700;border-top:2px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05)}
+.module-table .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
 .module-table .positive{color:var(--green)}
 .module-table .negative{color:var(--red)}
 
@@ -240,7 +242,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="modules" id="modules"></div>
 
   <h3 class="section-title">Detalle Mensual por <em>Módulo</em></h3>
-  <div id="moduleDetails"></div>
+  <div class="module-details-grid" id="moduleDetails"></div>
 
   <div class="charts">
     <div class="chart-card full">

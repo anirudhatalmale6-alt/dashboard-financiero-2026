@@ -113,6 +113,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
 .section-title em{font-style:normal;color:var(--gold)}
 
+/* Module Detail Tables */
+.module-detail{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.module-detail-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.module-detail-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--gold-dim);color:var(--gold)}
+.module-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.module-table thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-size:10px;padding:10px 12px;text-align:right;border-bottom:1px solid var(--border)}
+.module-table thead th:first-child{text-align:left;border-radius:8px 0 0 0}
+.module-table thead th:last-child{border-radius:0 8px 0 0}
+.module-table tbody td{padding:8px 12px;border-bottom:1px solid rgba(42,43,58,.4);text-align:right;color:var(--text)}
+.module-table tbody td:first-child{text-align:left;color:var(--text2);font-weight:500}
+.module-table tbody tr:hover{background:var(--surface2)}
+.module-table tbody tr:last-child td{border-bottom:none}
+.module-table .total-row td{font-weight:700;border-top:2px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05)}
+.module-table .positive{color:var(--green)}
+.module-table .negative{color:var(--red)}
+
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
@@ -223,6 +239,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title">Módulos de <em>Negocio</em></h3>
   <div class="modules" id="modules"></div>
 
+  <h3 class="section-title">Detalle Mensual por <em>Módulo</em></h3>
+  <div id="moduleDetails"></div>
+
   <div class="charts">
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--orange)"></span>Cotización Dólar Blue</div>
@@ -312,6 +331,7 @@ function renderAll(){
   renderChartVendedores();
   renderRankings();
   renderModules();
+  renderModuleDetails();
   renderChartDolar();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -481,6 +501,50 @@ function renderModules(){
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${recovery.toFixed(0)}%"></div></div>
         <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación: ${recovery.toFixed(0)}%</div>
+      </div>
+    `;
+  });
+}
+
+function renderModuleDetails(){
+  const icons=['📦','🏢','🤝','👩','🧑','💻','📈','💳','👤','📡'];
+  const mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  const container=document.getElementById('moduleDetails');
+  container.innerHTML='';
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  mods.forEach((mod,idx)=>{
+    const rows=allData.modulos.filter(r=>r.Modulo===mod);
+    let totalUSD=0,totalPesos=0;
+
+    let tbodyHTML='';
+    meses.forEach(mes=>{
+      const row=rows.find(r=>r.Mes===mes);
+      const usd=row?(row.Ganancia_USD||0):0;
+      const pesos=row?(row.Ganancia_Pesos||0):0;
+      totalUSD+=usd;
+      totalPesos+=pesos;
+      const hasData=usd!==0||pesos!==0;
+      tbodyHTML+=`<tr>
+        <td>${mes}</td>
+        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+      </tr>`;
+    });
+
+    tbodyHTML+=`<tr class="total-row">
+      <td>TOTAL</td>
+      <td>${fmtUSD(totalUSD)}</td>
+      <td>${fmtPesos(totalPesos)}</td>
+    </tr>`;
+
+    container.innerHTML+=`
+      <div class="module-detail">
+        <div class="module-detail-title"><span class="icon">${icons[idx%icons.length]}</span>${mod}</div>
+        <table class="module-table">
+          <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+          <tbody>${tbodyHTML}</tbody>
+        </table>
       </div>
     `;
   });

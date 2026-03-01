@@ -53,7 +53,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header-date{font-size:12px;color:var(--text3);background:var(--surface2);padding:8px 14px;border-radius:20px;border:1px solid var(--border)}
 
 /* KPI Cards */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.3s}
 .kpi:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -93,7 +93,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rank-item:nth-child(3) .rank-pos{background:linear-gradient(135deg,#b45309,#d97706);color:var(--bg)}
 .rank-item:nth-child(n+4) .rank-pos{background:var(--surface3);color:var(--text3)}
 .rank-name{flex:1;font-size:13px;font-weight:500}
-.rank-value{font-size:13px;font-weight:700;font-family:'Playfair Display',serif}
+.rank-value{font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;letter-spacing:.3px}
 
 /* Module Cards */
 .modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px}
@@ -244,11 +244,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title">Detalle Mensual por <em>Módulo</em></h3>
   <div class="module-details-grid" id="moduleDetails"></div>
 
+  <h3 class="section-title">Cuotas a <em>Cobrar vs Pagar</em></h3>
   <div class="charts">
-    <div class="chart-card full">
-      <div class="chart-title"><span class="dot" style="background:var(--orange)"></span>Cotización Dólar Blue</div>
-      <div class="chart-subtitle">Evolución mensual de la cotización</div>
-      <div class="chart-container short"><canvas id="chartDolar"></canvas></div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Cuotas en U$D</div>
+      <div class="chart-subtitle">Cobro de cuotas vs Compromisos de pago mensual</div>
+      <div class="chart-container"><canvas id="chartCuotasUSD"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Cuotas en Pesos</div>
+      <div class="chart-subtitle">Cobro de cuotas en pesos por mes</div>
+      <div class="chart-container"><canvas id="chartCuotasPesos"></canvas></div>
     </div>
   </div>
 </main>
@@ -258,6 +264,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
 let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
+let dashRaw=null;
 let charts={};
 let currency='usd';
 let filterMes='all';
@@ -317,7 +324,7 @@ function enrichModulesWithPesos(raw){
 
 async function loadAllData(){
   try{
-    const[r,v,m,p,dashRaw]=await Promise.all([
+    const[r,v,m,p,dRaw]=await Promise.all([
       fetchSheet('LS_Resumen_Mensual'),
       fetchSheet('LS_Ganancias_Vendedor'),
       fetchSheet('LS_Modulos_Negocio'),
@@ -325,7 +332,8 @@ async function loadAllData(){
       fetchRawSheet('DASHBOARD')
     ]);
     allData={resumen:r,vendedor:v,modulos:m,panel:p};
-    enrichModulesWithPesos(dashRaw);
+    dashRaw=dRaw;
+    enrichModulesWithPesos(dRaw);
     populateFilters();
     renderAll();
   }catch(e){
@@ -375,7 +383,8 @@ function renderAll(){
   renderRankings();
   renderModules();
   renderModuleDetails();
-  renderChartDolar();
+  renderChartCuotasUSD();
+  renderChartCuotasPesos();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -407,7 +416,6 @@ function renderKPIs(){
     <div class="kpi"><div class="kpi-label">Ingresos Totales USD</div><div class="kpi-value">${fmtUSD(totalIngresosUSD)}</div><div class="kpi-sub">${d.length} meses</div></div>
     <div class="kpi"><div class="kpi-label">Gastos Fijos e Inversiones</div><div class="kpi-value">${fmtUSD(totalGastos)}</div><div class="kpi-sub">Columna J - DASHBOARD</div></div>
     <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(totalFinalUSD):fmtPesos(totalFinalPesos)}</div><div class="kpi-sub">Después de gastos</div></div>
-    <div class="kpi"><div class="kpi-label">Cotización Dólar</div><div class="kpi-value">$ ${cotProm.toFixed(0)}</div><div class="kpi-sub">Promedio del período</div></div>
   `;
 }
 
@@ -593,21 +601,71 @@ function renderModuleDetails(){
   });
 }
 
-function renderChartDolar(){
-  const d=allData.resumen;
-  if(charts.dolar)charts.dolar.destroy();
-  charts.dolar=new Chart(document.getElementById('chartDolar'),{
-    type:'line',
+function extractCuotasData(){
+  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[]};
+  // Find "Cuotas a Cobrar" section by scanning for marker text
+  let startRow=-1;
+  for(let i=0;i<dashRaw.length;i++){
+    const row=dashRaw[i];
+    if(row){
+      for(let j=0;j<row.length;j++){
+        if(row[j]&&typeof row[j]==='string'&&row[j].toLowerCase().includes('cuotas a cobrar')){
+          startRow=i;break;
+        }
+      }
+    }
+    if(startRow>=0)break;
+  }
+  if(startRow<0)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[]};
+  // Data rows are below the header row
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const labels=[],cobrarUSD=[],pagarUSD=[],cobrarPesos=[];
+  for(let i=startRow+1;i<Math.min(startRow+25,dashRaw.length);i++){
+    const row=dashRaw[i];
+    if(!row)continue;
+    // Check if col E (index 4) has a month name
+    const monthCell=row[4];
+    if(monthCell&&typeof monthCell==='string'){
+      const m=meses.find(ms=>monthCell.toLowerCase().includes(ms.toLowerCase()));
+      if(m){
+        labels.push(m);
+        cobrarUSD.push(typeof row[5]==='number'?row[5]:0); // F = cuotas a cobrar USD
+        pagarUSD.push(typeof row[6]==='number'?row[6]:0);  // G = a pagar USD
+        cobrarPesos.push(typeof row[9]==='number'?row[9]:0); // J = cuotas a cobrar Pesos
+      }
+    }
+  }
+  return{labels,cobrarUSD,pagarUSD,cobrarPesos};
+}
+
+function renderChartCuotasUSD(){
+  const q=extractCuotasData();
+  if(charts.cuotasUSD)charts.cuotasUSD.destroy();
+  charts.cuotasUSD=new Chart(document.getElementById('chartCuotasUSD'),{
+    type:'bar',
     data:{
-      labels:d.map(r=>r.Mes),
-      datasets:[{
-        label:'Cotización Dólar',data:d.map(r=>r.Cotizacion_Dolar),
-        borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,.1)',
-        pointBackgroundColor:'#fb923c',pointRadius:5,pointHoverRadius:7,
-        tension:.4,fill:true,borderWidth:2
-      }]
+      labels:q.labels,
+      datasets:[
+        {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+      ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5c5a65',font:{size:11}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:11},callback:v=>'$ '+v},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderChartCuotasPesos(){
+  const q=extractCuotasData();
+  if(charts.cuotasPesos)charts.cuotasPesos.destroy();
+  charts.cuotasPesos=new Chart(document.getElementById('chartCuotasPesos'),{
+    type:'bar',
+    data:{
+      labels:q.labels,
+      datasets:[
+        {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 

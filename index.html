@@ -274,15 +274,55 @@ async function fetchSheet(name){
   });
 }
 
+async function fetchRawSheet(name){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
+}
+
+function cellVal(raw,row,col){
+  if(!raw||row<1||row>raw.length)return 0;
+  const r=raw[row-1];
+  if(!r||col<1||col>r.length)return 0;
+  return r[col-1]||0;
+}
+
+function enrichModulesWithPesos(raw){
+  // Module pesos data mapping: {moduleName: {investPesos: [row,col], restaPesos: [row,col]}}
+  const modMap={
+    'Osito S.r.l.':{invP:[98,6],resP:[100,6]},
+    'Patito S.A.':{invP:[98,11],resP:[100,11]},
+    'Gonza':{invP:[98,16],resP:[100,16]},
+    'Mely':{invP:[122,6],resP:[124,6]},
+    'Tobias':{invP:[122,16],resP:[124,16]},
+    'Tecno':{invP:[146,6],resP:[148,6]},
+    'Inversiones':{invP:[146,11],resP:[148,11]},
+    'Creditos':{invP:[146,16],resP:[148,16]},
+    'Tino':{invP:[170,6],resP:[172,6]},
+    'Linea 314':{invP:[170,11],resP:[172,11]}
+  };
+  allData.modulos.forEach(r=>{
+    const cfg=modMap[r.Modulo];
+    if(cfg){
+      r.Inversion_Pesos=cellVal(raw,cfg.invP[0],cfg.invP[1]);
+      r.Resta_Cobrar_Pesos=cellVal(raw,cfg.resP[0],cfg.resP[1]);
+    }
+  });
+}
+
 async function loadAllData(){
   try{
-    const[r,v,m,p]=await Promise.all([
+    const[r,v,m,p,dashRaw]=await Promise.all([
       fetchSheet('LS_Resumen_Mensual'),
       fetchSheet('LS_Ganancias_Vendedor'),
       fetchSheet('LS_Modulos_Negocio'),
-      fetchSheet('LS_Panel_Control')
+      fetchSheet('LS_Panel_Control'),
+      fetchRawSheet('DASHBOARD')
     ]);
     allData={resumen:r,vendedor:v,modulos:m,panel:p};
+    enrichModulesWithPesos(dashRaw);
     populateFilters();
     renderAll();
   }catch(e){

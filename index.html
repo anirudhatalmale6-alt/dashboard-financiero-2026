@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Financiero 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=Playfair+Display:wght@600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0a0b0f;--surface:#12131a;--surface2:#1a1b25;--surface3:#22232f;
+--border:#2a2b3a;--text:#e8e6e3;--text2:#9a98a0;--text3:#5c5a65;
+--gold:#d4a853;--gold2:#f0c96b;--gold-dim:rgba(212,168,83,.12);
+--green:#34d399;--red:#f87171;--blue:#60a5fa;--purple:#a78bfa;
+--teal:#2dd4bf;--pink:#f472b6;--orange:#fb923c;--cyan:#22d3ee;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.03;pointer-events:none;z-index:9999;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(212,168,83,.06) 0%,transparent 70%);pointer-events:none;z-index:0}
+.glow2{position:fixed;bottom:-300px;left:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(96,165,250,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+.app{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* Sidebar */
+.sidebar{width:280px;background:var(--surface);border-right:1px solid var(--border);padding:28px 20px;display:flex;flex-direction:column;gap:24px;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10}
+.logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--bg);font-weight:700}
+.logo h1{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.5px}
+.logo span{display:block;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);font-weight:300;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+.filter-section{display:flex;flex-direction:column;gap:8px}
+.filter-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:500}
+.filter-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;transition:.2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239a98a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.filter-select:hover{border-color:var(--gold);background-color:var(--surface3)}
+.filter-select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+
+.sidebar-stats{margin-top:auto;padding-top:20px;border-top:1px solid var(--border)}
+.sidebar-stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12px}
+.sidebar-stat .label{color:var(--text3)}
+.sidebar-stat .val{color:var(--gold);font-weight:700}
+
+.refresh-btn{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;padding:12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;letter-spacing:.5px}
+.refresh-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,168,83,.3)}
+
+/* Main */
+.main{flex:1;margin-left:280px;padding:28px 32px}
+
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
+.header h2{font-family:'Playfair Display',serif;font-size:32px;font-weight:800;letter-spacing:-1px}
+.header h2 em{font-style:normal;color:var(--gold)}
+.header-sub{font-size:13px;color:var(--text3);font-weight:300;margin-top:4px}
+.header-date{font-size:12px;color:var(--text3);background:var(--surface2);padding:8px 14px;border-radius:20px;border:1px solid var(--border)}
+
+/* KPI Cards */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.3s}
+.kpi:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi:nth-child(1)::after{background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi:nth-child(2)::after{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi:nth-child(3)::after{background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi:nth-child(4)::after{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px}
+.kpi-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;letter-spacing:-1px}
+.kpi:nth-child(1) .kpi-value{color:var(--gold)}
+.kpi:nth-child(2) .kpi-value{color:var(--green)}
+.kpi:nth-child(3) .kpi-value{color:var(--blue)}
+.kpi:nth-child(4) .kpi-value{color:var(--purple)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* Chart Grid */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s}
+.chart-card:hover{border-color:rgba(212,168,83,.3)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.chart-title .dot{width:8px;height:8px;border-radius:50%}
+.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:18px}
+.chart-container{position:relative;height:300px}
+.chart-container.short{height:250px}
+.chart-container.tall{height:380px}
+
+/* Rankings */
+.rankings{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.ranking-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px}
+.rank-list{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.rank-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--surface2);transition:.2s}
+.rank-item:hover{background:var(--surface3)}
+.rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.rank-item:nth-child(1) .rank-pos{background:linear-gradient(135deg,#d4a853,#f0c96b);color:var(--bg)}
+.rank-item:nth-child(2) .rank-pos{background:linear-gradient(135deg,#94a3b8,#cbd5e1);color:var(--bg)}
+.rank-item:nth-child(3) .rank-pos{background:linear-gradient(135deg,#b45309,#d97706);color:var(--bg)}
+.rank-item:nth-child(n+4) .rank-pos{background:var(--surface3);color:var(--text3)}
+.rank-name{flex:1;font-size:13px;font-weight:500}
+.rank-value{font-size:13px;font-weight:700;font-family:'Playfair Display',serif}
+
+/* Module Cards */
+.modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+.module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:.3s}
+.module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.module-name{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.module-name .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--gold-dim);color:var(--gold)}
+.module-stats{display:flex;flex-direction:column;gap:8px}
+.module-stat{display:flex;justify-content:space-between;font-size:12px}
+.module-stat .lbl{color:var(--text3)}
+.module-stat .val{font-weight:700}
+.module-stat .val.positive{color:var(--green)}
+.module-stat .val.negative{color:var(--red)}
+.progress-bar{height:6px;background:var(--surface3);border-radius:3px;margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:.6s}
+
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
+.section-title em{font-style:normal;color:var(--gold)}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:12px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+
+/* Currency Toggle */
+.currency-toggle{display:flex;background:var(--surface2);border-radius:8px;border:1px solid var(--border);overflow:hidden}
+.currency-btn{padding:8px 16px;font-family:inherit;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:.2s;color:var(--text3);background:transparent;letter-spacing:.5px}
+.currency-btn.active{background:var(--gold);color:var(--bg);font-weight:700}
+
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="glow"></div>
+<div class="glow2"></div>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div><h1>Admin 2026</h1><span>Panel Financiero</span></div>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Moneda</label>
+    <div class="currency-toggle" id="currencyToggle">
+      <button class="currency-btn active" data-currency="usd">U$D Dólares</button>
+      <button class="currency-btn" data-currency="pesos">$ Pesos</button>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Mes</label>
+    <select class="filter-select" id="filterMes">
+      <option value="all">Todos los meses</option>
+    </select>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Vendedor / Módulo</label>
+    <select class="filter-select" id="filterVendedor">
+      <option value="all">Todos</option>
+    </select>
+  </div>
+
+  <div class="sidebar-stats" id="sidebarStats"></div>
+
+  <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar Datos</button>
+</aside>
+
+<main class="main">
+  <div class="header">
+    <div>
+      <h2>Dashboard <em>Financiero</em></h2>
+      <div class="header-sub">Resumen general de ventas, ganancias e inversiones</div>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
+    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
+    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
+    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card full">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
+      <div class="chart-subtitle">Evolución de ingresos por mes — 2026</div>
+      <div class="chart-container tall"><canvas id="chartIngresos"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Balance Mensual</div>
+      <div class="chart-subtitle">Ingresos vs Gastos vs Balance</div>
+      <div class="chart-container"><canvas id="chartBalance"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
+      <div class="chart-subtitle">Participación en ganancias totales</div>
+      <div class="chart-container"><canvas id="chartPie"></canvas></div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ganancias por Vendedor</div>
+      <div class="chart-subtitle">Comparación mensual por vendedor/módulo</div>
+      <div class="chart-container tall"><canvas id="chartVendedores"></canvas></div>
+    </div>
+  </div>
+
+  <h3 class="section-title">Ranking de <em>Ganancias</em></h3>
+  <div class="rankings" id="rankings">
+    <div class="ranking-card">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Top Vendedores USD</div>
+      <div class="chart-subtitle">Ranking acumulado en dólares</div>
+      <ul class="rank-list" id="rankUSD"></ul>
+    </div>
+    <div class="ranking-card">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Top Vendedores Pesos</div>
+      <div class="chart-subtitle">Ranking acumulado en pesos</div>
+      <ul class="rank-list" id="rankPesos"></ul>
+    </div>
+  </div>
+
+  <h3 class="section-title">Módulos de <em>Negocio</em></h3>
+  <div class="modules" id="modules"></div>
+
+  <div class="charts">
+    <div class="chart-card full">
+      <div class="chart-title"><span class="dot" style="background:var(--orange)"></span>Cotización Dólar Blue</div>
+      <div class="chart-subtitle">Evolución mensual de la cotización</div>
+      <div class="chart-container short"><canvas id="chartDolar"></canvas></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
+const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
+let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
+let charts={};
+let currency='usd';
+let filterMes='all';
+let filterVendedor='all';
+
+async function fetchSheet(name){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  const cols=j.table.cols.map(c=>c.label);
+  return j.table.rows.map(row=>{
+    const o={};
+    row.c.forEach((cell,i)=>{o[cols[i]]=cell?cell.v:0;});
+    return o;
+  });
+}
+
+async function loadAllData(){
+  try{
+    const[r,v,m,p]=await Promise.all([
+      fetchSheet('LS_Resumen_Mensual'),
+      fetchSheet('LS_Ganancias_Vendedor'),
+      fetchSheet('LS_Modulos_Negocio'),
+      fetchSheet('LS_Panel_Control')
+    ]);
+    allData={resumen:r,vendedor:v,modulos:m,panel:p};
+    populateFilters();
+    renderAll();
+  }catch(e){
+    console.error('Error loading data:',e);
+    document.querySelector('.main').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Error al cargar datos. Verificá que el Google Sheets sea público.</div></div>';
+  }
+}
+
+function populateFilters(){
+  const meses=[...new Set(allData.resumen.map(r=>r.Mes))];
+  const sel=document.getElementById('filterMes');
+  sel.innerHTML='<option value="all">Todos los meses</option>';
+  meses.forEach(m=>{sel.innerHTML+=`<option value="${m}">${m}</option>`;});
+
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const sel2=document.getElementById('filterVendedor');
+  sel2.innerHTML='<option value="all">Todos</option>';
+  vends.forEach(v=>{sel2.innerHTML+=`<option value="${v}">${v}</option>`;});
+}
+
+function fmt(n,isCurrency=true){
+  if(n===undefined||n===null||isNaN(n))return'—';
+  if(Math.abs(n)>=1000000)return(isCurrency?'$':'')+( n/1000000).toFixed(1)+'M';
+  if(Math.abs(n)>=1000)return(isCurrency?'$':'')+( n/1000).toFixed(1)+'K';
+  return(isCurrency?'$':'')+Number(n).toFixed(0);
+}
+
+function fmtFull(n){
+  if(n===undefined||n===null||isNaN(n))return'—';
+  return'$'+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+function renderAll(){
+  renderKPIs();
+  renderChartIngresos();
+  renderChartBalance();
+  renderChartPie();
+  renderChartVendedores();
+  renderRankings();
+  renderModules();
+  renderChartDolar();
+  renderSidebarStats();
+  document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function getFilteredResumen(){
+  let d=allData.resumen;
+  if(filterMes!=='all')d=d.filter(r=>r.Mes===filterMes);
+  return d;
+}
+
+function getFilteredVendedor(){
+  let d=allData.vendedor;
+  if(filterMes!=='all')d=d.filter(r=>r.Mes===filterMes);
+  if(filterVendedor!=='all')d=d.filter(r=>r.Vendedor===filterVendedor);
+  return d;
+}
+
+function renderKPIs(){
+  const d=getFilteredResumen();
+  const isUSD=currency==='usd';
+  const totalIngresos=d.reduce((s,r)=>s+(isUSD?r.Ingresos_USD:r.Ingresos_Pesos),0);
+  const totalFinal=d.reduce((s,r)=>s+(isUSD?r.Total_Final_USD:r.Total_Final_Pesos),0);
+  const totalGastos=d.reduce((s,r)=>s+Math.abs(r.Gastos_Fijos_USD||0),0);
+  const cotProm=d.reduce((s,r)=>s+(r.Cotizacion_Dolar||0),0)/Math.max(d.length,1);
+
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Ingresos Totales ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalIngresos)}</div><div class="kpi-sub">${d.length} meses</div></div>
+    <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'$'}</div><div class="kpi-value">${fmtFull(totalFinal)}</div><div class="kpi-sub">Después de gastos</div></div>
+    <div class="kpi"><div class="kpi-label">Gastos Fijos USD</div><div class="kpi-value">${fmtFull(totalGastos)}</div><div class="kpi-sub">Inversiones y gastos</div></div>
+    <div class="kpi"><div class="kpi-label">Cotización Dólar</div><div class="kpi-value">$${cotProm.toFixed(0)}</div><div class="kpi-sub">Promedio del período</div></div>
+  `;
+}
+
+function renderChartIngresos(){
+  const d=allData.resumen;
+  const isUSD=currency==='usd';
+  if(charts.ingresos)charts.ingresos.destroy();
+  charts.ingresos=new Chart(document.getElementById('chartIngresos'),{
+    type:'bar',
+    data:{
+      labels:d.map(r=>r.Mes),
+      datasets:[
+        {label:isUSD?'Ingresos USD':'Ingresos Pesos',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6},
+        {label:isUSD?'Total Final USD':'Total Final Pesos',data:d.map(r=>isUSD?r.Total_Final_USD:r.Total_Final_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderChartBalance(){
+  const d=allData.panel;
+  const isUSD=currency==='usd';
+  if(charts.balance)charts.balance.destroy();
+  charts.balance=new Chart(document.getElementById('chartBalance'),{
+    type:'bar',
+    data:{
+      labels:d.map(r=>r.Mes),
+      datasets:[
+        {label:isUSD?'Totales USD':'Totales Pesos',data:d.map(r=>isUSD?r.Totales_USD:r.Totales_Pesos),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.5},
+        {label:'Gastos USD',data:d.map(r=>Math.abs(r.Gastos_USD||0)),backgroundColor:'rgba(248,113,113,.6)',borderRadius:4,barPercentage:.5},
+        {label:'Balance',data:d.map(r=>isUSD?r.Balance_USD:(r.Totales_Pesos-(Math.abs(r.Gastos_USD||0)*1500))),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderChartPie(){
+  const d=getFilteredVendedor();
+  const isUSD=currency==='usd';
+  const agg={};
+  d.forEach(r=>{
+    const k=r.Vendedor;
+    const v=isUSD?r.Ganancia_USD:r.Ganancia_Pesos;
+    agg[k]=(agg[k]||0)+(v||0);
+  });
+  const sorted=Object.entries(agg).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(charts.pie)charts.pie.destroy();
+  charts.pie=new Chart(document.getElementById('chartPie'),{
+    type:'doughnut',
+    data:{
+      labels:sorted.map(([k])=>k),
+      datasets:[{data:sorted.map(([,v])=>v),backgroundColor:COLORS.slice(0,sorted.length),borderColor:'#12131a',borderWidth:3,hoverOffset:8}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,padding:8,borderRadius:3,useBorderRadius:true}}}}
+  });
+}
+
+function renderChartVendedores(){
+  const isUSD=currency==='usd';
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const meses=[...new Set(allData.vendedor.map(r=>r.Mes))];
+  let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
+  const datasets=filteredVends.map((v,i)=>({
+    label:v,
+    data:meses.map(m=>{
+      const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);
+      return row?(isUSD?row.Ganancia_USD:row.Ganancia_Pesos):0;
+    }),
+    backgroundColor:COLORS[i%COLORS.length]+'99',
+    borderColor:COLORS[i%COLORS.length],
+    borderWidth:1,borderRadius:4,barPercentage:.7
+  }));
+  if(charts.vendedores)charts.vendedores.destroy();
+  charts.vendedores=new Chart(document.getElementById('chartVendedores'),{
+    type:'bar',
+    data:{labels:meses,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderRankings(){
+  const isUSD=currency==='usd';
+  const aggUSD={},aggPesos={};
+  let data=allData.vendedor;
+  if(filterMes!=='all')data=data.filter(r=>r.Mes===filterMes);
+  data.forEach(r=>{
+    aggUSD[r.Vendedor]=(aggUSD[r.Vendedor]||0)+(r.Ganancia_USD||0);
+    aggPesos[r.Vendedor]=(aggPesos[r.Vendedor]||0)+(r.Ganancia_Pesos||0);
+  });
+  const sUSD=Object.entries(aggUSD).sort((a,b)=>b[1]-a[1]);
+  const sPesos=Object.entries(aggPesos).sort((a,b)=>b[1]-a[1]);
+
+  document.getElementById('rankUSD').innerHTML=sUSD.map(([k,v],i)=>
+    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--gold)">U$D ${fmt(v,false)}</span></li>`
+  ).join('');
+  document.getElementById('rankPesos').innerHTML=sPesos.map(([k,v],i)=>
+    `<li class="rank-item"><span class="rank-pos">${i+1}</span><span class="rank-name">${k}</span><span class="rank-value" style="color:var(--green)">$ ${fmt(v,false)}</span></li>`
+  ).join('');
+}
+
+function renderModules(){
+  const icons=['📦','🏢','🤝','👩','🧑','💻','📈','💳','👤','📡'];
+  const mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  const container=document.getElementById('modules');
+  container.innerHTML='';
+
+  mods.forEach((mod,idx)=>{
+    let rows=allData.modulos.filter(r=>r.Modulo===mod);
+    if(filterMes!=='all')rows=rows.filter(r=>r.Mes===filterMes);
+    const totalUSD=rows.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
+    const totalPesos=rows.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
+    const inv=rows[0]?rows[0].Inversion_USD:0;
+    const resta=rows[0]?rows[0].Resta_Cobrar_USD:0;
+    const caja=rows[0]?rows[0].Caja_Actual_USD:0;
+    const recovery=resta>0&&(totalUSD+Math.abs(inv||0))>0?Math.min(100,((totalUSD)/(totalUSD+resta))*100):0;
+
+    container.innerHTML+=`
+      <div class="module-card">
+        <div class="module-name"><span class="icon">${icons[idx%icons.length]}</span>${mod}</div>
+        <div class="module-stats">
+          <div class="module-stat"><span class="lbl">Ganancia USD</span><span class="val ${totalUSD>=0?'positive':'negative'}">U$D ${fmtFull(totalUSD)}</span></div>
+          <div class="module-stat"><span class="lbl">Ganancia Pesos</span><span class="val ${totalPesos>=0?'positive':'negative'}">$ ${fmtFull(totalPesos)}</span></div>
+          <div class="module-stat"><span class="lbl">Inversión USD</span><span class="val ${inv>=0?'positive':'negative'}">U$D ${fmtFull(inv)}</span></div>
+          <div class="module-stat"><span class="lbl">Resta Cobrar</span><span class="val">U$D ${fmtFull(resta)}</span></div>
+          <div class="module-stat"><span class="lbl">Caja Actual</span><span class="val ${caja>=0?'positive':'negative'}">U$D ${fmtFull(caja)}</span></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${recovery.toFixed(0)}%"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación: ${recovery.toFixed(0)}%</div>
+      </div>
+    `;
+  });
+}
+
+function renderChartDolar(){
+  const d=allData.resumen;
+  if(charts.dolar)charts.dolar.destroy();
+  charts.dolar=new Chart(document.getElementById('chartDolar'),{
+    type:'line',
+    data:{
+      labels:d.map(r=>r.Mes),
+      datasets:[{
+        label:'Cotización Dólar',data:d.map(r=>r.Cotizacion_Dolar),
+        borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,.1)',
+        pointBackgroundColor:'#fb923c',pointRadius:5,pointHoverRadius:7,
+        tension:.4,fill:true,borderWidth:2
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5c5a65',font:{size:11}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:11},callback:v=>'$'+v},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderSidebarStats(){
+  const d=allData.resumen;
+  const mesesConDatos=d.filter(r=>(r.Ingresos_USD||0)>2000).length;
+  const totalVentas=d.reduce((s,r)=>s+(r.Ingresos_USD||0),0);
+  const promMensual=totalVentas/Math.max(mesesConDatos,1);
+  document.getElementById('sidebarStats').innerHTML=`
+    <div class="sidebar-stat"><span class="label">Meses con datos</span><span class="val">${mesesConDatos}</span></div>
+    <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
+    <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">U$D ${fmt(promMensual,false)}</span></div>
+  `;
+}
+
+// Event Listeners
+document.getElementById('currencyToggle').addEventListener('click',e=>{
+  if(!e.target.classList.contains('currency-btn'))return;
+  document.querySelectorAll('.currency-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  currency=e.target.dataset.currency;
+  renderAll();
+});
+
+document.getElementById('filterMes').addEventListener('change',e=>{
+  filterMes=e.target.value;
+  renderAll();
+});
+
+document.getElementById('filterVendedor').addEventListener('change',e=>{
+  filterVendedor=e.target.value;
+  renderAll();
+});
+
+// Init
+loadAllData();
+</script>
+</body>
+</html>

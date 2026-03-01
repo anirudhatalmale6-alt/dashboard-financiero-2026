@@ -290,18 +290,19 @@ function cellVal(raw,row,col){
 }
 
 function enrichModulesWithPesos(raw){
-  // Module pesos data mapping: {moduleName: {investPesos: [row,col], restaPesos: [row,col]}}
+  // gviz row/col mapping (1-indexed) - found by scanning raw data for markers
+  // gviz rows differ from Excel rows due to hidden/merged rows
   const modMap={
-    'Osito S.r.l.':{invP:[98,6],resP:[100,6]},
-    'Patito S.A.':{invP:[98,11],resP:[100,11]},
-    'Gonza':{invP:[98,16],resP:[100,16]},
-    'Mely':{invP:[122,6],resP:[124,6]},
-    'Tobias':{invP:[122,16],resP:[124,16]},
-    'Tecno':{invP:[146,6],resP:[148,6]},
-    'Inversiones':{invP:[146,11],resP:[148,11]},
-    'Creditos':{invP:[146,16],resP:[148,16]},
-    'Tino':{invP:[170,6],resP:[172,6]},
-    'Linea 314':{invP:[170,11],resP:[172,11]}
+    'Osito S.r.l.':{invP:[61,6],resP:[62,6]},
+    'Patito S.A.':{invP:[61,11],resP:[62,11]},
+    'Gonza':{invP:[61,16],resP:[62,16]},
+    'Mely':{invP:[78,6],resP:[79,6]},
+    'Tobias':{invP:[78,16],resP:[79,16]},
+    'Tecno':{invP:[95,6],resP:[96,6]},
+    'Inversiones':{invP:[95,11],resP:[96,11]},
+    'Creditos':{invP:[95,16],resP:[96,16]},
+    'Tino':{invP:[112,6],resP:[113,6]},
+    'Linea 314':{invP:[112,11],resP:[113,11]}
   };
   allData.modulos.forEach(r=>{
     const cfg=modMap[r.Modulo];

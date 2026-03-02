@@ -209,8 +209,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container tall"><canvas id="chartIngresos"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Balance Mensual</div>
-      <div class="chart-subtitle">Ingresos vs Gastos Fijos vs Balance</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
+      <div class="chart-subtitle">Ingresos, gastos y balance acumulado mes a mes</div>
       <div class="chart-container"><canvas id="chartBalance"></canvas></div>
     </div>
     <div class="chart-card">
@@ -471,18 +471,24 @@ function renderChartBalance(){
   const d=allData.resumen;
   const isUSD=currency==='usd';
   if(charts.balance)charts.balance.destroy();
+  // Cumulative (acumulado) chart - running totals
+  let cumIng=0,cumGas=0,cumBal=0;
+  const cumIngresos=d.map(r=>{cumIng+=isUSD?(r.Ingresos_USD||0):(r.Ingresos_Pesos||0);return cumIng;});
+  const cumGastos=d.map(r=>{cumGas+=Math.abs(r.Gastos_Fijos_USD||0);return cumGas;});
+  const cumBalance=d.map(r=>{cumBal+=isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0);return cumBal;});
+  const pre=isUSD?'U$D ':'$ ';
   charts.balance=new Chart(document.getElementById('chartBalance'),{
-    type:'bar',
+    type:'line',
     data:{
       labels:d.map(r=>r.Mes),
       datasets:[
-        {label:isUSD?'Ingresos U$D':'Ingresos $',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(52,211,153,.6)',borderRadius:4,barPercentage:.5},
-        {label:'Gastos Fijos U$D',data:d.map(r=>Math.abs(r.Gastos_Fijos_USD||0)),backgroundColor:'rgba(248,113,113,.6)',borderRadius:4,barPercentage:.5},
-        {label:isUSD?'Balance U$D':'Balance $',data:d.map(r=>isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0)),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
+        {label:isUSD?'Ingresos Acum. U$D':'Ingresos Acum. $',data:cumIngresos,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.1)',pointBackgroundColor:'#34d399',pointRadius:4,tension:.4,borderWidth:2,fill:true},
+        {label:'Gastos Acum. U$D',data:cumGastos,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',pointBackgroundColor:'#f87171',pointRadius:3,tension:.4,borderWidth:2,fill:true},
+        {label:isUSD?'Balance Acum. U$D':'Balance Acum. $',data:cumBalance,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',pointBackgroundColor:'#a78bfa',pointRadius:4,tension:.4,borderWidth:2.5,fill:true}
       ]
     },
     plugins:[ChartDataLabels],
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:1,formatter:function(v,ctx){if(ctx.dataset.type==='line')return '';return v>=2000?fmt(v,'U$D '):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=2000?fmt(v,pre):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -576,7 +582,7 @@ function renderModules(){
     const restaPesos=rows[0]?(rows[0].Resta_Cobrar_Pesos||0):0;
     const caja=rows[0]?(rows[0].Caja_Actual_USD||0):0;
     const cuotasPct=restaUSD>0&&totalUSD>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
-    const invRecovery=Math.abs(invUSD)>0?Math.min(100,((totalUSD)/Math.abs(invUSD))*100):0;
+    const invRecovery=Math.abs(invUSD)>0&&caja>0?Math.min(100,((caja)/Math.abs(invUSD))*100):0;
 
     container.innerHTML+=`
       <div class="module-card">

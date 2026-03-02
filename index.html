@@ -142,11 +142,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .acum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))}
 .acum-card .mes{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px;font-weight:500}
 .acum-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
-.acum-card .acum-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--blue);margin-bottom:2px}
+.acum-card .acum-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#cbd5e1;margin-bottom:2px}
 .acum-card .acum-val.neg{color:var(--red)}
+.acum-card .acum-val2{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:2px}
+.acum-card .acum-val2.neg{color:var(--red)}
 .acum-card .acum-sub{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--gold)}
 .acum-card .acum-sub.neg{color:var(--red)}
-.acum-card .acum-sub2{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--blue);opacity:.85}
+.acum-card .acum-sub2{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--blue)}
 .acum-card .acum-sub2.neg{color:var(--red)}
 .acum-card .acum-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
 .acum-card .acum-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:.6s}
@@ -282,7 +284,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-title">Navegación</div>
-    <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>KPIs Principales</a>
+    <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen General</a>
     <a onclick="document.getElementById('acumCards').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Mensual</a>
     <a onclick="document.getElementById('secGraficos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Ingresos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ganancias</a>
@@ -568,7 +570,7 @@ function renderAcumuladoCards(){
   const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  let cumNeto=0;
+  let cumNeto=0, cumNeto2=0;
   const months=[];
 
   if(filterVendedor!=='all'){
@@ -579,11 +581,11 @@ function renderAcumuladoCards(){
       const row=vData.find(r=>r.Mes===mesName);
       const netoUSD=row?(row.Ganancia_USD||0):0;
       const netoPesos=row?(row.Ganancia_Pesos||0):0;
-      const ganancia=isUSD?netoUSD:netoPesos;
-      const ganancia2=isUSD?netoPesos:netoUSD;
-      cumNeto+=ganancia;
-      const hasData=ganancia!==0;
-      months.push({mes:allMeses[i],mesFull:mesName,neto:ganancia,neto2:ganancia2,cumNeto,hasData});
+      const neto1=isUSD?netoUSD:netoPesos;
+      const neto2=isUSD?netoPesos:netoUSD;
+      cumNeto+=neto1; cumNeto2+=neto2;
+      const hasData=neto1!==0||neto2!==0;
+      months.push({mes:allMeses[i],mesFull:mesName,neto:neto1,neto2,cumNeto,cumNeto2,hasData});
     }
   } else {
     // Global mode: read from DASHBOARD columns
@@ -591,11 +593,11 @@ function renderAcumuladoCards(){
       const row=2+i;
       const netoUSD=dashNum(row,11);
       const netoPesos=dashNum(row,10);
-      const neto=isUSD?netoUSD:netoPesos;
+      const neto1=isUSD?netoUSD:netoPesos;
       const neto2=isUSD?netoPesos:netoUSD;
-      cumNeto+=neto;
-      const hasData=neto!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
-      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,neto2,cumNeto,hasData});
+      cumNeto+=neto1; cumNeto2+=neto2;
+      const hasData=neto1!==0||neto2!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
+      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto:neto1,neto2,cumNeto,cumNeto2,hasData});
     }
   }
 
@@ -603,20 +605,18 @@ function renderAcumuladoCards(){
   const maxCum=Math.max(...months.map(m=>Math.abs(m.cumNeto)),1);
   const fmtVal=isUSD?fmtUSD:fmtPesos;
   const fmtVal2=isUSD?fmtPesos:fmtUSD;
-  const label=filterVendedor!=='all'?'Ganancia':'Neto Mes';
-  const label2=isUSD?'Neto $':'Neto U$D';
 
   months.forEach(m=>{
     const pct=Math.min(100,Math.abs(m.cumNeto)/maxCum*100);
-    const isNeg=m.cumNeto<0;
     container.innerHTML+=`
       <div class="acum-card${m.hasData?'':' no-data'}">
         <div class="mes">${m.mes}</div>
-        <span class="lbl">${label}</span>
+        <span class="lbl">Neto Mes</span>
         <div class="acum-sub${m.neto<0?' neg':''}">${fmtVal(m.neto)}</div>
         <div class="acum-sub2${m.neto2<0?' neg':''}">${fmtVal2(m.neto2)}</div>
         <span class="lbl">Acumulado</span>
-        <div class="acum-val${isNeg?' neg':''}">${fmtVal(m.cumNeto)}</div>
+        <div class="acum-val${m.cumNeto<0?' neg':''}">${fmtVal(m.cumNeto)}</div>
+        <div class="acum-val2${m.cumNeto2<0?' neg':''}">${fmtVal2(m.cumNeto2)}</div>
         <div class="acum-bar"><div class="acum-fill" style="width:${pct}%"></div></div>
       </div>`;
   });

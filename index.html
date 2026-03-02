@@ -347,6 +347,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Cómo se construye tu patrimonio — activos que suman vs compromisos que restan</div>
       <div class="chart-container tall"><canvas id="chartInvWaterfall"></canvas></div>
     </div>
+    <div class="chart-card full" style="margin-top:16px" id="evolCard">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Evolución del Patrimonio</div>
+      <div class="chart-subtitle">Seguimiento mensual — ¿sube o baja tu capital?</div>
+      <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
+    </div>
   </div>
 </main>
 </div>
@@ -357,6 +362,7 @@ const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3
 let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
 let dashRaw=null;
 let invRaw=null;
+let trackRaw=null;
 let charts={};
 let currency='usd';
 let filterMes='all';
@@ -477,6 +483,8 @@ async function loadAllData(){
     invRaw=iRaw;
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
+    // Try fetching tracking data (may not exist yet)
+    try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     populateFilters();
     renderAll();
   }catch(e){
@@ -834,6 +842,87 @@ function renderInversiones(){
   });
 }
 
+function renderEvolucion(){
+  const card=document.getElementById('evolCard');
+  // Hide if no tracking data yet
+  if(!trackRaw||trackRaw.length<2){card.style.display='none';return;}
+  card.style.display='';
+  const isUSD=currency==='usd';
+  const fv=isUSD?fmtUSD:fmtPesos;
+
+  // Parse tracking data: row 0 = header, rows 1+ = data
+  const points=[];
+  for(let i=1;i<trackRaw.length;i++){
+    const row=trackRaw[i];
+    if(!row||!row[0])continue;
+    const dateVal=row[0];
+    let label='';
+    if(typeof dateVal==='string'){
+      label=dateVal;
+    } else if(dateVal&&dateVal.toString().startsWith('Date(')){
+      const m=dateVal.toString().match(/Date\((\d+),(\d+),(\d+)\)/);
+      if(m){
+        const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        label=meses[parseInt(m[2])]+' '+m[1];
+      }
+    }
+    const usd=typeof row[1]==='number'?row[1]:0;
+    const pesos=typeof row[2]==='number'?row[2]:0;
+    points.push({label:label||('Punto '+(i)),usd,pesos});
+  }
+  if(points.length<1){card.style.display='none';return;}
+
+  const vals=points.map(p=>isUSD?p.usd:p.pesos);
+  const labels=points.map(p=>p.label);
+  const lastVal=vals[vals.length-1];
+  const prevVal=vals.length>1?vals[vals.length-2]:lastVal;
+  const trend=lastVal>=prevVal;
+
+  if(charts.evolucion)charts.evolucion.destroy();
+  charts.evolucion=new Chart(document.getElementById('chartEvolucion'),{
+    type:'line',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:isUSD?'Patrimonio U$D':'Patrimonio $',
+        data:vals,
+        borderColor:trend?'#34d399':'#f87171',
+        backgroundColor:trend?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)',
+        borderWidth:3,
+        fill:true,
+        tension:.3,
+        pointBackgroundColor:trend?'#34d399':'#f87171',
+        pointBorderColor:'#12131a',
+        pointBorderWidth:2,
+        pointRadius:6,
+        pointHoverRadius:8
+      }]
+    },
+    plugins:[ChartDataLabels],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:25}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#9a98a0',font:{family:'DM Sans',size:11}}},
+        y:{grid:{color:'rgba(42,43,58,.4)'},ticks:{color:'#9a98a0',font:{family:'IBM Plex Mono',size:11},
+          callback:function(v){return isUSD?'U$D '+(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1e3).toFixed(0)+'K'):'$ '+(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1e3).toFixed(0)+'K');}
+        }}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,anchor:'end',align:'top',color:trend?'#34d399':'#f87171',
+          font:{family:'IBM Plex Mono',size:11,weight:600},
+          formatter:function(v){return fv(v);}
+        },
+        tooltip:{
+          backgroundColor:'#1a1b25',titleColor:'#e8e6e3',bodyColor:'#e8e6e3',borderColor:'#2a2b3a',borderWidth:1,cornerRadius:8,padding:12,
+          callbacks:{label:function(ctx){return fv(ctx.raw);}}
+        }
+      }
+    }
+  });
+}
+
 function renderAll(){
   renderKPIs();
   renderAcumuladoCards();
@@ -848,6 +937,7 @@ function renderAll(){
   renderChartCuotasUSD();
   renderChartCuotasPesos();
   renderInversiones();
+  renderEvolucion();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }

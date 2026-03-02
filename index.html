@@ -997,7 +997,7 @@ function renderEvolucion(){
 }
 
 function renderVendedorDash(){
-  if(!dashRaw||dashRaw.length<210)return;
+  if(!dashRaw||dashRaw.length<195)return;
   const container=document.getElementById('vendedorDashContainer');
   container.innerHTML='';
   const icons=['💰','📦','📈','💳','🤝','🏢','👩','🧑','💻','📡'];
@@ -1007,7 +1007,7 @@ function renderVendedorDash(){
   const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
   const blockStarts=[];
 
-  for(let i=200;i<dashRaw.length-16;i++){
+  for(let i=180;i<dashRaw.length-16;i++){
     const r=dashRaw[i];
     if(!r)continue;
     const v2=r[2];

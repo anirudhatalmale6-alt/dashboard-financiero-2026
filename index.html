@@ -473,14 +473,23 @@ function renderKPIs(){
       <div class="kpi"><div class="kpi-label">Promedio Mensual ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(mesesCount>0?ganUSD/mesesCount:0):fmtPesos(mesesCount>0?ganPesos/mesesCount:0)}</div><div class="kpi-sub">Por mes activo</div></div>
     `;
   } else {
-    // Aggregate KPIs from resumen
+    // Aggregate KPIs from resumen + Modulo 1 & 2
     const d=getFilteredResumen();
-    const totalIngresosUSD=d.reduce((s,r)=>s+(r.Ingresos_USD||0),0);
+    let totalIngresosUSD=d.reduce((s,r)=>s+(r.Ingresos_USD||0),0);
     const totalGastos=d.reduce((s,r)=>s+(r.Gastos_Fijos_USD||0),0);
-    const totalFinalUSD=d.reduce((s,r)=>s+(r.Total_Final_USD||0),0);
-    const totalFinalPesos=d.reduce((s,r)=>s+(r.Total_Final_Pesos||0),0);
+    let totalFinalUSD=d.reduce((s,r)=>s+(r.Total_Final_USD||0),0);
+    let totalFinalPesos=d.reduce((s,r)=>s+(r.Total_Final_Pesos||0),0);
+    // Include Modulo 1 & 2 (not in LS_Resumen_Mensual, only in vendedor data)
+    const newModNames=['Modulo 1','Modulo 2'];
+    let modExtra=allData.vendedor.filter(r=>newModNames.includes(r.Vendedor));
+    if(filterMes!=='all')modExtra=modExtra.filter(r=>r.Mes===filterMes);
+    const modExtraUSD=modExtra.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
+    const modExtraPesos=modExtra.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
+    totalIngresosUSD+=modExtraUSD;
+    totalFinalUSD+=modExtraUSD;
+    totalFinalPesos+=modExtraPesos;
     document.getElementById('kpis').innerHTML=`
-      <div class="kpi"><div class="kpi-label">Ingresos Totales USD</div><div class="kpi-value">${fmtUSD(totalIngresosUSD)}</div><div class="kpi-sub">${d.length} meses</div></div>
+      <div class="kpi"><div class="kpi-label">Ingresos Totales Acumulados USD</div><div class="kpi-value">${fmtUSD(totalIngresosUSD)}</div><div class="kpi-sub">${d.length} meses</div></div>
       <div class="kpi"><div class="kpi-label">Gastos Fijos e Inversiones</div><div class="kpi-value">${fmtUSD(totalGastos)}</div><div class="kpi-sub">Columna J - DASHBOARD</div></div>
       <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(totalFinalUSD):fmtPesos(totalFinalPesos)}</div><div class="kpi-sub">Después de gastos</div></div>
     `;

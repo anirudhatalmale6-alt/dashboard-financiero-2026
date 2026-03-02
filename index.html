@@ -780,8 +780,10 @@ function renderInversiones(){
         borderSkipped:false
       }]
     },
+    plugins:[ChartDataLabels],
     options:{
       responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:30}},
       indexAxis:'x',
       scales:{
         x:{

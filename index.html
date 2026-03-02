@@ -205,7 +205,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .inv-sum-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px}
 .inv-sum-card .val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)}
 .inv-sum-card .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3);margin-top:2px}
-.inv-donut-wrap{display:flex;justify-content:center;margin-top:16px}
+/* waterfall chart uses chart-card full styling */
 
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
@@ -342,7 +342,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="inv-header" id="invHeader"></div>
     <div class="inv-cats" id="invCats"></div>
     <div class="inv-summary" id="invSummary"></div>
-    <div class="inv-donut-wrap"><canvas id="chartInvDonut" width="340" height="340"></canvas></div>
+    <div class="chart-card full" style="margin-top:16px">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Flujo de Capital</div>
+      <div class="chart-subtitle">Cómo se construye tu patrimonio — activos que suman vs compromisos que restan</div>
+      <div class="chart-container tall"><canvas id="chartInvWaterfall"></canvas></div>
+    </div>
   </div>
 </main>
 </div>
@@ -728,27 +732,100 @@ function renderInversiones(){
       <div class="val" style="color:var(--purple)">${fv(isUSD?cajaUSD:cajaUSD*cotizacion)}</div>
     </div>`;
 
-  // Donut chart
-  const donutData=categories.map(c=>({
-    label:c.title,
-    value:Math.abs(c.items.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0)),
-    color:c.color==='var(--gold)'?'#d4a853':c.color==='var(--blue)'?'#60a5fa':c.color==='var(--green)'?'#34d399':c.color==='var(--red)'?'#f87171':'#a78bfa'
-  }));
-  if(charts.invDonut)charts.invDonut.destroy();
-  charts.invDonut=new Chart(document.getElementById('chartInvDonut'),{
-    type:'doughnut',
+  // Waterfall chart - shows how each category builds/reduces total patrimony
+  const propTotal=properties.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+  const creditTotal=credits.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+  const cuotaTotal=cuotas.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+  const debtTotal=allDebts.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+  const cashTotal=cash.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+
+  // Build waterfall: each bar starts where the previous ended
+  const wfItems=[
+    {label:'Propiedades\n& Vehículos',value:propTotal,color:'#d4a853'},
+    {label:'Créditos\na Cobrar',value:creditTotal,color:'#60a5fa'},
+    {label:'Cuotas\npor Cobrar',value:cuotaTotal,color:'#34d399'},
+    {label:'Deudas &\nCompromisos',value:debtTotal,color:'#f87171'},
+    {label:'Caja\nActual',value:cashTotal,color:'#a78bfa'}
+  ];
+
+  // Calculate floating bar ranges [bottom, top]
+  let running=0;
+  const floatingData=[];
+  const barColors=[];
+  const wfLabels=[];
+  wfItems.forEach(item=>{
+    const start=running;
+    running+=item.value;
+    floatingData.push(item.value>=0?[start,running]:[running,start]);
+    barColors.push(item.color);
+    wfLabels.push(item.label);
+  });
+  // Add total bar (from 0 to total)
+  const patrimonio=running;
+  floatingData.push([0,patrimonio]);
+  barColors.push(patrimonio>=0?'rgba(212,168,83,.7)':'rgba(248,113,113,.7)');
+  wfLabels.push('PATRIMONIO\nTOTAL');
+
+  if(charts.invWaterfall)charts.invWaterfall.destroy();
+  charts.invWaterfall=new Chart(document.getElementById('chartInvWaterfall'),{
+    type:'bar',
     data:{
-      labels:donutData.map(d=>d.label),
-      datasets:[{data:donutData.map(d=>d.value),backgroundColor:donutData.map(d=>d.color),borderWidth:0,hoverOffset:8}]
+      labels:wfLabels,
+      datasets:[{
+        data:floatingData,
+        backgroundColor:barColors,
+        borderColor:barColors.map(c=>c.replace('0.7','1')),
+        borderWidth:1,
+        borderRadius:6,
+        borderSkipped:false
+      }]
     },
     options:{
-      responsive:false,cutout:'65%',
+      responsive:true,maintainAspectRatio:false,
+      indexAxis:'x',
+      scales:{
+        x:{
+          grid:{display:false},
+          ticks:{color:'#9a98a0',font:{family:'DM Sans',size:10},maxRotation:0,
+            callback:function(val,idx){
+              const lbl=this.getLabelForValue(val);
+              return lbl.split('\n');
+            }
+          }
+        },
+        y:{
+          grid:{color:'rgba(42,43,58,.4)'},
+          ticks:{color:'#9a98a0',font:{family:'IBM Plex Mono',size:11},
+            callback:function(val){
+              if(Math.abs(val)>=1000000)return(val/1000000).toFixed(1)+'M';
+              if(Math.abs(val)>=1000)return(val/1000).toFixed(0)+'K';
+              return val;
+            }
+          }
+        }
+      },
       plugins:{
-        legend:{display:true,position:'bottom',labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},padding:12,usePointStyle:true,pointStyle:'circle'}},
-        datalabels:{display:false},
+        legend:{display:false},
+        datalabels:{
+          display:true,
+          color:function(ctx){return barColors[ctx.dataIndex];},
+          anchor:'end',align:'top',
+          font:{family:'IBM Plex Mono',size:11,weight:600},
+          formatter:function(val){
+            const v=Array.isArray(val)?val[1]-val[0]:val;
+            return fv(v);
+          }
+        },
         tooltip:{
-          backgroundColor:'#1a1b25',titleColor:'#e8e6e3',bodyColor:'#e8e6e3',borderColor:'#2a2b3a',borderWidth:1,cornerRadius:8,padding:10,
-          callbacks:{label:function(ctx){return ctx.label+': '+fv(ctx.raw);}}
+          backgroundColor:'#1a1b25',titleColor:'#e8e6e3',bodyColor:'#e8e6e3',borderColor:'#2a2b3a',borderWidth:1,cornerRadius:8,padding:12,
+          callbacks:{
+            title:function(ctx){return ctx[0].label.replace(/\n/g,' ');},
+            label:function(ctx){
+              const d=ctx.raw;
+              const val=Array.isArray(d)?d[1]-d[0]:d;
+              return(val>=0?' + ':' − ')+fv(Math.abs(val));
+            }
+          }
         }
       }
     }

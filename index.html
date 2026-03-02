@@ -980,17 +980,29 @@ function renderKPIs(){
   const kpiEl=document.getElementById('kpis');
 
   if(filterVendedor!=='all'){
-    // Per-vendedor: 4 cards
+    // Per-vendedor: 8 cards — same layout as global
     kpiEl.className='kpis';
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const ganPesos=vd.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
     const mesesCount=[...new Set(vd.filter(r=>(r.Ganancia_USD||0)!==0||(r.Ganancia_Pesos||0)!==0).map(r=>r.Mes))].length;
+    const promUSD=mesesCount>0?ganUSD/mesesCount:0;
+    const promPesos=mesesCount>0?ganPesos/mesesCount:0;
+    // Global gastos
+    let gastos=0;
+    let monthRows=[];
+    if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
+    else{for(let i=2;i<=13;i++)monthRows.push(i);}
+    monthRows.forEach(r=>{gastos+=dashNum(r,9);});
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div><div class="kpi-sub">${filterMes!=='all'?'Filtro: '+filterMes:'Todos los meses'}</div></div>
-      <div class="kpi" data-color="green"><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${isUSD?fmtUSD(mesesCount>0?ganUSD/mesesCount:0):fmtPesos(mesesCount>0?ganPesos/mesesCount:0)}</div><div class="kpi-sub">Por mes activo</div></div>
-      <div class="kpi" data-color="purple"><div class="kpi-label">Total Acumulado</div><div class="kpi-value">${isUSD?fmtUSD(ganUSD):fmtPesos(ganPesos)}</div><div class="kpi-sub">${isUSD?fmtPesos(ganPesos):fmtUSD(ganUSD)}</div></div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div></div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
+      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
+      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Acumulado Dólares</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div></div>
+      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
+      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtPesos(promPesos)}</div></div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Acumulado Pesos</div><div class="kpi-value">${fmtPesos(ganPesos)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
     `;
   } else {
     // Global: 8 cards — 4 dólares arriba, 4 pesos abajo

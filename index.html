@@ -299,6 +299,32 @@ function cellVal(raw,row,col){
   return r[col-1]||0;
 }
 
+function addNewModulesFromRaw(raw){
+  // Modulo 2: gviz row 63 header (1-indexed), months at rows 64-75, col J(10)=USD, K(11)=Pesos
+  // Modulo 1: gviz row 97 header (1-indexed), months at rows 98-109, col O(15)=USD, P(16)=Pesos
+  const newMods=[
+    {name:'Modulo 2',startRow:64,usdCol:10,pesosCol:11,totalRow:76,invRow:77,restaRow:78,cajaRow:79},
+    {name:'Modulo 1',startRow:98,usdCol:15,pesosCol:16,totalRow:110,invRow:111,restaRow:112,cajaRow:113}
+  ];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  newMods.forEach(mod=>{
+    meses.forEach((m,i)=>{
+      const gUSD=cellVal(raw,mod.startRow+i,mod.usdCol);
+      const gPesos=cellVal(raw,mod.startRow+i,mod.pesosCol);
+      allData.modulos.push({
+        Modulo:mod.name,Mes:m,
+        Ganancia_USD:typeof gUSD==='number'?gUSD:0,
+        Ganancia_Pesos:typeof gPesos==='number'?gPesos:0,
+        Inversion_USD:cellVal(raw,mod.invRow,mod.usdCol)||0,
+        Resta_Cobrar_USD:cellVal(raw,mod.restaRow,mod.usdCol)||0,
+        Caja_Actual_USD:cellVal(raw,mod.cajaRow,mod.usdCol)||0,
+        Inversion_Pesos:cellVal(raw,mod.invRow,mod.pesosCol)||0,
+        Resta_Cobrar_Pesos:cellVal(raw,mod.restaRow,mod.pesosCol)||0
+      });
+    });
+  });
+}
+
 function enrichModulesWithPesos(raw){
   // gviz row/col mapping (1-indexed) - found by scanning raw data for markers
   // gviz rows differ from Excel rows due to hidden/merged rows
@@ -334,6 +360,7 @@ async function loadAllData(){
     ]);
     allData={resumen:r,vendedor:v,modulos:m,panel:p};
     dashRaw=dRaw;
+    addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     populateFilters();
     renderAll();

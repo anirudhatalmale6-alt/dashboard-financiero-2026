@@ -55,7 +55,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* KPI Cards */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
-.kpis.kpis-7{grid-template-columns:repeat(4,1fr)}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.3s}
 .kpi:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -66,6 +65,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi[data-color="red"]::after{background:linear-gradient(90deg,var(--red),transparent)}
 .kpi[data-color="blue"]::after{background:linear-gradient(90deg,var(--blue),transparent)}
 .kpi[data-color="purple"]::after{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi[data-color="pink"]::after{background:linear-gradient(90deg,var(--pink),transparent)}
+.kpi[data-color="silver"]::after{background:linear-gradient(90deg,#cbd5e1,transparent)}
 .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px}
 .kpi-value{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .kpi[data-color="gold"] .kpi-value{color:var(--gold)}
@@ -75,6 +76,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi[data-color="red"] .kpi-value{color:var(--red)}
 .kpi[data-color="blue"] .kpi-value{color:var(--blue)}
 .kpi[data-color="purple"] .kpi-value{color:var(--purple)}
+.kpi[data-color="pink"] .kpi-value{color:var(--pink)}
+.kpi[data-color="silver"] .kpi-value{color:#cbd5e1}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
 .kpi-flag{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
 .kpi-flag.usd{background:rgba(212,168,83,.15);color:var(--gold)}
@@ -990,8 +993,8 @@ function renderKPIs(){
       <div class="kpi" data-color="purple"><div class="kpi-label">Total Acumulado</div><div class="kpi-value">${isUSD?fmtUSD(ganUSD):fmtPesos(ganPesos)}</div><div class="kpi-sub">${isUSD?fmtPesos(ganPesos):fmtUSD(ganUSD)}</div></div>
     `;
   } else {
-    // Global: 7 cards — both currencies visible
-    kpiEl.className='kpis kpis-7';
+    // Global: 8 cards — 4 dólares arriba, 4 pesos abajo
+    kpiEl.className='kpis';
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
     else{for(let i=2;i<=13;i++)monthRows.push(i);}
@@ -1004,13 +1007,14 @@ function renderKPIs(){
     });
 
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingreso Bruto</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div></div>
-      <div class="kpi" data-color="gold2"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingreso Bruto</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div></div>
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div></div>
-      <div class="kpi" data-color="teal"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div></div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div></div>
       <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Neto Final Dólares</div><div class="kpi-value">${fmtUSD(netoUSD)}</div></div>
-      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Neto Final Pesos</div><div class="kpi-value">${fmtPesos(netoPesos)}</div></div>
+      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Final Dólares</div><div class="kpi-value">${fmtUSD(netoUSD)}</div></div>
+      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div></div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div></div>
+      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
+      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Final Pesos</div><div class="kpi-value">${fmtPesos(netoPesos)}</div></div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div></div>
     `;
   }
 }

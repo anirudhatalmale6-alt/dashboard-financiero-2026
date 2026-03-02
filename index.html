@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Financiero 2026</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=Inter:wght@600;700;800&family=Playfair+Display:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=IBM+Plex+Mono:wght@500;600;700&family=Playfair+Display:wght@600;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -62,7 +63,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi:nth-child(3)::after{background:linear-gradient(90deg,var(--blue),transparent)}
 .kpi:nth-child(4)::after{background:linear-gradient(90deg,var(--purple),transparent)}
 .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px}
-.kpi-value{font-family:'Inter','DM Sans',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .kpi:nth-child(1) .kpi-value{color:var(--gold)}
 .kpi:nth-child(2) .kpi-value{color:var(--green)}
 .kpi:nth-child(3) .kpi-value{color:var(--blue)}
@@ -93,7 +94,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .rank-item:nth-child(3) .rank-pos{background:linear-gradient(135deg,#b45309,#d97706);color:var(--bg)}
 .rank-item:nth-child(n+4) .rank-pos{background:var(--surface3);color:var(--text3)}
 .rank-name{flex:1;font-size:13px;font-weight:500}
-.rank-value{font-size:14px;font-weight:700;font-family:'Inter','DM Sans',sans-serif;letter-spacing:.3px;font-variant-numeric:tabular-nums}
+.rank-value{font-size:14px;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:.3px;font-variant-numeric:tabular-nums}
 
 /* Module Cards */
 .modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px}
@@ -466,14 +467,21 @@ function renderChartPie(){
     agg[k]=(agg[k]||0)+(v||0);
   });
   const sorted=Object.entries(agg).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,[,v])=>s+v,0);
+  const pcts=sorted.map(([,v])=>total>0?((v/total)*100).toFixed(1):0);
+  const labelsWithPct=sorted.map(([k],i)=>`${k}  (${pcts[i]}%)`);
   if(charts.pie)charts.pie.destroy();
   charts.pie=new Chart(document.getElementById('chartPie'),{
     type:'doughnut',
     data:{
-      labels:sorted.map(([k])=>k),
+      labels:labelsWithPct,
       datasets:[{data:sorted.map(([,v])=>v),backgroundColor:COLORS.slice(0,sorted.length),borderColor:'#12131a',borderWidth:3,hoverOffset:8}]
     },
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,padding:8,borderRadius:3,useBorderRadius:true}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{
+      legend:{position:'right',labels:{color:'#e8e6e3',font:{family:'IBM Plex Mono, DM Sans',size:11,weight:'500'},boxWidth:12,boxHeight:12,padding:10,borderRadius:3,useBorderRadius:true}},
+      datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:11,weight:'600'},formatter:function(value,ctx){const p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=5?p+'%':'';},anchor:'center',align:'center',textShadowBlur:4,textShadowColor:'rgba(0,0,0,0.6)'}
+    }}
   });
 }
 

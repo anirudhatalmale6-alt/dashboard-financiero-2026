@@ -114,6 +114,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
 .section-title em{font-style:normal;color:var(--gold)}
 
+/* Acumulado Monthly Cards */
+.acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
+.acum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;transition:.3s;position:relative;overflow:hidden}
+.acum-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.acum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))}
+.acum-card .mes{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px;font-weight:500}
+.acum-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
+.acum-card .acum-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--blue);margin-bottom:2px}
+.acum-card .acum-val.neg{color:var(--red)}
+.acum-card .acum-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+.acum-card .acum-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
+.acum-card .acum-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:.6s}
+.acum-card.no-data{opacity:.3}
+
 /* Cuotas Mini Cards */
 .cuotas-cards{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px}
 .cuota-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;transition:.3s;position:relative;overflow:hidden}
@@ -219,6 +233,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
     <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
   </div>
+
+  <div class="acum-cards" id="acumCards"></div>
 
   <div class="charts">
     <div class="chart-card full">
@@ -443,8 +459,49 @@ function fmtFull(n){
   return'$'+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
+function renderAcumuladoCards(){
+  const isUSD=currency==='usd';
+  const container=document.getElementById('acumCards');
+  container.innerHTML='';
+  const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Read monthly data from DASHBOARD and compute cumulative
+  let cumNeto=0,cumIng=0;
+  const months=[];
+  for(let i=0;i<12;i++){
+    const row=2+i; // DASHBOARD rows 2-13 (0-indexed)
+    const unificado=isUSD?dashNum(row,8):dashNum(row,7); // Col I(USD) or H(Pesos)
+    const gasto=dashNum(row,9); // Col J (always USD)
+    const neto=isUSD?dashNum(row,11):dashNum(row,10); // Col L(USD) or K(Pesos)
+    cumNeto+=neto;
+    cumIng+=unificado;
+    const hasData=unificado!==0||neto!==0;
+    months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,unificado,gasto,cumNeto,cumIng,hasData});
+  }
+
+  // Find max cumulative for progress bar
+  const maxCum=Math.max(...months.map(m=>Math.abs(m.cumNeto)),1);
+
+  months.forEach(m=>{
+    const pct=Math.min(100,Math.abs(m.cumNeto)/maxCum*100);
+    const fmtVal=isUSD?fmtUSD:fmtPesos;
+    const isNeg=m.cumNeto<0;
+    container.innerHTML+=`
+      <div class="acum-card${m.hasData?'':' no-data'}">
+        <div class="mes">${m.mes}</div>
+        <span class="lbl">Neto Mes</span>
+        <div class="acum-sub">${fmtVal(m.neto)}</div>
+        <span class="lbl">Acumulado</span>
+        <div class="acum-val${isNeg?' neg':''}">${fmtVal(m.cumNeto)}</div>
+        <div class="acum-bar"><div class="acum-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  });
+}
+
 function renderAll(){
   renderKPIs();
+  renderAcumuladoCards();
   renderChartIngresos();
   renderChartBalance();
   renderChartPie();

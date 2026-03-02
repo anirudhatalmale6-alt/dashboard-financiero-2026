@@ -1024,9 +1024,14 @@ function renderVendedorDash(){
       const name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
       if(!name||typeof name!=='string')return;
 
+      // Vendedor filter: skip if a specific vendedor is selected and doesn't match
+      if(filterVendedor!=='all'&&name!==filterVendedor)return;
+
       let totalUSD=0,totalPesos=0;
       let tbodyHTML='';
       meses.forEach((mes,mi)=>{
+        // Month filter: skip months that don't match
+        if(filterMes!=='all'&&mes!==filterMes)return;
         const row=dashRaw[bs+1+mi];
         const usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
         const pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
@@ -1068,9 +1073,13 @@ function renderVendedorDetail(){
   const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
 
   vends.forEach((vName,vi)=>{
+    // Vendedor filter: skip if doesn't match
+    if(filterVendedor!=='all'&&vName!==filterVendedor)return;
+
     const vData=allData.vendedor.filter(r=>r.Vendedor===vName);
-    const totalUSD=vData.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
-    const totalPesos=vData.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
+    const filteredData=filterMes!=='all'?vData.filter(r=>r.Mes===filterMes):vData;
+    const totalUSD=filteredData.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
+    const totalPesos=filteredData.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
     const color=COLORS[vi%COLORS.length];
 
     let cumUSD=0,cumPesos=0;
@@ -1080,9 +1089,10 @@ function renderVendedorDetail(){
       const usd=row?(row.Ganancia_USD||0):0;
       const pesos=row?(row.Ganancia_Pesos||0):0;
       cumUSD+=usd;cumPesos+=pesos;
+      const isFiltered=filterMes!=='all'&&mFull!==filterMes;
       const hasData=usd!==0||pesos!==0;
       cardsHTML+=`
-        <div class="acum-card${hasData?'':' no-data'}">
+        <div class="acum-card${hasData?'':' no-data'}${isFiltered?' no-data':''}">
           <div class="mes">${allMeses[mi]}</div>
           <span class="lbl">Neto Mes</span>
           <div class="acum-sub${usd<0?' neg':''}">${fmtUSD(usd)}</div>

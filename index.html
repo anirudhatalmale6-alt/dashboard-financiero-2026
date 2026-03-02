@@ -1000,86 +1000,61 @@ function renderVendedorDash(){
   if(!dashRaw||dashRaw.length<210)return;
   const container=document.getElementById('vendedorDashContainer');
   container.innerHTML='';
-  const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const icons=['💰','📦','📈','💳','🤝','🏢','👩','🧑','💻','📡'];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   // Parse vendedor blocks from DASHBOARD. Each block = 17 rows, 3 vendedores per block.
-  // Vendedor positions: col 2 (USD col 4, Pesos col 5), col 7 (USD col 9, Pesos col 10), col 12 (USD col 14, Pesos col 15)
   const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
   const blockStarts=[];
 
-  // Scan for block headers starting from row 200
   for(let i=200;i<dashRaw.length-16;i++){
     const r=dashRaw[i];
     if(!r)continue;
     const v2=r[2];
-    if(v2&&typeof v2==='string'&&v2!=='Total'&&!allMesesFull.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
-      // Check if next row has a month name at col 2
+    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
       const nextR=dashRaw[i+1];
       if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
     }
   }
 
-  let colorIdx=0;
+  container.className='module-details-grid';
+  let idx=0;
   blockStarts.forEach(bs=>{
     positions.forEach(pos=>{
       const name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
       if(!name||typeof name!=='string')return;
 
-      const color=COLORS[colorIdx%COLORS.length];
-      colorIdx++;
-
-      // Monthly data (rows bs+1 to bs+12)
-      let cumUSD=0,cumPesos=0;
-      let cardsHTML='';
-      for(let mi=0;mi<12;mi++){
+      let totalUSD=0,totalPesos=0;
+      let tbodyHTML='';
+      meses.forEach((mes,mi)=>{
         const row=dashRaw[bs+1+mi];
         const usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
         const pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
-        cumUSD+=usd;cumPesos+=pesos;
-        const hasData=usd!==0||pesos!==0;
-        cardsHTML+=`
-          <div class="acum-card${hasData?'':' no-data'}">
-            <div class="mes">${allMeses[mi]}</div>
-            <span class="lbl">Neto Mes</span>
-            <div class="acum-sub${usd<0?' neg':''}">${fmtUSD(usd)}</div>
-            <div class="acum-sub2${pesos<0?' neg':''}">${fmtPesos(pesos)}</div>
-            <span class="lbl">Acumulado</span>
-            <div class="acum-val${cumUSD<0?' neg':''}">${fmtUSD(cumUSD)}</div>
-            <div class="acum-val2${cumPesos<0?' neg':''}">${fmtPesos(cumPesos)}</div>
-          </div>`;
-      }
-
-      // Summary: Total (row bs+13), Inversión (bs+14), Resta Cobrar (bs+15), Caja Actual (bs+16)
-      const totalRow=dashRaw[bs+13];
-      const invRow=dashRaw[bs+14];
-      const restaRow=dashRaw[bs+15];
-      const cajaRow=dashRaw[bs+16];
-      const totalUSD=totalRow?((typeof totalRow[pos.usdCol]==='number')?totalRow[pos.usdCol]:0):0;
-      const totalPesos=totalRow?((typeof totalRow[pos.pesosCol]==='number')?totalRow[pos.pesosCol]:0):0;
-      const invUSD=invRow?((typeof invRow[pos.usdCol]==='number')?invRow[pos.usdCol]:0):0;
-      const invPesos=invRow?((typeof invRow[pos.pesosCol]==='number')?invRow[pos.pesosCol]:0):0;
-      const restaUSD=restaRow?((typeof restaRow[pos.usdCol]==='number')?restaRow[pos.usdCol]:0):0;
-      const restaPesos=restaRow?((typeof restaRow[pos.pesosCol]==='number')?restaRow[pos.pesosCol]:0):0;
-
-      // Build summary badges
-      let summaryHTML='';
-      if(invUSD||invPesos)summaryHTML+=`<span style="font-size:11px;color:var(--text3);margin-left:12px">Inv: ${fmtUSD(invUSD)}</span>`;
-      if(restaUSD||restaPesos)summaryHTML+=`<span style="font-size:11px;color:var(--text3);margin-left:8px">Resta: ${fmtUSD(restaUSD)}</span>`;
+        totalUSD+=usd;totalPesos+=pesos;
+        tbodyHTML+=`<tr>
+          <td>${mes}</td>
+          <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+          <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+        </tr>`;
+      });
+      tbodyHTML+=`<tr class="total-row">
+        <td>TOTAL</td>
+        <td>${fmtUSD(totalUSD)}</td>
+        <td>${fmtPesos(totalPesos)}</td>
+      </tr>`;
 
       container.innerHTML+=`
-        <div class="vd-block">
-          <div class="vd-block-header">
-            <div class="vd-block-dot" style="background:${color}"></div>
-            <div class="vd-block-name">${name}</div>
-            <div class="vd-block-total">${fmtUSD(totalUSD)} <span>${fmtPesos(totalPesos)}</span>${summaryHTML}</div>
-          </div>
-          <div class="vd-cards">${cardsHTML}</div>
+        <div class="module-detail">
+          <div class="module-detail-title"><span class="icon">${icons[idx%icons.length]}</span>${name}</div>
+          <table class="module-table">
+            <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+            <tbody>${tbodyHTML}</tbody>
+          </table>
         </div>`;
+      idx++;
     });
   });
 
-  // Hide section if no data
   const title=document.getElementById('secVendedorDash');
   if(!container.innerHTML){title.style.display='none';container.style.display='none';}
   else{title.style.display='';container.style.display='';}

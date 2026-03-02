@@ -16,6 +16,7 @@
 --green:#34d399;--red:#f87171;--blue:#60a5fa;--purple:#a78bfa;
 --teal:#2dd4bf;--pink:#f472b6;--orange:#fb923c;--cyan:#22d3ee;
 }
+html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 .noise{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.03;pointer-events:none;z-index:9999;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(212,168,83,.06) 0%,transparent 70%);pointer-events:none;z-index:0}
@@ -35,6 +36,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .filter-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;transition:.2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239a98a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .filter-select:hover{border-color:var(--gold);background-color:var(--surface3)}
 .filter-select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+
+/* Sidebar Navigation */
+.sidebar-nav{display:flex;flex-direction:column;gap:2px}
+.sidebar-nav-title{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:4px;font-weight:600}
+.sidebar-nav a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:var(--text2);text-decoration:none;transition:.2s;cursor:pointer}
+.sidebar-nav a:hover{background:var(--surface2);color:var(--text);transform:translateX(2px)}
+.sidebar-nav a .nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
 .sidebar-stats{margin-top:auto;padding-top:20px;border-top:1px solid var(--border)}
 .sidebar-stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12px}
@@ -136,7 +144,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .acum-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
 .acum-card .acum-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--blue);margin-bottom:2px}
 .acum-card .acum-val.neg{color:var(--red)}
-.acum-card .acum-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+.acum-card .acum-sub{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--gold)}
+.acum-card .acum-sub.neg{color:var(--red)}
 .acum-card .acum-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
 .acum-card .acum-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:.6s}
 .acum-card.no-data{opacity:.3}
@@ -269,6 +278,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </select>
   </div>
 
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-title">Navegación</div>
+    <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>KPIs Principales</a>
+    <a onclick="document.getElementById('acumCards').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Mensual</a>
+    <a onclick="document.getElementById('secGraficos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Ingresos Mensuales</a>
+    <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ganancias</a>
+    <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
+    <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
+    <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>
+    <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cronograma Inversiones</a>
+  </nav>
+
   <div class="sidebar-stats" id="sidebarStats"></div>
 
   <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar Datos</button>
@@ -292,7 +313,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="acum-cards" id="acumCards"></div>
 
-  <div class="charts">
+  <div class="charts" id="secGraficos">
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
       <div class="chart-subtitle">Ingresos vs Gastos Fijos (DASHBOARD) — 2026</div>
@@ -315,7 +336,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title">Ranking de <em>Ganancias</em></h3>
+  <h3 class="section-title" id="secRanking">Ranking de <em>Ganancias</em></h3>
   <div class="rankings" id="rankings">
     <div class="ranking-card">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Top Vendedores USD</div>
@@ -329,13 +350,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title">Módulos de <em>Negocio</em> / Balance Anual</h3>
+  <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
   <div class="modules" id="modules"></div>
 
-  <h3 class="section-title">Detalle Mensual por <em>Módulo</em></h3>
+  <h3 class="section-title" id="secDetalle">Detalle Mensual por <em>Módulo</em></h3>
   <div class="module-details-grid" id="moduleDetails"></div>
 
-  <h3 class="section-title">Cuotas a <em>Cobrar vs Pagar</em></h3>
+  <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar</em></h3>
   <div class="cuotas-cards" id="cuotasCards"></div>
   <div class="charts">
     <div class="chart-card">
@@ -350,7 +371,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title">Cronograma de <em>Inversiones</em></h3>
+  <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
   <div class="inv-section" id="invSection">
     <div class="inv-header" id="invHeader"></div>
     <div class="inv-cats" id="invCats"></div>
@@ -582,7 +603,7 @@ function renderAcumuladoCards(){
       <div class="acum-card${m.hasData?'':' no-data'}">
         <div class="mes">${m.mes}</div>
         <span class="lbl">${label}</span>
-        <div class="acum-sub">${fmtVal(m.neto)}</div>
+        <div class="acum-sub${m.neto<0?' neg':''}">${fmtVal(m.neto)}</div>
         <span class="lbl">Acumulado</span>
         <div class="acum-val${isNeg?' neg':''}">${fmtVal(m.cumNeto)}</div>
         <div class="acum-bar"><div class="acum-fill" style="width:${pct}%"></div></div>

@@ -54,7 +54,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header-date{font-size:12px;color:var(--text3);background:var(--surface2);padding:8px 14px;border-radius:20px;border:1px solid var(--border)}
 
 /* KPI Cards */
-.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.3s}
 .kpi:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -318,6 +318,20 @@ function cellVal(raw,row,col){
   return r[col-1]||0;
 }
 
+// Read numeric value from dashRaw (0-indexed), handles Argentine format strings
+function dashNum(row,col){
+  if(!dashRaw||!dashRaw[row])return 0;
+  const v=dashRaw[row][col];
+  if(typeof v==='number')return v;
+  if(typeof v==='string'){
+    const neg=v.includes('-')?-1:1;
+    const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+    const n=parseFloat(clean);
+    return isNaN(n)?0:n*neg;
+  }
+  return 0;
+}
+
 function addNewModulesFromRaw(raw){
   // Modulo 2: gviz row 63 header (1-indexed), months at rows 64-75, col J(10)=USD, K(11)=Pesos
   // Modulo 1: gviz row 97 header (1-indexed), months at rows 98-109, col O(15)=USD, P(16)=Pesos
@@ -460,9 +474,12 @@ function getFilteredVendedor(){
 
 function renderKPIs(){
   const isUSD=currency==='usd';
+  // DASHBOARD monthly rows: 0-indexed rows 2-13 (Enero-Diciembre)
+  // Cols: E=4(Bruto USD), F=5(Bruto Pesos), H=7(Unificado Pesos), I=8(Unificado USD), J=9(Gastos), K=10(Neto Pesos), L=11(Neto USD)
+  const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   if(filterVendedor!=='all'){
-    // Per-vendedor KPIs from vendedor data
+    // Per-vendedor KPIs
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const ganPesos=vd.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
@@ -471,27 +488,34 @@ function renderKPIs(){
       <div class="kpi"><div class="kpi-label">Ganancia ${filterVendedor} USD</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
       <div class="kpi"><div class="kpi-label">Ganancia ${filterVendedor} Pesos</div><div class="kpi-value">${fmtPesos(ganPesos)}</div><div class="kpi-sub">Filtro: ${filterMes!=='all'?filterMes:'Todos los meses'}</div></div>
       <div class="kpi"><div class="kpi-label">Promedio Mensual ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(mesesCount>0?ganUSD/mesesCount:0):fmtPesos(mesesCount>0?ganPesos/mesesCount:0)}</div><div class="kpi-sub">Por mes activo</div></div>
+      <div class="kpi"><div class="kpi-label">Total Acumulado ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(ganUSD):fmtPesos(ganPesos)}</div><div class="kpi-sub">${isUSD?fmtPesos(ganPesos):fmtUSD(ganUSD)}</div></div>
     `;
   } else {
-    // Aggregate KPIs from resumen + Modulo 1 & 2
-    const d=getFilteredResumen();
-    let totalIngresosUSD=d.reduce((s,r)=>s+(r.Ingresos_USD||0),0);
-    const totalGastos=d.reduce((s,r)=>s+(r.Gastos_Fijos_USD||0),0);
-    let totalFinalUSD=d.reduce((s,r)=>s+(r.Total_Final_USD||0),0);
-    let totalFinalPesos=d.reduce((s,r)=>s+(r.Total_Final_Pesos||0),0);
-    // Include Modulo 1 & 2 (not in LS_Resumen_Mensual, only in vendedor data)
-    const newModNames=['Modulo 1','Modulo 2'];
-    let modExtra=allData.vendedor.filter(r=>newModNames.includes(r.Vendedor));
-    if(filterMes!=='all')modExtra=modExtra.filter(r=>r.Mes===filterMes);
-    const modExtraUSD=modExtra.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
-    const modExtraPesos=modExtra.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
-    totalIngresosUSD+=modExtraUSD;
-    totalFinalUSD+=modExtraUSD;
-    totalFinalPesos+=modExtraPesos;
+    // Read directly from DASHBOARD sheet columns
+    let monthRows=[];
+    if(filterMes!=='all'){
+      const idx=allMeses.indexOf(filterMes);
+      if(idx>=0)monthRows=[2+idx]; // single month row
+    } else {
+      for(let i=2;i<=13;i++)monthRows.push(i); // all months
+    }
+
+    let brutoUSD=0,brutoPesos=0,unificadoPesos=0,unificadoUSD=0,gastos=0,netoPesos=0,netoUSD=0;
+    monthRows.forEach(r=>{
+      brutoUSD+=dashNum(r,4);       // Col E
+      brutoPesos+=dashNum(r,5);     // Col F
+      unificadoPesos+=dashNum(r,7); // Col H
+      unificadoUSD+=dashNum(r,8);   // Col I
+      gastos+=dashNum(r,9);         // Col J
+      netoPesos+=dashNum(r,10);     // Col K
+      netoUSD+=dashNum(r,11);       // Col L
+    });
+
     document.getElementById('kpis').innerHTML=`
-      <div class="kpi"><div class="kpi-label">Ingresos Totales Acumulados USD</div><div class="kpi-value">${fmtUSD(totalIngresosUSD)}</div><div class="kpi-sub">${d.length} meses</div></div>
-      <div class="kpi"><div class="kpi-label">Gastos Fijos e Inversiones</div><div class="kpi-value">${fmtUSD(totalGastos)}</div><div class="kpi-sub">Columna J - DASHBOARD</div></div>
-      <div class="kpi"><div class="kpi-label">Balance Final ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(totalFinalUSD):fmtPesos(totalFinalPesos)}</div><div class="kpi-sub">Después de gastos</div></div>
+      <div class="kpi"><div class="kpi-label">Ingreso Bruto ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(brutoUSD):fmtPesos(brutoPesos)}</div><div class="kpi-sub">${isUSD?fmtPesos(brutoPesos):fmtUSD(brutoUSD)}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Unificado ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(unificadoUSD):fmtPesos(unificadoPesos)}</div><div class="kpi-sub">Todo en una moneda</div></div>
+      <div class="kpi"><div class="kpi-label">Gastos Fijos USD</div><div class="kpi-value">${fmtUSD(gastos)}</div><div class="kpi-sub">Columna J</div></div>
+      <div class="kpi"><div class="kpi-label">Neto Final ${isUSD?'USD':'Pesos'}</div><div class="kpi-value">${isUSD?fmtUSD(netoUSD):fmtPesos(netoPesos)}</div><div class="kpi-sub">Unificado - Gastos</div></div>
     `;
   }
 }

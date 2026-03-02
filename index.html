@@ -578,73 +578,69 @@ function renderInversiones(){
   const catsEl=document.getElementById('invCats');
   const summaryEl=document.getElementById('invSummary');
 
-  // Parse data from INVERSIONES CRONOGRAMA sheet
-  // Row indices are 0-based. Data is at gviz rows 160-193 (sheet rows 161-194)
+  // Parse data from INVERSIONES CRONOGRAMA sheet (0-indexed rows)
   // Col D=3 (description), Col F=5 (USD), Col G=6 (Pesos)
-  const cotizacion=invNum(161,5)||invNum(161,6)||1450;
+  const cotizacion=invNum(162,6)||1450;
 
-  // PROPIEDADES & VEHICULOS (rows 163-171 / 0-indexed)
+  // PROPIEDADES & VEHICULOS (rows 164-172)
   const properties=[];
-  for(let r=163;r<=171;r++){
+  for(let r=164;r<=172;r++){
     const name=invStr(r,3);
     const usd=invNum(r,5);
     const pesos=invNum(r,6);
-    if(name && name!=='X' && (usd||pesos)) properties.push({name,usd,pesos:pesos||usd*cotizacion});
+    if(name && !name.startsWith('X') && usd) properties.push({name,usd,pesos:pesos||usd*cotizacion});
   }
 
-  // CRÉDITOS A COBRAR (rows 173-175)
+  // CRÉDITOS A COBRAR (rows 174-176)
   const credits=[];
-  for(let r=173;r<=175;r++){
+  for(let r=174;r<=176;r++){
     const name=invStr(r,3);
     const usd=invNum(r,5);
     const pesos=invNum(r,6);
-    if(name && !name.startsWith('X') && (usd||pesos)) credits.push({name,usd,pesos:pesos||usd*cotizacion});
+    if(name && !name.startsWith('X') && usd) credits.push({name,usd,pesos:pesos||usd*cotizacion});
   }
 
-  // CUOTAS POR COBRAR (rows 177-178)
+  // CUOTAS POR COBRAR (rows 178-179)
   const cuotas=[];
-  for(let r=177;r<=178;r++){
+  for(let r=178;r<=179;r++){
     const name=invStr(r,3);
     const usd=invNum(r,5);
     const pesos=invNum(r,6);
     if(name && !name.startsWith('X') && (usd||pesos)) cuotas.push({name,usd,pesos:pesos||0});
   }
 
-  // EQUIPAMIENTO DEUDA (row 180)
+  // EQUIPAMIENTO DEUDA (row 181)
   const equipDebt=[];
   {
-    const name=invStr(180,3);
-    const usd=invNum(180,5);
-    const pesos=invNum(180,6);
-    if(name && !name.startsWith('X') && (usd||pesos)) equipDebt.push({name,usd,pesos:pesos||usd*cotizacion});
+    const name=invStr(181,3);
+    const usd=invNum(181,5);
+    if(name && !name.startsWith('X') && usd) equipDebt.push({name,usd,pesos:usd*cotizacion});
   }
 
-  // COMPRAS / DEUDAS A PAGAR (rows 182-187)
+  // COMPRAS / DEUDAS A PAGAR (rows 183-188)
   const debts=[];
-  for(let r=182;r<=187;r++){
+  for(let r=183;r<=188;r++){
     const name=invStr(r,3);
     const usd=invNum(r,5);
-    const pesos=invNum(r,6);
-    if(name && !name.startsWith('X') && (usd||pesos||usd<0||pesos<0)) debts.push({name,usd,pesos:pesos||usd*cotizacion});
+    if(name && !name.startsWith('X')) debts.push({name,usd,pesos:usd*cotizacion});
   }
   // Combine equipment debt + compras debts
-  const allDebts=[...equipDebt,...debts];
+  const allDebts=[...equipDebt,...debts].filter(d=>d.usd!==0);
 
-  // CAJA ACTUAL (row 189)
+  // CAJA ACTUAL (row 190)
   const cash=[];
   {
-    const name=invStr(189,3)||'Caja Actual';
-    const usd=invNum(189,5);
-    const pesos=invNum(189,6);
-    if(usd||pesos) cash.push({name,usd,pesos:pesos||usd*cotizacion});
+    const name=invStr(190,3)||'Dinero en Caja';
+    const usd=invNum(190,5);
+    if(usd) cash.push({name,usd,pesos:usd*cotizacion});
   }
 
-  // Grand totals from row 190 (or computed)
-  const totalUSD=invNum(190,5)||0;
-  const totalPesos=invNum(190,6)||0;
+  // Grand totals from row 163 (Totales) or row 191 (Total)
+  const totalUSD=invNum(163,5)||invNum(191,5)||0;
+  const totalPesos=invNum(163,6)||invNum(191,6)||0;
 
-  // Summary rows 191-193
-  const inversionUSD=properties.reduce((s,i)=>s+i.usd,0)+credits.reduce((s,i)=>s+i.usd,0)+cuotas.reduce((s,i)=>s+i.usd,0);
+  // Computed summaries
+  const inversionUSD=properties.reduce((s,i)=>s+i.usd,0);
   const restaCobrarUSD=cuotas.reduce((s,i)=>s+i.usd,0)+credits.reduce((s,i)=>s+i.usd,0);
   const cajaUSD=cash.reduce((s,i)=>s+i.usd,0);
 

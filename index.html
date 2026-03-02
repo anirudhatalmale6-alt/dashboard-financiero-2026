@@ -665,7 +665,7 @@ function extractCuotasData(){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
         }
       }
-      if(v.includes('compromisos de cuotas mensuales')){compromisoRow=i;}
+      if(v.includes('resta pagar')){compromisoRow=i;}
       if(v.includes('ingresos de cuotas en pesos')){
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}

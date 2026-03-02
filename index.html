@@ -115,13 +115,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-title em{font-style:normal;color:var(--gold)}
 
 /* Cuotas Mini Cards */
-.cuotas-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.cuotas-cards{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px}
 .cuota-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;transition:.3s;position:relative;overflow:hidden}
 .cuota-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.cuota-card.acum{grid-column:span 2;background:linear-gradient(135deg,var(--surface),var(--surface2));border-color:var(--gold-dim)}
+.cuota-card.acum::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.cuota-card.acum .mes{color:var(--gold);font-size:11px;font-weight:700}
+.cuota-card.acum .cobrar{font-size:20px}
+.cuota-card.acum .pagar{font-size:16px}
 .cuota-card .mes{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px;font-weight:500}
 .cuota-card .cobrar{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--green);margin-bottom:3px}
 .cuota-card .pagar{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--red)}
 .cuota-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
+.cuota-card .cuota-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
+.cuota-card .cuota-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--green),var(--teal));transition:.6s}
+.cuota-card .cuota-pct{font-size:9px;color:var(--text3);margin-top:3px}
 .cuota-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--teal))}
 
 /* Module Detail Tables */
@@ -750,19 +758,37 @@ function renderCuotasCards(){
   const q=extractCuotasData();
   const container=document.getElementById('cuotasCards');
   container.innerHTML='';
+  let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
     const cobrar=q.cobrarUSD[i]||0;
     const pagar=q.pagarUSD[i]||0;
+    totalCobrar+=cobrar;
+    totalPagar+=pagar;
     if(cobrar===0&&pagar===0)return;
+    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
     container.innerHTML+=`
       <div class="cuota-card">
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar</span>
         <div class="cobrar">${fmtUSD(cobrar)}</div>
         <span class="lbl">A Pagar</span>
-        <div class="pagar">${pagar>0?'-':' '}${fmtUSD(pagar)}</div>
+        <div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div>
+        <div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div>
+        <div class="cuota-pct">Cobro: ${pct}%</div>
       </div>`;
   });
+  // Accumulated card (double width)
+  const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  container.innerHTML+=`
+    <div class="cuota-card acum">
+      <div class="mes">ACUMULADO ANUAL</div>
+      <span class="lbl">Total A Cobrar</span>
+      <div class="cobrar">${fmtUSD(totalCobrar)}</div>
+      <span class="lbl">Total A Pagar</span>
+      <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>
+      <div class="cuota-bar"><div class="cuota-fill" style="width:${totalPct}%"></div></div>
+      <div class="cuota-pct">Cobro: ${totalPct}%</div>
+    </div>`;
 }
 
 function renderSidebarStats(){

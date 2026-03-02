@@ -707,7 +707,12 @@ function extractCuotasData(){
     if(!dashRaw[row])return 0;
     const v=dashRaw[row][col];
     if(typeof v==='number')return v;
-    if(typeof v==='string'){const n=parseFloat(v.replace(/[^\d.\-]/g,''));return isNaN(n)?0:n;}
+    if(typeof v==='string'){
+      const neg=v.includes('-')?-1:1;
+      const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+      const n=parseFloat(clean);
+      return isNaN(n)?0:n*neg;
+    }
     return 0;
   }
   // Cols: 4=Enero, 5=Feb, ..., 15=Dec (indices for 12 months of 2026)

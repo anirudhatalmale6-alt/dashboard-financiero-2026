@@ -87,6 +87,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi[data-color="pink"] .kpi-value{color:var(--pink)}
 .kpi[data-color="silver"] .kpi-value{color:#cbd5e1}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;margin-top:6px;padding:2px 8px;border-radius:6px}
+.kpi-trend.up{background:rgba(74,222,128,.12);color:#4ade80}
+.kpi-trend.down{background:rgba(248,113,113,.12);color:#f87171}
+.kpi-trend.flat{background:rgba(148,163,184,.12);color:#94a3b8}
 .kpi-flag{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
 .kpi-flag.usd{background:rgba(212,168,83,.15);color:var(--gold)}
 .kpi-flag.ars{background:rgba(96,165,250,.15);color:var(--blue)}
@@ -1006,13 +1010,36 @@ function getFilteredVendedor(){
   return d;
 }
 
+function trendBadge(cur,prev){
+  if(prev===0&&cur===0)return '';
+  if(prev===0)return '<div class="kpi-trend up">&#9650; nuevo</div>';
+  const pct=((cur-prev)/Math.abs(prev)*100).toFixed(1);
+  if(Math.abs(pct)<0.5)return '<div class="kpi-trend flat">&#9644; 0%</div>';
+  const up=pct>0;
+  return `<div class="kpi-trend ${up?'up':'down'}">${up?'&#9650;':'&#9660;'} ${up?'+':''}${pct}%</div>`;
+}
+
 function renderKPIs(){
   const isUSD=currency==='usd';
   const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const kpiEl=document.getElementById('kpis');
 
+  // Determine current month index and previous month for trend
+  // Find last month with data as the "current" month
+  function findLastDataMonth(){
+    for(let i=13;i>=2;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
+    return -1;
+  }
+  let curIdx=-1,prevIdx=-1;
+  if(filterMes!=='all'){
+    curIdx=2+allMeses.indexOf(filterMes);
+    prevIdx=curIdx>2?curIdx-1:-1;
+  } else {
+    curIdx=findLastDataMonth();
+    prevIdx=curIdx>2?curIdx-1:-1;
+  }
+
   if(filterVendedor!=='all'){
-    // Per-vendedor: 8 cards — same layout as global
     kpiEl.className='kpis';
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
@@ -1020,24 +1047,42 @@ function renderKPIs(){
     const mesesCount=[...new Set(vd.filter(r=>(r.Ganancia_USD||0)!==0||(r.Ganancia_Pesos||0)!==0).map(r=>r.Mes))].length;
     const promUSD=mesesCount>0?ganUSD/mesesCount:0;
     const promPesos=mesesCount>0?ganPesos/mesesCount:0;
-    // Global gastos
     let gastos=0;
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
     else{for(let i=2;i<=13;i++)monthRows.push(i);}
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
+
+    // Trend: compare current vs previous month for this vendedor
+    const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
+    let curGanUSD=0,curGanPesos=0,prevGanUSD=0,prevGanPesos=0,curGastos=0,prevGastos=0;
+    if(curIdx>=2){
+      const curMes=allMeses[curIdx-2];
+      const cr=allVd.find(r=>r.Mes===curMes);
+      curGanUSD=cr?(cr.Ganancia_USD||0):0;curGanPesos=cr?(cr.Ganancia_Pesos||0):0;
+      curGastos=dashNum(curIdx,9);
+    }
+    if(prevIdx>=2){
+      const prevMes=allMeses[prevIdx-2];
+      const pr=allVd.find(r=>r.Mes===prevMes);
+      prevGanUSD=pr?(pr.Ganancia_USD||0):0;prevGanPesos=pr?(pr.Ganancia_Pesos||0):0;
+      prevGastos=dashNum(prevIdx,9);
+    }
+    const tGanU=prevIdx>=2?trendBadge(curGanUSD,prevGanUSD):'';
+    const tGanP=prevIdx>=2?trendBadge(curGanPesos,prevGanPesos):'';
+    const tGas=prevIdx>=2?trendBadge(curGastos,prevGastos):'';
+
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div></div>
-      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}</div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
       <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Acumulado Dólares</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div></div>
-      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div>${tGanP}</div>
+      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtPesos(promPesos)}</div></div>
       <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Acumulado Pesos</div><div class="kpi-value">${fmtPesos(ganPesos)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
     `;
   } else {
-    // Global: 8 cards — 4 dólares arriba, 4 pesos abajo
     kpiEl.className='kpis';
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
@@ -1050,15 +1095,27 @@ function renderKPIs(){
       gastos+=dashNum(r,9);netoPesos+=dashNum(r,10);netoUSD+=dashNum(r,11);
     });
 
+    // Trend: current month vs previous month
+    let tBrutoU='',tBrutoP='',tGas='',tNetoU='',tNetoP='',tUniU='',tUniP='';
+    if(curIdx>=2&&prevIdx>=2){
+      tBrutoU=trendBadge(dashNum(curIdx,4),dashNum(prevIdx,4));
+      tBrutoP=trendBadge(dashNum(curIdx,5),dashNum(prevIdx,5));
+      tGas=trendBadge(dashNum(curIdx,9),dashNum(prevIdx,9));
+      tNetoU=trendBadge(dashNum(curIdx,11),dashNum(prevIdx,11));
+      tNetoP=trendBadge(dashNum(curIdx,10),dashNum(prevIdx,10));
+      tUniU=trendBadge(dashNum(curIdx,8),dashNum(prevIdx,8));
+      tUniP=trendBadge(dashNum(curIdx,7),dashNum(prevIdx,7));
+    }
+
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div></div>
-      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
-      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Final Dólares</div><div class="kpi-value">${fmtUSD(netoUSD)}</div></div>
-      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div></div>
-      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div></div>
-      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Final Pesos</div><div class="kpi-value">${fmtPesos(netoPesos)}</div></div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div></div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Final Dólares</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
+      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
+      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Final Pesos</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
     `;
   }
 }

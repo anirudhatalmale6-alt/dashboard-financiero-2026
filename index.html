@@ -311,15 +311,23 @@ function addNewModulesFromRaw(raw){
     meses.forEach((m,i)=>{
       const gUSD=cellVal(raw,mod.startRow+i,mod.usdCol);
       const gPesos=cellVal(raw,mod.startRow+i,mod.pesosCol);
+      const ganUSD=typeof gUSD==='number'?gUSD:0;
+      const ganPesos=typeof gPesos==='number'?gPesos:0;
       allData.modulos.push({
         Modulo:mod.name,Mes:m,
-        Ganancia_USD:typeof gUSD==='number'?gUSD:0,
-        Ganancia_Pesos:typeof gPesos==='number'?gPesos:0,
+        Ganancia_USD:ganUSD,
+        Ganancia_Pesos:ganPesos,
         Inversion_USD:cellVal(raw,mod.invRow,mod.usdCol)||0,
         Resta_Cobrar_USD:cellVal(raw,mod.restaRow,mod.usdCol)||0,
         Caja_Actual_USD:cellVal(raw,mod.cajaRow,mod.usdCol)||0,
         Inversion_Pesos:cellVal(raw,mod.invRow,mod.pesosCol)||0,
         Resta_Cobrar_Pesos:cellVal(raw,mod.restaRow,mod.pesosCol)||0
+      });
+      // Also add to vendedor data so they appear in all charts
+      allData.vendedor.push({
+        Vendedor:mod.name,Mes:m,
+        Ganancia_USD:ganUSD,
+        Ganancia_Pesos:ganPesos
       });
     });
   });

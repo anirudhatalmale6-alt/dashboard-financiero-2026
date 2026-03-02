@@ -520,31 +520,43 @@ function renderAcumuladoCards(){
   const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // Read monthly data from DASHBOARD and compute cumulative
-  let cumNeto=0,cumIng=0;
+  let cumNeto=0;
   const months=[];
-  for(let i=0;i<12;i++){
-    const row=2+i; // DASHBOARD rows 2-13 (0-indexed)
-    const unificado=isUSD?dashNum(row,8):dashNum(row,7); // Col I(USD) or H(Pesos)
-    const gasto=dashNum(row,9); // Col J (always USD)
-    const neto=isUSD?dashNum(row,11):dashNum(row,10); // Col L(USD) or K(Pesos)
-    cumNeto+=neto;
-    cumIng+=unificado;
-    const hasData=unificado!==0||neto!==0;
-    months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,unificado,gasto,cumNeto,cumIng,hasData});
+
+  if(filterVendedor!=='all'){
+    // Per-vendedor mode: use vendedor data
+    const vData=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
+    for(let i=0;i<12;i++){
+      const mesName=allMesesFull[i];
+      const row=vData.find(r=>r.Mes===mesName);
+      const ganancia=row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;
+      cumNeto+=ganancia;
+      const hasData=ganancia!==0;
+      months.push({mes:allMeses[i],mesFull:mesName,neto:ganancia,cumNeto,hasData});
+    }
+  } else {
+    // Global mode: read from DASHBOARD columns
+    for(let i=0;i<12;i++){
+      const row=2+i;
+      const neto=isUSD?dashNum(row,11):dashNum(row,10);
+      cumNeto+=neto;
+      const hasData=neto!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
+      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,cumNeto,hasData});
+    }
   }
 
   // Find max cumulative for progress bar
   const maxCum=Math.max(...months.map(m=>Math.abs(m.cumNeto)),1);
+  const fmtVal=isUSD?fmtUSD:fmtPesos;
+  const label=filterVendedor!=='all'?'Ganancia':'Neto Mes';
 
   months.forEach(m=>{
     const pct=Math.min(100,Math.abs(m.cumNeto)/maxCum*100);
-    const fmtVal=isUSD?fmtUSD:fmtPesos;
     const isNeg=m.cumNeto<0;
     container.innerHTML+=`
       <div class="acum-card${m.hasData?'':' no-data'}">
         <div class="mes">${m.mes}</div>
-        <span class="lbl">Neto Mes</span>
+        <span class="lbl">${label}</span>
         <div class="acum-sub">${fmtVal(m.neto)}</div>
         <span class="lbl">Acumulado</span>
         <div class="acum-val${isNeg?' neg':''}">${fmtVal(m.cumNeto)}</div>

@@ -435,7 +435,8 @@ function renderChartIngresos(){
         {label:isUSD?'Balance Final U$D':'Balance Final $',data:d.map(r=>isUSD?r.Total_Final_USD:r.Total_Final_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v,ctx){if(ctx.dataset.type==='line')return '';return v>=1000?fmt(v,pre):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -453,7 +454,8 @@ function renderChartBalance(){
         {label:isUSD?'Balance U$D':'Balance $',data:d.map(r=>isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0)),type:'line',borderColor:'#a78bfa',pointBackgroundColor:'#a78bfa',pointRadius:3,tension:.4,borderWidth:2}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:1,formatter:function(v,ctx){if(ctx.dataset.type==='line')return '';return v>=500?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -498,13 +500,15 @@ function renderChartVendedores(){
     }),
     backgroundColor:COLORS[i%COLORS.length]+'99',
     borderColor:COLORS[i%COLORS.length],
-    borderWidth:1,borderRadius:4,barPercentage:.7
+    borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8
   }));
   if(charts.vendedores)charts.vendedores.destroy();
+  const vpre=isUSD?'U$D ':'$ ';
   charts.vendedores=new Chart(document.getElementById('chartVendedores'),{
     type:'bar',
     data:{labels:meses,datasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,isUSD?'U$D ':'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:1,rotation:-45,formatter:function(v){return v>=500?fmt(v,vpre):v>0?Math.round(v):'';}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -665,7 +669,8 @@ function renderChartCuotasUSD(){
         {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 
@@ -680,7 +685,8 @@ function renderChartCuotasPesos(){
         {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=10000?fmt(v,'$ '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 

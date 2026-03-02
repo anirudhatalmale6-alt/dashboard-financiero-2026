@@ -146,6 +146,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .acum-card .acum-val.neg{color:var(--red)}
 .acum-card .acum-sub{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--gold)}
 .acum-card .acum-sub.neg{color:var(--red)}
+.acum-card .acum-sub2{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--blue);opacity:.85}
+.acum-card .acum-sub2.neg{color:var(--red)}
 .acum-card .acum-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
 .acum-card .acum-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:.6s}
 .acum-card.no-data{opacity:.3}
@@ -575,26 +577,34 @@ function renderAcumuladoCards(){
     for(let i=0;i<12;i++){
       const mesName=allMesesFull[i];
       const row=vData.find(r=>r.Mes===mesName);
-      const ganancia=row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;
+      const netoUSD=row?(row.Ganancia_USD||0):0;
+      const netoPesos=row?(row.Ganancia_Pesos||0):0;
+      const ganancia=isUSD?netoUSD:netoPesos;
+      const ganancia2=isUSD?netoPesos:netoUSD;
       cumNeto+=ganancia;
       const hasData=ganancia!==0;
-      months.push({mes:allMeses[i],mesFull:mesName,neto:ganancia,cumNeto,hasData});
+      months.push({mes:allMeses[i],mesFull:mesName,neto:ganancia,neto2:ganancia2,cumNeto,hasData});
     }
   } else {
     // Global mode: read from DASHBOARD columns
     for(let i=0;i<12;i++){
       const row=2+i;
-      const neto=isUSD?dashNum(row,11):dashNum(row,10);
+      const netoUSD=dashNum(row,11);
+      const netoPesos=dashNum(row,10);
+      const neto=isUSD?netoUSD:netoPesos;
+      const neto2=isUSD?netoPesos:netoUSD;
       cumNeto+=neto;
       const hasData=neto!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
-      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,cumNeto,hasData});
+      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto,neto2,cumNeto,hasData});
     }
   }
 
   // Find max cumulative for progress bar
   const maxCum=Math.max(...months.map(m=>Math.abs(m.cumNeto)),1);
   const fmtVal=isUSD?fmtUSD:fmtPesos;
+  const fmtVal2=isUSD?fmtPesos:fmtUSD;
   const label=filterVendedor!=='all'?'Ganancia':'Neto Mes';
+  const label2=isUSD?'Neto $':'Neto U$D';
 
   months.forEach(m=>{
     const pct=Math.min(100,Math.abs(m.cumNeto)/maxCum*100);
@@ -604,6 +614,7 @@ function renderAcumuladoCards(){
         <div class="mes">${m.mes}</div>
         <span class="lbl">${label}</span>
         <div class="acum-sub${m.neto<0?' neg':''}">${fmtVal(m.neto)}</div>
+        <div class="acum-sub2${m.neto2<0?' neg':''}">${fmtVal2(m.neto2)}</div>
         <span class="lbl">Acumulado</span>
         <div class="acum-val${isNeg?' neg':''}">${fmtVal(m.cumNeto)}</div>
         <div class="acum-bar"><div class="acum-fill" style="width:${pct}%"></div></div>

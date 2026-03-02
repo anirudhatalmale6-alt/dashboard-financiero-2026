@@ -548,7 +548,8 @@ function renderModules(){
     const restaUSD=rows[0]?(rows[0].Resta_Cobrar_USD||0):0;
     const restaPesos=rows[0]?(rows[0].Resta_Cobrar_Pesos||0):0;
     const caja=rows[0]?(rows[0].Caja_Actual_USD||0):0;
-    const recovery=restaUSD>0&&(totalUSD+Math.abs(invUSD))>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
+    const cuotasPct=restaUSD>0&&totalUSD>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
+    const invRecovery=Math.abs(invUSD)>0?Math.min(100,((totalUSD)/Math.abs(invUSD))*100):0;
 
     container.innerHTML+=`
       <div class="module-card">
@@ -562,8 +563,10 @@ function renderModules(){
           ${restaPesos?`<div class="module-stat"><span class="lbl">Resta Cobrar $</span><span class="val">${fmtPesos(restaPesos)}</span></div>`:''}
           <div class="module-stat"><span class="lbl">Caja Actual U$D</span><span class="val ${caja>=0?'positive':'negative'}">${fmtUSD(caja)}</span></div>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${recovery.toFixed(0)}%"></div></div>
-        <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación: ${recovery.toFixed(0)}%</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${cuotasPct.toFixed(0)}%"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Cuotas Cobradas: ${cuotasPct.toFixed(0)}%</div>
+        <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${Math.min(invRecovery,100).toFixed(0)}%;background:linear-gradient(90deg,var(--green),var(--teal))"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación de Inversión: ${invRecovery.toFixed(0)}%</div>
       </div>
     `;
   });

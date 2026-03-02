@@ -164,6 +164,49 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .module-table .positive{color:var(--green)}
 .module-table .negative{color:var(--red)}
 
+/* Investment Portfolio */
+.inv-section{margin-bottom:28px}
+.inv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+.inv-totals{display:flex;gap:16px}
+.inv-total-badge{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 18px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.inv-total-badge .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3)}
+.inv-total-badge .val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)}
+.inv-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.inv-cat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:.3s}
+.inv-cat:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.inv-cat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.inv-cat.cat-prop::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.inv-cat.cat-credit::before{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.inv-cat.cat-cuota::before{background:linear-gradient(90deg,var(--green),var(--teal))}
+.inv-cat.cat-debt::before{background:linear-gradient(90deg,var(--red),var(--orange))}
+.inv-cat.cat-cash::before{background:linear-gradient(90deg,var(--purple),var(--pink))}
+.inv-cat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.inv-cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.cat-prop .inv-cat-icon{background:rgba(212,168,83,.15);color:var(--gold)}
+.cat-credit .inv-cat-icon{background:rgba(96,165,250,.15);color:var(--blue)}
+.cat-cuota .inv-cat-icon{background:rgba(52,211,153,.15);color:var(--green)}
+.cat-debt .inv-cat-icon{background:rgba(248,113,113,.15);color:var(--red)}
+.cat-cash .inv-cat-icon{background:rgba(167,139,250,.15);color:var(--purple)}
+.inv-cat-title{font-size:13px;font-weight:700;letter-spacing:.3px}
+.inv-cat-subtotal{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3)}
+.inv-items{display:flex;flex-direction:column;gap:6px}
+.inv-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:var(--surface2);transition:.2s}
+.inv-item:hover{background:var(--surface3)}
+.inv-item-name{font-size:12px;color:var(--text);font-weight:500;flex:1}
+.inv-item-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-align:right;min-width:90px}
+.inv-item-val.positive{color:var(--green)}
+.inv-item-val.negative{color:var(--red)}
+.inv-item-val.neutral{color:var(--text)}
+.inv-item-bar{width:100%;height:3px;background:var(--surface3);border-radius:2px;margin-top:4px}
+.inv-item-fill{height:100%;border-radius:2px;transition:.6s}
+.inv-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.inv-sum-card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;position:relative;overflow:hidden}
+.inv-sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--purple))}
+.inv-sum-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px}
+.inv-sum-card .val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)}
+.inv-sum-card .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3);margin-top:2px}
+.inv-donut-wrap{display:flex;justify-content:center;margin-top:16px}
+
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
@@ -293,6 +336,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container"><canvas id="chartCuotasPesos"></canvas></div>
     </div>
   </div>
+
+  <h3 class="section-title">Cronograma de <em>Inversiones</em></h3>
+  <div class="inv-section" id="invSection">
+    <div class="inv-header" id="invHeader"></div>
+    <div class="inv-cats" id="invCats"></div>
+    <div class="inv-summary" id="invSummary"></div>
+    <div class="inv-donut-wrap"><canvas id="chartInvDonut" width="340" height="340"></canvas></div>
+  </div>
 </main>
 </div>
 
@@ -301,6 +352,7 @@ const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
 let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
 let dashRaw=null;
+let invRaw=null;
 let charts={};
 let currency='usd';
 let filterMes='all';
@@ -408,15 +460,17 @@ function enrichModulesWithPesos(raw){
 
 async function loadAllData(){
   try{
-    const[r,v,m,p,dRaw]=await Promise.all([
+    const[r,v,m,p,dRaw,iRaw]=await Promise.all([
       fetchSheet('LS_Resumen_Mensual'),
       fetchSheet('LS_Ganancias_Vendedor'),
       fetchSheet('LS_Modulos_Negocio'),
       fetchSheet('LS_Panel_Control'),
-      fetchRawSheet('DASHBOARD')
+      fetchRawSheet('DASHBOARD'),
+      fetchRawSheet('INVERSIONES CRONOGRAMA')
     ]);
     allData={resumen:r,vendedor:v,modulos:m,panel:p};
     dashRaw=dRaw;
+    invRaw=iRaw;
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     populateFilters();
@@ -499,6 +553,200 @@ function renderAcumuladoCards(){
   });
 }
 
+function invNum(row,col){
+  if(!invRaw||!invRaw[row])return 0;
+  const v=invRaw[row][col];
+  if(typeof v==='number')return v;
+  if(typeof v==='string'){
+    const neg=v.includes('-')?-1:1;
+    const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+    const n=parseFloat(clean);
+    return isNaN(n)?0:n*neg;
+  }
+  return 0;
+}
+function invStr(row,col){
+  if(!invRaw||!invRaw[row])return '';
+  const v=invRaw[row][col];
+  return v?String(v).trim():'';
+}
+
+function renderInversiones(){
+  if(!invRaw||invRaw.length<165)return;
+  const isUSD=currency==='usd';
+  const headerEl=document.getElementById('invHeader');
+  const catsEl=document.getElementById('invCats');
+  const summaryEl=document.getElementById('invSummary');
+
+  // Parse data from INVERSIONES CRONOGRAMA sheet
+  // Row indices are 0-based. Data is at gviz rows 160-193 (sheet rows 161-194)
+  // Col D=3 (description), Col F=5 (USD), Col G=6 (Pesos)
+  const cotizacion=invNum(161,5)||invNum(161,6)||1450;
+
+  // PROPIEDADES & VEHICULOS (rows 163-171 / 0-indexed)
+  const properties=[];
+  for(let r=163;r<=171;r++){
+    const name=invStr(r,3);
+    const usd=invNum(r,5);
+    const pesos=invNum(r,6);
+    if(name && name!=='X' && (usd||pesos)) properties.push({name,usd,pesos:pesos||usd*cotizacion});
+  }
+
+  // CRÉDITOS A COBRAR (rows 173-175)
+  const credits=[];
+  for(let r=173;r<=175;r++){
+    const name=invStr(r,3);
+    const usd=invNum(r,5);
+    const pesos=invNum(r,6);
+    if(name && !name.startsWith('X') && (usd||pesos)) credits.push({name,usd,pesos:pesos||usd*cotizacion});
+  }
+
+  // CUOTAS POR COBRAR (rows 177-178)
+  const cuotas=[];
+  for(let r=177;r<=178;r++){
+    const name=invStr(r,3);
+    const usd=invNum(r,5);
+    const pesos=invNum(r,6);
+    if(name && !name.startsWith('X') && (usd||pesos)) cuotas.push({name,usd,pesos:pesos||0});
+  }
+
+  // EQUIPAMIENTO DEUDA (row 180)
+  const equipDebt=[];
+  {
+    const name=invStr(180,3);
+    const usd=invNum(180,5);
+    const pesos=invNum(180,6);
+    if(name && !name.startsWith('X') && (usd||pesos)) equipDebt.push({name,usd,pesos:pesos||usd*cotizacion});
+  }
+
+  // COMPRAS / DEUDAS A PAGAR (rows 182-187)
+  const debts=[];
+  for(let r=182;r<=187;r++){
+    const name=invStr(r,3);
+    const usd=invNum(r,5);
+    const pesos=invNum(r,6);
+    if(name && !name.startsWith('X') && (usd||pesos||usd<0||pesos<0)) debts.push({name,usd,pesos:pesos||usd*cotizacion});
+  }
+  // Combine equipment debt + compras debts
+  const allDebts=[...equipDebt,...debts];
+
+  // CAJA ACTUAL (row 189)
+  const cash=[];
+  {
+    const name=invStr(189,3)||'Caja Actual';
+    const usd=invNum(189,5);
+    const pesos=invNum(189,6);
+    if(usd||pesos) cash.push({name,usd,pesos:pesos||usd*cotizacion});
+  }
+
+  // Grand totals from row 190 (or computed)
+  const totalUSD=invNum(190,5)||0;
+  const totalPesos=invNum(190,6)||0;
+
+  // Summary rows 191-193
+  const inversionUSD=properties.reduce((s,i)=>s+i.usd,0)+credits.reduce((s,i)=>s+i.usd,0)+cuotas.reduce((s,i)=>s+i.usd,0);
+  const restaCobrarUSD=cuotas.reduce((s,i)=>s+i.usd,0)+credits.reduce((s,i)=>s+i.usd,0);
+  const cajaUSD=cash.reduce((s,i)=>s+i.usd,0);
+
+  // Render header with totals
+  const fv=isUSD?fmtUSD:fmtPesos;
+  const tVal=isUSD?totalUSD:totalPesos;
+  headerEl.innerHTML=`
+    <div class="inv-totals">
+      <div class="inv-total-badge">
+        <span class="lbl">Patrimonio Total</span>
+        <span class="val">${fv(tVal)}</span>
+      </div>
+      <div class="inv-total-badge">
+        <span class="lbl">Cotización</span>
+        <span class="val" style="font-size:15px;color:var(--text)">$ ${Number(cotizacion).toLocaleString('es-AR')}</span>
+      </div>
+    </div>`;
+
+  // Categories definition
+  const categories=[
+    {id:'prop',icon:'🏠',title:'Propiedades & Vehículos',items:properties,color:'var(--gold)',cls:'cat-prop'},
+    {id:'credit',icon:'💰',title:'Créditos a Cobrar',items:credits,color:'var(--blue)',cls:'cat-credit'},
+    {id:'cuota',icon:'📊',title:'Cuotas por Cobrar',items:cuotas,color:'var(--green)',cls:'cat-cuota'},
+    {id:'debt',icon:'📉',title:'Deudas & Compromisos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
+    {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'}
+  ].filter(c=>c.items.length>0);
+
+  // Dynamic column count
+  const colCount=Math.min(categories.length,3);
+  catsEl.style.gridTemplateColumns=`repeat(${colCount},1fr)`;
+
+  // Find max absolute value for bars
+  const allItems=[...properties,...credits,...cuotas,...allDebts,...cash];
+  const maxVal=Math.max(...allItems.map(i=>Math.abs(isUSD?i.usd:i.pesos)),1);
+
+  catsEl.innerHTML=categories.map(cat=>{
+    const subtotal=cat.items.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
+    const itemsHtml=cat.items.map(item=>{
+      const val=isUSD?item.usd:item.pesos;
+      const pct=Math.min(100,Math.abs(val)/maxVal*100);
+      const cls=val>0?'positive':val<0?'negative':'neutral';
+      const fillColor=val>=0?cat.color:'var(--red)';
+      return `<div class="inv-item">
+        <span class="inv-item-name">${item.name}</span>
+        <span class="inv-item-val ${cls}">${fv(val)}</span>
+      </div>
+      <div class="inv-item-bar"><div class="inv-item-fill" style="width:${pct}%;background:${fillColor}"></div></div>`;
+    }).join('');
+    return `<div class="inv-cat ${cat.cls}">
+      <div class="inv-cat-head">
+        <div class="inv-cat-icon">${cat.icon}</div>
+        <div>
+          <div class="inv-cat-title">${cat.title}</div>
+          <div class="inv-cat-subtotal">${fv(subtotal)}</div>
+        </div>
+      </div>
+      <div class="inv-items">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+
+  // Summary cards
+  summaryEl.innerHTML=`
+    <div class="inv-sum-card">
+      <div class="lbl">Inversión Total</div>
+      <div class="val">${fv(isUSD?inversionUSD:inversionUSD*cotizacion)}</div>
+    </div>
+    <div class="inv-sum-card">
+      <div class="lbl">Resta Cobrar</div>
+      <div class="val" style="color:var(--green)">${fv(isUSD?restaCobrarUSD:restaCobrarUSD*cotizacion)}</div>
+    </div>
+    <div class="inv-sum-card">
+      <div class="lbl">Caja Actual</div>
+      <div class="val" style="color:var(--purple)">${fv(isUSD?cajaUSD:cajaUSD*cotizacion)}</div>
+    </div>`;
+
+  // Donut chart
+  const donutData=categories.map(c=>({
+    label:c.title,
+    value:Math.abs(c.items.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0)),
+    color:c.color==='var(--gold)'?'#d4a853':c.color==='var(--blue)'?'#60a5fa':c.color==='var(--green)'?'#34d399':c.color==='var(--red)'?'#f87171':'#a78bfa'
+  }));
+  if(charts.invDonut)charts.invDonut.destroy();
+  charts.invDonut=new Chart(document.getElementById('chartInvDonut'),{
+    type:'doughnut',
+    data:{
+      labels:donutData.map(d=>d.label),
+      datasets:[{data:donutData.map(d=>d.value),backgroundColor:donutData.map(d=>d.color),borderWidth:0,hoverOffset:8}]
+    },
+    options:{
+      responsive:false,cutout:'65%',
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},padding:12,usePointStyle:true,pointStyle:'circle'}},
+        datalabels:{display:false},
+        tooltip:{
+          backgroundColor:'#1a1b25',titleColor:'#e8e6e3',bodyColor:'#e8e6e3',borderColor:'#2a2b3a',borderWidth:1,cornerRadius:8,padding:10,
+          callbacks:{label:function(ctx){return ctx.label+': '+fv(ctx.raw);}}
+        }
+      }
+    }
+  });
+}
+
 function renderAll(){
   renderKPIs();
   renderAcumuladoCards();
@@ -512,6 +760,7 @@ function renderAll(){
   renderCuotasCards();
   renderChartCuotasUSD();
   renderChartCuotasPesos();
+  renderInversiones();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }

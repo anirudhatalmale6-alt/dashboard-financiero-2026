@@ -286,8 +286,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .acum-card::before{background:#888!important}
   .acum-card:hover{transform:none!important;box-shadow:none!important}
   .charts{grid-template-columns:1fr!important;gap:12px!important}
-  .chart-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
+  .chart-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid;page-break-before:always}
   .chart-card:hover{border-color:#d1d5db!important}
+  .chart-container.tall{height:500px!important}
   .rankings{grid-template-columns:1fr 1fr!important}
   .ranking-card{border:1px solid #d1d5db!important;break-inside:avoid}
   .rank-item{background:#f0f1f3!important}
@@ -1797,6 +1798,32 @@ function renderSidebarStats(){
 }
 
 // Print / Export PDF
+function setChartPrintMode(dark){
+  const dlColor=dark?'#222':'#e8e6e3';
+  const legColor=dark?'#555':'#9a98a0';
+  const tickColor=dark?'#666':'#5c5a65';
+  const gridColor=dark?'rgba(0,0,0,.1)':'rgba(42,43,58,.3)';
+  Object.values(charts).forEach(c=>{
+    if(!c||!c.options)return;
+    if(c.options.plugins&&c.options.plugins.datalabels){
+      c.options.plugins.datalabels.color=dlColor;
+      c.options.plugins.datalabels.font.weight='700';
+    }
+    if(c.options.plugins&&c.options.plugins.legend&&c.options.plugins.legend.labels){
+      c.options.plugins.legend.labels.color=legColor;
+    }
+    if(c.options.scales){
+      ['x','y'].forEach(ax=>{
+        if(c.options.scales[ax]){
+          if(c.options.scales[ax].ticks)c.options.scales[ax].ticks.color=tickColor;
+          if(c.options.scales[ax].grid)c.options.scales[ax].grid.color=gridColor;
+        }
+      });
+    }
+    c.update('none');
+  });
+}
+
 function buildPrintHeader(){
   const now=new Date();
   const dateStr=now.toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -1817,37 +1844,37 @@ function buildPrintHeader(){
 function printDashboard(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
+  setChartPrintMode(true);
   setTimeout(()=>{
     window.print();
     ph.style.display='none';fi.style.display='none';
-  },200);
+    setChartPrintMode(false);
+  },300);
 }
 
 function printVendedores(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
-  // Hide all main sections except vendedor ones
+  setChartPrintMode(true);
   const hideIds=['kpis','acumCards','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secInversiones','invSection'];
-  // Also hide cuotas charts (the .charts div after cuotasCards)
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const hidden=[];
   hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
   if(cuotasCharts){hidden.push({el:cuotasCharts,prev:cuotasCharts.style.display});cuotasCharts.style.display='none';}
-  // Also hide header subtitle
   const headerDiv=document.querySelector('.header');
   if(headerDiv){hidden.push({el:headerDiv,prev:headerDiv.style.display});headerDiv.style.display='none';}
   setTimeout(()=>{
     window.print();
-    // Restore everything
     ph.style.display='none';fi.style.display='none';
+    setChartPrintMode(false);
     hidden.forEach(h=>{h.el.style.display=h.prev;});
-  },200);
+  },300);
 }
 
 function printPrincipal(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
-  // Hide vendedor sections
+  setChartPrintMode(true);
   const hideIds=['secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
   const hidden=[];
   hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
@@ -1856,8 +1883,9 @@ function printPrincipal(){
   setTimeout(()=>{
     window.print();
     ph.style.display='none';fi.style.display='none';
+    setChartPrintMode(false);
     hidden.forEach(h=>{h.el.style.display=h.prev;});
-  },200);
+  },300);
 }
 
 // Event Listeners

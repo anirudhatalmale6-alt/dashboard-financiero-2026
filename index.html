@@ -1178,6 +1178,7 @@ function renderVendedorDetail(){
 }
 
 function renderAll(){
+  const isFiltered=filterVendedor!=='all';
   renderKPIs();
   renderAcumuladoCards();
   renderChartIngresos();
@@ -1187,11 +1188,20 @@ function renderAll(){
   renderRankings();
   renderModules();
   renderModuleDetails();
-  renderCuotasCards();
-  renderChartCuotasUSD();
-  renderChartCuotasPesos();
-  renderInversiones();
-  renderEvolucion();
+  // Hide cuotas & inversiones when filtering by vendedor (they are global data)
+  const cuotasTitle=document.getElementById('secCuotas');
+  const cuotasContainer=document.getElementById('cuotasCards');
+  const cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
+  const invTitle=document.getElementById('secInversiones');
+  const invSection=document.getElementById('invSection');
+  [cuotasTitle,cuotasContainer,cuotasCharts,invTitle,invSection].forEach(el=>{if(el)el.style.display=isFiltered?'none':'';});
+  if(!isFiltered){
+    renderCuotasCards();
+    renderChartCuotasUSD();
+    renderChartCuotasPesos();
+    renderInversiones();
+    renderEvolucion();
+  }
   renderVendedorDash();
   renderVendedorDetail();
   renderSidebarStats();
@@ -1469,6 +1479,7 @@ function renderRankings(){
   const aggUSD={},aggPesos={};
   let data=allData.vendedor;
   if(filterMes!=='all')data=data.filter(r=>r.Mes===filterMes);
+  if(filterVendedor!=='all')data=data.filter(r=>r.Vendedor===filterVendedor);
   data.forEach(r=>{
     aggUSD[r.Vendedor]=(aggUSD[r.Vendedor]||0)+(r.Ganancia_USD||0);
     aggPesos[r.Vendedor]=(aggPesos[r.Vendedor]||0)+(r.Ganancia_Pesos||0);
@@ -1486,7 +1497,8 @@ function renderRankings(){
 
 function renderModules(){
   const icons=['📦','🏢','🤝','👩','🧑','💻','📈','💳','👤','📡'];
-  const mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  let mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  if(filterVendedor!=='all')mods=mods.filter(m=>m===filterVendedor);
   const container=document.getElementById('modules');
   container.innerHTML='';
 
@@ -1526,7 +1538,8 @@ function renderModules(){
 
 function renderModuleDetails(){
   const icons=['📦','🏢','🤝','👩','🧑','💻','📈','💳','👤','📡'];
-  const mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  let mods=[...new Set(allData.modulos.map(r=>r.Modulo))];
+  if(filterVendedor!=='all')mods=mods.filter(m=>m===filterVendedor);
   const container=document.getElementById('moduleDetails');
   container.innerHTML='';
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];

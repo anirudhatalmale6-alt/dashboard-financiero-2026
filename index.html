@@ -257,8 +257,65 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .currency-btn{padding:8px 16px;font-family:inherit;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:.2s;color:var(--text3);background:transparent;letter-spacing:.5px}
 .currency-btn.active{background:var(--gold);color:var(--bg);font-weight:700}
 
+/* Print Button */
+.print-btn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;letter-spacing:.3px}
+.print-btn:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.print-btn svg{width:16px;height:16px;fill:currentColor}
+
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.vd-cards{grid-template-columns:repeat(3,1fr)!important}}
 @media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+
+/* Print Styles */
+@media print{
+  @page{size:landscape;margin:10mm}
+  body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .noise,.glow,.glow2{display:none!important}
+  .sidebar{display:none!important}
+  .main{margin-left:0!important;padding:10px!important}
+  .print-btn{display:none!important}
+  .refresh-btn{display:none!important}
+  .header-date{display:none!important}
+  :root{--bg:#fff;--surface:#f8f9fa;--surface2:#f0f1f3;--surface3:#e5e7eb;--border:#d1d5db;--text:#111;--text2:#555;--text3:#888}
+  .kpis{grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
+  .kpi{border:1px solid #d1d5db!important;box-shadow:none!important;padding:12px!important;break-inside:avoid}
+  .kpi::after{display:none}
+  .kpi:hover{transform:none!important;box-shadow:none!important}
+  .kpi-value{font-size:18px!important}
+  .acum-cards{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
+  .acum-card{border:1px solid #d1d5db!important;break-inside:avoid}
+  .acum-card::before{background:#888!important}
+  .acum-card:hover{transform:none!important;box-shadow:none!important}
+  .charts{grid-template-columns:1fr!important;gap:12px!important}
+  .chart-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
+  .chart-card:hover{border-color:#d1d5db!important}
+  .rankings{grid-template-columns:1fr 1fr!important}
+  .ranking-card{border:1px solid #d1d5db!important;break-inside:avoid}
+  .rank-item{background:#f0f1f3!important}
+  .modules{grid-template-columns:repeat(3,1fr)!important}
+  .module-card{border:1px solid #d1d5db!important;break-inside:avoid}
+  .module-card:hover{transform:none!important}
+  .module-details-grid{grid-template-columns:repeat(2,1fr)!important}
+  .module-detail{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
+  .module-table thead th{background:#e5e7eb!important;color:#333!important}
+  .module-table tbody td{color:#111!important}
+  .module-table .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
+  .module-table .positive{color:#16a34a!important}
+  .module-table .negative{color:#dc2626!important}
+  .cuotas-cards{grid-template-columns:repeat(6,1fr)!important}
+  .cuota-card{border:1px solid #d1d5db!important;break-inside:avoid}
+  .vd-block{break-inside:avoid;page-break-inside:avoid}
+  .vd-cards{grid-template-columns:repeat(6,1fr)!important}
+  .inv-cats{grid-template-columns:repeat(3,1fr)!important}
+  .inv-cat{border:1px solid #d1d5db!important;break-inside:avoid}
+  .section-title{page-break-after:avoid}
+  a{color:inherit!important;text-decoration:none!important}
+  .kpi-trend.up{background:rgba(22,163,74,.12)!important;color:#16a34a!important}
+  .kpi-trend.down{background:rgba(220,38,38,.12)!important;color:#dc2626!important}
+  .kpi-trend.flat{background:rgba(100,116,139,.12)!important;color:#64748b!important}
+  .print-header{display:flex!important;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #b8860b;font-size:12px;color:#555}
+  .print-header strong{font-size:16px;color:#111}
+  .print-filter-info{display:block!important;background:#f0f1f3;border:1px solid #d1d5db;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#333}
+}
 </style>
 </head>
 <body>
@@ -320,8 +377,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <h2>Dashboard <em>Financiero</em></h2>
       <div class="header-sub">Resumen general de ventas, ganancias e inversiones</div>
     </div>
-    <div class="header-date" id="headerDate"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="print-btn" onclick="printDashboard()"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Exportar PDF</button>
+      <div class="header-date" id="headerDate"></div>
+    </div>
   </div>
+  <div class="print-header" style="display:none"><strong>Dashboard Financiero 2026</strong><span id="printDate"></span></div>
+  <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
   <div class="kpis" id="kpis">
     <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
@@ -1635,6 +1697,24 @@ function renderSidebarStats(){
     <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
     <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">${fmtUSD(promMensual)}</span></div>
   `;
+}
+
+// Print / Export PDF
+function printDashboard(){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('printDate').textContent=dateStr;
+  const fi=document.getElementById('printFilterInfo');
+  const parts=[];
+  const vf=document.getElementById('filterVendedor');
+  const mf=document.getElementById('filterMes');
+  if(filterVendedor!=='all') parts.push('Vendedor: '+vf.options[vf.selectedIndex].text);
+  if(filterMes!=='all') parts.push('Mes: '+mf.options[mf.selectedIndex].text);
+  if(currency==='pesos') parts.push('Moneda: Pesos');
+  else parts.push('Moneda: USD');
+  if(parts.length>0){fi.textContent='Filtros aplicados: '+parts.join(' | ');fi.style.display='';}
+  else{fi.style.display='none';}
+  setTimeout(()=>window.print(),200);
 }
 
 // Event Listeners

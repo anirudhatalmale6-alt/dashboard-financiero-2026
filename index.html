@@ -1084,6 +1084,39 @@ function renderEvolucion(){
   });
 }
 
+// Helper: parse vendedor blocks from DASHBOARD raw data (rows 180+)
+function parseDashVendedores(){
+  if(!dashRaw||dashRaw.length<195)return [];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
+  const blockStarts=[];
+  for(let i=180;i<dashRaw.length-16;i++){
+    const r=dashRaw[i];
+    if(!r)continue;
+    const v2=r[2];
+    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
+      const nextR=dashRaw[i+1];
+      if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
+    }
+  }
+  const result=[];
+  blockStarts.forEach(bs=>{
+    positions.forEach(pos=>{
+      const name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
+      if(!name||typeof name!=='string')return;
+      const months=[];
+      meses.forEach((mes,mi)=>{
+        const row=dashRaw[bs+1+mi];
+        const usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
+        const pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
+        months.push({mes,usd,pesos});
+      });
+      result.push({name,months});
+    });
+  });
+  return result;
+}
+
 function renderVendedorDash(){
   if(!dashRaw||dashRaw.length<195)return;
   const container=document.getElementById('vendedorDashContainer');
@@ -1158,24 +1191,23 @@ function renderVendedorDetail(){
   container.innerHTML='';
   const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const dashVends=parseDashVendedores();
 
-  vends.forEach((vName,vi)=>{
-    // Vendedor filter: skip if doesn't match
+  dashVends.forEach((vObj,vi)=>{
+    const vName=vObj.name;
     if(filterVendedor!=='all'&&vName!==filterVendedor)return;
 
-    const vData=allData.vendedor.filter(r=>r.Vendedor===vName);
-    const filteredData=filterMes!=='all'?vData.filter(r=>r.Mes===filterMes):vData;
-    const totalUSD=filteredData.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
-    const totalPesos=filteredData.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
+    const filteredMonths=filterMes!=='all'?vObj.months.filter(m=>m.mes===filterMes):vObj.months;
+    const totalUSD=filteredMonths.reduce((s,m)=>s+m.usd,0);
+    const totalPesos=filteredMonths.reduce((s,m)=>s+m.pesos,0);
     const color=COLORS[vi%COLORS.length];
 
     let cumUSD=0,cumPesos=0;
     let cardsHTML='';
     allMesesFull.forEach((mFull,mi)=>{
-      const row=vData.find(r=>r.Mes===mFull);
-      const usd=row?(row.Ganancia_USD||0):0;
-      const pesos=row?(row.Ganancia_Pesos||0):0;
+      const mData=vObj.months.find(m=>m.mes===mFull);
+      const usd=mData?mData.usd:0;
+      const pesos=mData?mData.pesos:0;
       cumUSD+=usd;cumPesos+=pesos;
       const isFiltered=filterMes!=='all'&&mFull!==filterMes;
       const hasData=usd!==0||pesos!==0;
@@ -1205,24 +1237,28 @@ function renderVendedorDetail(){
 
 function renderChartVendedores2(){
   const isUSD=currency==='usd';
-  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
-  const meses=[...new Set(allData.vendedor.map(r=>r.Mes))];
-  let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
+  const dashVends=parseDashVendedores();
+  const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const vendNames=dashVends.map(v=>v.name);
+  let filteredVends=filterVendedor!=='all'?dashVends.filter(v=>v.name===filterVendedor):dashVends;
   const vpre=isUSD?'U$D ':'$ ';
-  const datasets=filteredVends.map((v,i)=>({
-    label:v,
-    data:meses.map(m=>{
-      const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);
-      return row?(isUSD?row.Ganancia_USD:row.Ganancia_Pesos):0;
-    }),
-    backgroundColor:COLORS[i%COLORS.length]+'99',
-    borderColor:COLORS[i%COLORS.length],
-    borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8
-  }));
+  const datasets=filteredVends.map((vObj,i)=>{
+    const ci=vendNames.indexOf(vObj.name);
+    return{
+      label:vObj.name,
+      data:allMeses.map(m=>{
+        const mData=vObj.months.find(x=>x.mes===m);
+        return mData?(isUSD?mData.usd:mData.pesos):0;
+      }),
+      backgroundColor:COLORS[ci%COLORS.length]+'99',
+      borderColor:COLORS[ci%COLORS.length],
+      borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8
+    };
+  });
   if(charts.vendedores2)charts.vendedores2.destroy();
   charts.vendedores2=new Chart(document.getElementById('chartVendedores2'),{
     type:'bar',
-    data:{labels:meses,datasets},
+    data:{labels:allMeses,datasets},
     plugins:[ChartDataLabels],
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,rotation:filteredVends.length>1?-45:0,formatter:function(v){if(v===0)return '';return v>=1000?fmt(v,vpre):vpre+Math.round(v);}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
@@ -1231,21 +1267,23 @@ function renderChartVendedores2(){
 function renderChartAcumVend(){
   const isUSD=currency==='usd';
   const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
-  let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
+  const dashVends=parseDashVendedores();
+  const vendNames=dashVends.map(v=>v.name);
+  let filteredVends=filterVendedor!=='all'?dashVends.filter(v=>v.name===filterVendedor):dashVends;
   const vpre=isUSD?'U$D ':'$ ';
-  const datasets=filteredVends.map((v,i)=>{
+  const datasets=filteredVends.map((vObj,i)=>{
+    const ci=vendNames.indexOf(vObj.name);
     let cum=0;
     const cumData=allMeses.map(m=>{
-      const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);
-      cum+=row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;
+      const mData=vObj.months.find(x=>x.mes===m);
+      cum+=mData?(isUSD?mData.usd:mData.pesos):0;
       return cum;
     });
     return{
-      label:v,data:cumData,
-      borderColor:COLORS[i%COLORS.length],
-      backgroundColor:COLORS[i%COLORS.length]+'18',
-      pointBackgroundColor:COLORS[i%COLORS.length],
+      label:vObj.name,data:cumData,
+      borderColor:COLORS[ci%COLORS.length],
+      backgroundColor:COLORS[ci%COLORS.length]+'18',
+      pointBackgroundColor:COLORS[ci%COLORS.length],
       pointRadius:3,tension:.4,borderWidth:2,fill:filteredVends.length===1
     };
   });

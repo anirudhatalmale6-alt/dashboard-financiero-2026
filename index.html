@@ -378,8 +378,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="header-sub">Resumen general de ventas, ganancias e inversiones</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <button class="print-btn" onclick="printDashboard()"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Exportar Todo</button>
-      <button class="print-btn" onclick="printVendedores()" style="border-color:var(--teal)"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Exportar Vendedores</button>
+      <button class="print-btn" onclick="printPrincipal()"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Principal</button>
+      <button class="print-btn" onclick="printVendedores()" style="border-color:var(--teal)"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Vendedores</button>
+      <button class="print-btn" onclick="printDashboard()" style="border-color:var(--purple)"><svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>Todo</button>
       <div class="header-date" id="headerDate"></div>
     </div>
   </div>
@@ -472,6 +473,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <h3 class="section-title" id="secVendedorDash">Detalle Mensual por <em>Vendedor / Módulo</em> (Dashboard)</h3>
   <div id="vendedorDashContainer"></div>
+
+  <div class="charts" id="secVendedorCharts" style="margin-top:28px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ganancias por Vendedor</div>
+      <div class="chart-subtitle">Comparación mensual — sección vendedores</div>
+      <div class="chart-container tall"><canvas id="chartVendedores2"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
+      <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
+      <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
+    </div>
+  </div>
 
   <h3 class="section-title" id="secVendedorDetail">Detalle Ganancias Mensuales de <em>Vendedores / Módulos</em></h3>
   <div id="vendedorDetailContainer"></div>
@@ -1178,6 +1192,61 @@ function renderVendedorDetail(){
   });
 }
 
+function renderChartVendedores2(){
+  const isUSD=currency==='usd';
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const meses=[...new Set(allData.vendedor.map(r=>r.Mes))];
+  let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
+  const vpre=isUSD?'U$D ':'$ ';
+  const datasets=filteredVends.map((v,i)=>({
+    label:v,
+    data:meses.map(m=>{
+      const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);
+      return row?(isUSD?row.Ganancia_USD:row.Ganancia_Pesos):0;
+    }),
+    backgroundColor:COLORS[i%COLORS.length]+'99',
+    borderColor:COLORS[i%COLORS.length],
+    borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8
+  }));
+  if(charts.vendedores2)charts.vendedores2.destroy();
+  charts.vendedores2=new Chart(document.getElementById('chartVendedores2'),{
+    type:'bar',
+    data:{labels:meses,datasets},
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,rotation:filteredVends.length>1?-45:0,formatter:function(v){if(v===0)return '';return v>=1000?fmt(v,vpre):vpre+Math.round(v);}}},scales:{x:{stacked:false,ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
+function renderChartAcumVend(){
+  const isUSD=currency==='usd';
+  const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
+  const vpre=isUSD?'U$D ':'$ ';
+  const datasets=filteredVends.map((v,i)=>{
+    let cum=0;
+    const cumData=allMeses.map(m=>{
+      const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);
+      cum+=row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;
+      return cum;
+    });
+    return{
+      label:v,data:cumData,
+      borderColor:COLORS[i%COLORS.length],
+      backgroundColor:COLORS[i%COLORS.length]+'18',
+      pointBackgroundColor:COLORS[i%COLORS.length],
+      pointRadius:3,tension:.4,borderWidth:2,fill:filteredVends.length===1
+    };
+  });
+  if(charts.acumVend)charts.acumVend.destroy();
+  charts.acumVend=new Chart(document.getElementById('chartAcumVend'),{
+    type:'line',
+    data:{labels:allMeses,datasets},
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=2000?fmt(v,vpre):v>0?vpre+Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
+}
+
 function renderAll(){
   const isFiltered=filterVendedor!=='all';
   renderKPIs();
@@ -1204,6 +1273,8 @@ function renderAll(){
     renderEvolucion();
   }
   renderVendedorDash();
+  renderChartVendedores2();
+  renderChartAcumVend();
   renderVendedorDetail();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -1765,6 +1836,22 @@ function printVendedores(){
   setTimeout(()=>{
     window.print();
     // Restore everything
+    ph.style.display='none';fi.style.display='none';
+    hidden.forEach(h=>{h.el.style.display=h.prev;});
+  },200);
+}
+
+function printPrincipal(){
+  const{ph,fi}=buildPrintHeader();
+  ph.style.display='flex';fi.style.display='block';
+  // Hide vendedor sections
+  const hideIds=['secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer'];
+  const hidden=[];
+  hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
+  const headerDiv=document.querySelector('.header');
+  if(headerDiv){hidden.push({el:headerDiv,prev:headerDiv.style.display});headerDiv.style.display='none';}
+  setTimeout(()=>{
+    window.print();
     ph.style.display='none';fi.style.display='none';
     hidden.forEach(h=>{h.el.style.display=h.prev;});
   },200);

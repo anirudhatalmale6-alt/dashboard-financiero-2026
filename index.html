@@ -1725,8 +1725,9 @@ function renderSidebarStats(){
 function printDashboard(){
   const now=new Date();
   const dateStr=now.toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  document.getElementById('printDate').textContent=dateStr;
+  const ph=document.getElementById('printDate').parentElement;
   const fi=document.getElementById('printFilterInfo');
+  document.getElementById('printDate').textContent=dateStr;
   const parts=[];
   const vf=document.getElementById('filterVendedor');
   const mf=document.getElementById('filterMes');
@@ -1734,9 +1735,13 @@ function printDashboard(){
   if(filterMes!=='all') parts.push('Mes: '+mf.options[mf.selectedIndex].text);
   if(currency==='pesos') parts.push('Moneda: Pesos');
   else parts.push('Moneda: USD');
-  if(parts.length>0){fi.textContent='Filtros aplicados: '+parts.join(' | ');fi.style.display='';}
-  else{fi.style.display='none';}
-  setTimeout(()=>window.print(),200);
+  if(parts.length>0){fi.textContent='Filtros aplicados: '+parts.join(' | ');}
+  // Show print-only elements, print, then hide them again
+  ph.style.display='flex';fi.style.display='block';
+  setTimeout(()=>{
+    window.print();
+    ph.style.display='none';fi.style.display='none';
+  },200);
 }
 
 // Event Listeners

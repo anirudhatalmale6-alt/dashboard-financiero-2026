@@ -475,20 +475,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="vendedorDashContainer"></div>
 
   <div class="charts" id="secVendedorCharts" style="margin-top:28px">
-    <div class="chart-card">
+    <div class="chart-card" style="width:100%">
       <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ganancias por Vendedor</div>
       <div class="chart-subtitle">Comparación mensual — sección vendedores</div>
       <div class="chart-container tall"><canvas id="chartVendedores2"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
-      <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
-      <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
     </div>
   </div>
 
   <h3 class="section-title" id="secVendedorDetail">Detalle Ganancias Mensuales de <em>Vendedores / Módulos</em></h3>
   <div id="vendedorDetailContainer"></div>
+
+  <div class="charts" id="secAcumVendChart" style="margin-top:28px">
+    <div class="chart-card" style="width:100%">
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
+      <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
+      <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
+    </div>
+  </div>
 
 </main>
 </div>
@@ -1845,7 +1848,7 @@ function printPrincipal(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
   // Hide vendedor sections
-  const hideIds=['secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer'];
+  const hideIds=['secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
   const hidden=[];
   hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
   const headerDiv=document.querySelector('.header');

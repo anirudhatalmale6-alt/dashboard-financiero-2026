@@ -141,21 +141,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Acumulado Monthly Cards */
 .ingresos-monthly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-.ing-month-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;transition:.3s}
-.ing-month-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
-.ing-month-header{background:linear-gradient(135deg,rgba(96,165,250,.15),rgba(139,92,246,.1));padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.ing-month-header .mes-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text1)}
-.ing-month-header .mes-total{font-size:11px;font-weight:600;color:var(--gold)}
-.ing-month-body{padding:8px 12px}
-.ing-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(42,43,58,.3)}
-.ing-row:last-child{border-bottom:none}
-.ing-row .vname{font-size:10px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:6px}
-.ing-row .vusd{font-size:10px;font-weight:600;color:var(--gold);min-width:65px;text-align:right;margin-right:8px;font-family:'IBM Plex Mono',monospace}
-.ing-row .vpesos{font-size:10px;font-weight:600;color:var(--blue);min-width:75px;text-align:right;font-family:'IBM Plex Mono',monospace}
-.ing-row.total-row{border-top:2px solid var(--border);padding-top:6px;margin-top:2px}
-.ing-row.total-row .vname{font-weight:700;color:var(--text1)}
-.ing-row.total-row .vusd{color:#facc15}
-.ing-row.total-row .vpesos{color:#60a5fa}
+.ing-month-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;overflow:hidden;transition:.3s}
+.ing-month-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
+.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
+.ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
+.ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
+.ing-month-card thead th:last-child{border-radius:0 6px 0 0}
+.ing-month-card tbody td{padding:4px 8px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px}
+.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
+.ing-month-card tbody tr:hover{background:var(--surface2)}
+.ing-month-card tbody tr:last-child td{border-bottom:none}
+.ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
+.ing-month-card .positive{color:var(--green)}
+.ing-month-card .negative{color:var(--red)}
 .ing-month-card.no-data{opacity:.35}
 .acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
 .acum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;transition:.3s;position:relative;overflow:hidden}
@@ -300,13 +300,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .kpi-value{font-size:18px!important}
   .ingresos-monthly-grid{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
   .ing-month-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
-  .ing-month-header{background:#f0f1f3!important}
-  .ing-month-header .mes-name{color:#111!important}
-  .ing-month-header .mes-total{color:#b8860b!important}
-  .ing-row .vname{color:#333!important}
-  .ing-row .vusd{color:#b8860b!important}
-  .ing-row .vpesos{color:#1d4ed8!important}
-  .ing-row.total-row .vname{color:#111!important}
+  .ing-month-card thead th{background:#e5e7eb!important;color:#333!important}
+  .ing-month-card tbody td{color:#111!important}
+  .ing-month-card .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
+  .ing-month-card .positive{color:#16a34a!important}
+  .ing-month-card .negative{color:#dc2626!important}
   .acum-cards{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
   .acum-card{border:1px solid #d1d5db!important;break-inside:avoid}
   .acum-card::before{background:#888!important}
@@ -429,7 +427,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
   </div>
 
-  <h2 class="section-title" id="secDetalleIngresos"><span class="dot" style="background:var(--gold)"></span>Detalle Ingresos Mensuales</h2>
+  <h2 class="section-title" id="secDetalleIngresos"><span class="dot" style="background:var(--gold)"></span>Detalle <em>Ingresos Mensuales</em></h2>
   <div class="ingresos-monthly-grid" id="ingresosMensualContainer"></div>
 
   <div class="acum-cards" id="acumCards"></div>
@@ -1350,43 +1348,42 @@ function renderDetalleIngresos(){
     // Filter vendedores if filter active
     const filteredCols=filterVendedor!=='all'?vendCols.filter(vc=>vc.name===filterVendedor):vendCols;
 
-    let rowsHTML='';
-    filteredCols.forEach(vc=>{
-      const usdRaw=usdRow?usdRow[vc.col]:0;
-      const pesosRaw=pesosRow?pesosRow[vc.col]:0;
-      // Parse string values like "U$D 7.476" or "$710.250"
-      function parseVal(v){
-        if(typeof v==='number')return v;
-        if(typeof v==='string'){
-          const neg=v.includes('-')?-1:1;
-          const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
-          const n=parseFloat(clean);
-          return isNaN(n)?0:n*neg;
-        }
-        return 0;
+    function parseVal(v){
+      if(typeof v==='number')return v;
+      if(typeof v==='string'){
+        const neg=v.includes('-')?-1:1;
+        const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+        const n=parseFloat(clean);
+        return isNaN(n)?0:n*neg;
       }
-      const usd=parseVal(usdRaw);
-      const pesos=parseVal(pesosRaw);
+      return 0;
+    }
+
+    let tbodyHTML='';
+    filteredCols.forEach(vc=>{
+      const usd=parseVal(usdRow?usdRow[vc.col]:0);
+      const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
       totalUSD+=usd;totalPesos+=pesos;
       if(usd!==0||pesos!==0)hasAnyData=true;
-      rowsHTML+=`<div class="ing-row">
-        <span class="vname">${vc.name}</span>
-        <span class="vusd">${fmtUSD(usd)}</span>
-        <span class="vpesos">${fmtPesos(pesos)}</span>
-      </div>`;
+      tbodyHTML+=`<tr>
+        <td>${vc.name}</td>
+        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+      </tr>`;
     });
-    rowsHTML+=`<div class="ing-row total-row">
-      <span class="vname">TOTAL</span>
-      <span class="vusd">${fmtUSD(totalUSD)}</span>
-      <span class="vpesos">${fmtPesos(totalPesos)}</span>
-    </div>`;
+    tbodyHTML+=`<tr class="total-row">
+      <td>TOTAL</td>
+      <td>${fmtUSD(totalUSD)}</td>
+      <td>${fmtPesos(totalPesos)}</td>
+    </tr>`;
 
+    const icons=['📅','📅','📅','📅','📅','📅','📅','📅','📅','📅','📅','📅'];
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
-      <div class="ing-month-header">
-        <span class="mes-name">${mesesShort[mi]}</span>
-        <span class="mes-total">${fmtUSD(totalUSD)}</span>
-      </div>
-      <div class="ing-month-body">${rowsHTML}</div>
+      <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
+      <table>
+        <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+        <tbody>${tbodyHTML}</tbody>
+      </table>
     </div>`;
   });
 }
@@ -1546,12 +1543,12 @@ function renderKPIs(){
 
     kpiEl.innerHTML=`
       <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
-      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
-      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
+      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
     `;
   }

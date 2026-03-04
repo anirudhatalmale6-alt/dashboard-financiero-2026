@@ -1319,7 +1319,7 @@ function renderChartAcumVend(){
     type:'line',
     data:{labels:allMeses,datasets},
     plugins:[ChartDataLabels],
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=2000?fmt(v,vpre):v>0?vpre+Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,right:60}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'right',offset:4,display:function(ctx){return ctx.dataIndex===ctx.dataset.data.length-1;},formatter:function(v){return v>=2000?fmt(v,vpre):v>0?vpre+Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,vpre)},grid:{color:'rgba(42,43,58,.3)'}}}}
   });
 }
 

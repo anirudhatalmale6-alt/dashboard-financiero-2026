@@ -154,6 +154,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card tbody tr:hover{background:var(--surface2)}
 .ing-month-card tbody tr:last-child td{border-bottom:none}
 .ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
+.ing-month-card .uni-row td{border-top:1px solid var(--blue);color:var(--blue);background:rgba(96,165,250,.05)}
 .ing-month-card .positive{color:var(--green)}
 .ing-month-card .negative{color:var(--red)}
 .ing-month-card.no-data{opacity:.35}
@@ -1376,7 +1377,15 @@ function renderDetalleIngresos(){
       <td>${fmtPesos(totalPesos)}</td>
     </tr>`;
 
-    const icons=['📅','📅','📅','📅','📅','📅','📅','📅','📅','📅','📅','📅'];
+    // Total Unificado from DASHBOARD summary (rows 2-13, col 8=USD, col 7=Pesos)
+    const uniUSD=dashNum(2+mi,8);
+    const uniPesos=dashNum(2+mi,7);
+    tbodyHTML+=`<tr class="total-row uni-row">
+      <td>TOTAL UNIFICADO</td>
+      <td>${fmtUSD(uniUSD)}</td>
+      <td>${fmtPesos(uniPesos)}</td>
+    </tr>`;
+
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
       <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
       <table>

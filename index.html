@@ -146,13 +146,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
 .ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed}
-.ing-month-card table col:nth-child(1){width:28%}
-.ing-month-card table col:nth-child(2){width:32%}
+.ing-month-card table col:nth-child(1){width:30%}
+.ing-month-card table col:nth-child(2){width:30%}
 .ing-month-card table col:nth-child(3){width:40%}
 .ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
 .ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
 .ing-month-card thead th:last-child{border-radius:0 6px 0 0}
-.ing-month-card tbody td{padding:4px 4px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:10px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ing-month-card tbody td{padding:4px 6px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px;font-family:'DM Sans',sans-serif}
 .ing-month-card tbody tr:hover{background:var(--surface2)}
 .ing-month-card tbody tr:last-child td{border-bottom:none}
@@ -486,7 +486,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secDetalle">Detalle Mensual por <em>Módulo</em></h3>
   <div class="module-details-grid" id="moduleDetails"></div>
 
-  <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar</em></h3>
+  <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
   <div class="cuotas-cards" id="cuotasCards"></div>
   <div class="charts">
     <div class="chart-card">
@@ -500,6 +500,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container"><canvas id="chartCuotasPesos"></canvas></div>
     </div>
   </div>
+
+  <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
+  <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
   <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
   <div class="inv-section" id="invSection">
@@ -1396,23 +1399,23 @@ function renderDetalleIngresos(){
       if(usd!==0||pesos!==0)hasAnyData=true;
       tbodyHTML+=`<tr>
         <td>${vc.name}</td>
-        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtNum(usd)}</td>
-        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtNum(pesos)}</td>
+        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
       </tr>`;
     });
     tbodyHTML+=`<tr class="total-row">
       <td>TOTAL</td>
-      <td>${fmtNum(totalUSD)}</td>
-      <td>${fmtNum(totalPesos)}</td>
+      <td>${fmtUSD(totalUSD)}</td>
+      <td>${fmtPesos(totalPesos)}</td>
     </tr>`;
 
     // Total Unificado from DASHBOARD summary (rows 2-13, col 8=USD, col 7=Pesos)
     const uniUSD=dashNum(2+mi,8);
     const uniPesos=dashNum(2+mi,7);
     tbodyHTML+=`<tr class="total-row uni-row">
-      <td>TOTAL UNI.</td>
-      <td>${fmtNum(uniUSD)}</td>
-      <td>${fmtNum(uniPesos)}</td>
+      <td>TOTAL UNIFICADO</td>
+      <td>${fmtUSD(uniUSD)}</td>
+      <td>${fmtPesos(uniPesos)}</td>
     </tr>`;
 
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
@@ -1442,11 +1445,14 @@ function renderAll(){
   const cuotasTitle=document.getElementById('secCuotas');
   const cuotasContainer=document.getElementById('cuotasCards');
   const cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
+  const cuotasPesosTitle=document.getElementById('secCuotasPesos');
+  const cuotasPesosContainer=document.getElementById('cuotasCardsPesos');
   const invTitle=document.getElementById('secInversiones');
   const invSection=document.getElementById('invSection');
-  [cuotasTitle,cuotasContainer,cuotasCharts,invTitle,invSection].forEach(el=>{if(el)el.style.display=isFiltered?'none':'';});
+  [cuotasTitle,cuotasContainer,cuotasCharts,cuotasPesosTitle,cuotasPesosContainer,invTitle,invSection].forEach(el=>{if(el)el.style.display=isFiltered?'none':'';});
   if(!isFiltered){
     renderCuotasCards();
+    renderCuotasCardsPesos();
     renderChartCuotasUSD();
     renderChartCuotasPesos();
     renderInversiones();
@@ -1843,9 +1849,9 @@ function renderModuleDetails(){
 }
 
 function extractCuotasData(){
-  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[]};
+  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[]};
   // Find rows by scanning for marker text in DASHBOARD raw data
-  let cobrarUSDTotalRow=-1,compromisoRow=-1,cobrarPesosTotalRow=-1;
+  let cobrarUSDTotalRow=-1,compromisoRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
   for(let i=0;i<dashRaw.length;i++){
     const row=dashRaw[i];
     if(!row)continue;
@@ -1858,10 +1864,22 @@ function extractCuotasData(){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
         }
       }
-      if(v.includes('resta pagar')){compromisoRow=i;}
+      if(v.includes('resta pagar')&&!v.includes('pesos')){compromisoRow=i;}
+      if(v.includes('resta pagar')&&v.includes('pesos')){compromisoPesosRow=i;}
       if(v.includes('ingresos de cuotas en pesos')){
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}
+        }
+        // Also look for resta pagar in pesos near this section
+        for(let k=i+1;k<Math.min(i+30,dashRaw.length);k++){
+          if(dashRaw[k]){
+            for(let jj=0;jj<dashRaw[k].length;jj++){
+              if(dashRaw[k][jj]&&typeof dashRaw[k][jj]==='string'&&dashRaw[k][jj].toLowerCase().includes('resta pagar')){
+                compromisoPesosRow=k;break;
+              }
+            }
+          }
+          if(compromisoPesosRow>=0)break;
         }
       }
     }
@@ -1881,14 +1899,15 @@ function extractCuotasData(){
     return 0;
   }
   // Cols: 4=Enero, 5=Feb, ..., 15=Dec (indices for 12 months of 2026)
-  const cobrarUSD=[],pagarUSD=[],cobrarPesos=[];
+  const cobrarUSD=[],pagarUSD=[],cobrarPesos=[],pagarPesos=[];
   for(let m=0;m<12;m++){
     const col=4+m;
     cobrarUSD.push(cobrarUSDTotalRow>=0?getNum(cobrarUSDTotalRow,col):0);
     pagarUSD.push(compromisoRow>=0?Math.abs(getNum(compromisoRow,col)):0);
     cobrarPesos.push(cobrarPesosTotalRow>=0?getNum(cobrarPesosTotalRow,col):0);
+    pagarPesos.push(compromisoPesosRow>=0?Math.abs(getNum(compromisoPesosRow,col)):0);
   }
-  return{labels,cobrarUSD,pagarUSD,cobrarPesos};
+  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos};
 }
 
 function renderChartCuotasUSD(){
@@ -1956,6 +1975,42 @@ function renderCuotasCards(){
       <div class="cobrar">${fmtUSD(totalCobrar)}</div>
       <span class="lbl">Total A Pagar</span>
       <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>
+      <div class="cuota-bar"><div class="cuota-fill" style="width:${totalPct}%"></div></div>
+      <div class="cuota-pct">Cobro: ${totalPct}%</div>
+    </div>`;
+}
+
+function renderCuotasCardsPesos(){
+  const q=extractCuotasData();
+  const container=document.getElementById('cuotasCardsPesos');
+  container.innerHTML='';
+  let totalCobrar=0,totalPagar=0;
+  q.labels.forEach((mes,i)=>{
+    const cobrar=q.cobrarPesos[i]||0;
+    const pagar=q.pagarPesos[i]||0;
+    totalCobrar+=cobrar;
+    totalPagar+=pagar;
+    if(cobrar===0&&pagar===0)return;
+    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    container.innerHTML+=`
+      <div class="cuota-card">
+        <div class="mes">${mes}</div>
+        <span class="lbl">A Cobrar</span>
+        <div class="cobrar">${fmtPesos(cobrar)}</div>
+        <span class="lbl">A Pagar</span>
+        <div class="pagar">${pagar>0?'-':''}${fmtPesos(pagar)}</div>
+        <div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div>
+        <div class="cuota-pct">Cobro: ${pct}%</div>
+      </div>`;
+  });
+  const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  container.innerHTML+=`
+    <div class="cuota-card acum">
+      <div class="mes">ACUMULADO ANUAL</div>
+      <span class="lbl">Total A Cobrar</span>
+      <div class="cobrar">${fmtPesos(totalCobrar)}</div>
+      <span class="lbl">Total A Pagar</span>
+      <div class="pagar">${totalPagar>0?'-':''}${fmtPesos(totalPagar)}</div>
       <div class="cuota-bar"><div class="cuota-fill" style="width:${totalPct}%"></div></div>
       <div class="cuota-pct">Cobro: ${totalPct}%</div>
     </div>`;

@@ -241,6 +241,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .inv-cat.cat-debt::before{background:linear-gradient(90deg,var(--red),var(--orange))}
 .inv-cat.cat-cash::before{background:linear-gradient(90deg,var(--purple),var(--pink))}
 .inv-cat.cat-gastos::before{background:linear-gradient(90deg,var(--purple),#7c3aed)}
+.inv-cat.cat-gastos .inv-item-val.negative{color:var(--purple)}
+.inv-cat.cat-gastos .inv-cat-total{color:var(--purple)}
 .inv-cat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .inv-cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .cat-prop .inv-cat-icon{background:rgba(212,168,83,.15);color:var(--gold)}
@@ -903,7 +905,7 @@ function renderInversiones(){
       const val=isUSD?item.usd:item.pesos;
       const pct=Math.min(100,Math.abs(val)/maxVal*100);
       const cls=val>0?'positive':val<0?'negative':'neutral';
-      const fillColor=val>=0?cat.color:'var(--red)';
+      const fillColor=val>=0?cat.color:(cat.id==='gastos'?cat.color:'var(--red)');
       return `<div class="inv-item">
         <span class="inv-item-name">${item.name}</span>
         <span class="inv-item-val ${cls}">${fv(val)}</span>

@@ -240,6 +240,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .inv-cat.cat-cuota::before{background:linear-gradient(90deg,var(--green),var(--teal))}
 .inv-cat.cat-debt::before{background:linear-gradient(90deg,var(--red),var(--orange))}
 .inv-cat.cat-cash::before{background:linear-gradient(90deg,var(--purple),var(--pink))}
+.inv-cat.cat-gastos::before{background:linear-gradient(90deg,var(--orange),var(--red))}
 .inv-cat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .inv-cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .cat-prop .inv-cat-icon{background:rgba(212,168,83,.15);color:var(--gold)}
@@ -870,18 +871,33 @@ function renderInversiones(){
     {id:'credit',icon:'💰',title:'Créditos a Cobrar',items:credits,color:'var(--blue)',cls:'cat-credit'},
     {id:'cuota',icon:'📊',title:'Cuotas por Cobrar',items:cuotas,color:'var(--green)',cls:'cat-cuota'},
     {id:'debt',icon:'📉',title:'Deudas & Compromisos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
-    {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'}
-  ].filter(c=>c.items.length>0);
+    {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'},
+  ];
+  // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (dashRaw rows 253-264)
+  if(dashRaw&&dashRaw.length>265){
+    const gastosMens=[];
+    const mNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    for(let mi=0;mi<12;mi++){
+      const r=dashRaw[253+mi];
+      if(!r)continue;
+      const usdRaw=r[3],pesosRaw=r[4];
+      function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+      const usd=pv(usdRaw),pesos=pv(pesosRaw);
+      if(usd||pesos)gastosMens.push({name:mNames[mi],usd:-Math.abs(usd),pesos:-Math.abs(pesos)});
+    }
+    if(gastosMens.length>0)categories.push({id:'gastos',icon:'💸',title:'Gastos Mensuales / Sueldo Martin',items:gastosMens,color:'var(--orange)',cls:'cat-gastos'});
+  }
+  const filteredCats=categories.filter(c=>c.items.length>0);
 
   // Dynamic column count
-  const colCount=Math.min(categories.length,3);
+  const colCount=Math.min(filteredCats.length,3);
   catsEl.style.gridTemplateColumns=`repeat(${colCount},1fr)`;
 
   // Find max absolute value for bars
-  const allItems=[...properties,...credits,...cuotas,...allDebts,...cash];
+  const allItems=filteredCats.flatMap(c=>c.items);
   const maxVal=Math.max(...allItems.map(i=>Math.abs(isUSD?i.usd:i.pesos)),1);
 
-  catsEl.innerHTML=categories.map(cat=>{
+  catsEl.innerHTML=filteredCats.map(cat=>{
     const subtotal=cat.items.reduce((s,i)=>s+(isUSD?i.usd:i.pesos),0);
     const itemsHtml=cat.items.map(item=>{
       const val=isUSD?item.usd:item.pesos;

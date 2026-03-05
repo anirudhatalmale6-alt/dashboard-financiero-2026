@@ -145,19 +145,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
-.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
-.ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
-.ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
-.ing-month-card thead th:last-child{border-radius:0 6px 0 0}
-.ing-month-card tbody td{padding:4px 8px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px}
-.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
-.ing-month-card tbody tr:hover{background:var(--surface2)}
-.ing-month-card tbody tr:last-child td{border-bottom:none}
-.ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
-.ing-month-card .uni-row td{border-top:1px solid var(--blue);color:var(--blue);background:rgba(96,165,250,.05)}
-.ing-month-card tbody td:nth-child(2).positive{color:var(--gold)}
-.ing-month-card tbody td:nth-child(3).positive{color:var(--cyan)}
-.ing-month-card .negative{color:var(--red)}
+.ing-month-card .ing-stats{display:flex;flex-direction:column;gap:6px}
+.ing-month-card .ing-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:2px 0;border-bottom:1px solid rgba(42,43,58,.15)}
+.ing-month-card .ing-row:last-child{border-bottom:none}
+.ing-month-card .ing-row .lbl{color:var(--text3);font-size:11px;flex-shrink:0}
+.ing-month-card .ing-row .vals{display:flex;gap:10px;font-weight:700;font-size:11px}
+.ing-month-card .ing-row .val-usd{color:var(--gold);white-space:nowrap}
+.ing-month-card .ing-row .val-pesos{color:var(--cyan);white-space:nowrap}
+.ing-month-card .ing-row .val-usd.zero,.ing-month-card .ing-row .val-pesos.zero{color:var(--text3);font-weight:400}
+.ing-month-card .ing-row.negative .val-usd,.ing-month-card .ing-row.negative .val-pesos{color:var(--red)}
+.ing-month-card .ing-total{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;padding:6px 0;margin-top:4px;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.03);border-radius:4px;padding:6px 4px}
+.ing-month-card .ing-total .vals{display:flex;gap:10px;font-size:11px}
+.ing-month-card .ing-uni{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;padding:4px;border-top:1px solid var(--blue);color:var(--blue);background:rgba(96,165,250,.03);border-radius:4px}
+.ing-month-card .ing-uni .vals{display:flex;gap:10px;font-size:11px}
 .ing-month-card.no-data{opacity:.35}
 .acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
 .acum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;transition:.3s;position:relative;overflow:hidden}
@@ -315,12 +315,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .kpi-value{font-size:18px!important}
   .ingresos-monthly-grid{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
   .ing-month-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
-  .ing-month-card thead th{background:#e5e7eb!important;color:#333!important}
-  .ing-month-card tbody td{color:#111!important}
-  .ing-month-card .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
-  .ing-month-card tbody td:nth-child(2).positive{color:#b8860b!important}
-  .ing-month-card tbody td:nth-child(3).positive{color:#0891b2!important}
-  .ing-month-card .negative{color:#dc2626!important}
+  .ing-month-card .ing-row .lbl{color:#333!important}
+  .ing-month-card .ing-row .val-usd{color:#b8860b!important}
+  .ing-month-card .ing-row .val-pesos{color:#0891b2!important}
+  .ing-month-card .ing-row .val-usd.zero,.ing-month-card .ing-row .val-pesos.zero{color:#888!important}
+  .ing-month-card .ing-total{color:#b8860b!important;border-top:1px solid #b8860b!important}
   .acum-cards{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
   .acum-card{border:1px solid #d1d5db!important;break-inside:avoid}
   .acum-card::before{background:#888!important}
@@ -1398,39 +1397,38 @@ function renderDetalleIngresos(){
       return 0;
     }
 
-    let tbodyHTML='';
+    let rowsHTML='';
     filteredCols.forEach(vc=>{
       const usd=parseVal(usdRow?usdRow[vc.col]:0);
       const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
       totalUSD+=usd;totalPesos+=pesos;
       if(usd!==0||pesos!==0)hasAnyData=true;
-      tbodyHTML+=`<tr>
-        <td>${vc.name}</td>
-        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
-        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
-      </tr>`;
+      rowsHTML+=`<div class="ing-row">
+        <span class="lbl">${vc.name}</span>
+        <div class="vals">
+          <span class="val-usd${usd===0?' zero':''}">${fmtUSD(usd)}</span>
+          <span class="val-pesos${pesos===0?' zero':''}">${fmtPesos(pesos)}</span>
+        </div>
+      </div>`;
     });
-    tbodyHTML+=`<tr class="total-row">
-      <td>TOTAL</td>
-      <td>${fmtUSD(totalUSD)}</td>
-      <td>${fmtPesos(totalPesos)}</td>
-    </tr>`;
 
     // Total Unificado from DASHBOARD summary (rows 2-13, col 8=USD, col 7=Pesos)
     const uniUSD=dashNum(2+mi,8);
     const uniPesos=dashNum(2+mi,7);
-    tbodyHTML+=`<tr class="total-row uni-row">
-      <td>TOTAL UNIFICADO</td>
-      <td>${fmtUSD(uniUSD)}</td>
-      <td>${fmtPesos(uniPesos)}</td>
-    </tr>`;
 
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
       <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
-      <table>
-        <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
-        <tbody>${tbodyHTML}</tbody>
-      </table>
+      <div class="ing-stats">
+        ${rowsHTML}
+        <div class="ing-total">
+          <span class="lbl">TOTAL</span>
+          <div class="vals"><span>${fmtUSD(totalUSD)}</span><span>${fmtPesos(totalPesos)}</span></div>
+        </div>
+        <div class="ing-uni">
+          <span class="lbl">TOTAL UNIFICADO</span>
+          <div class="vals"><span>${fmtUSD(uniUSD)}</span><span>${fmtPesos(uniPesos)}</span></div>
+        </div>
+      </div>
     </div>`;
   });
 }

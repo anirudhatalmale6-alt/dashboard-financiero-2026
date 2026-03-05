@@ -240,7 +240,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .inv-cat.cat-cuota::before{background:linear-gradient(90deg,var(--green),var(--teal))}
 .inv-cat.cat-debt::before{background:linear-gradient(90deg,var(--red),var(--orange))}
 .inv-cat.cat-cash::before{background:linear-gradient(90deg,var(--purple),var(--pink))}
-.inv-cat.cat-gastos::before{background:linear-gradient(90deg,var(--orange),var(--red))}
+.inv-cat.cat-gastos::before{background:linear-gradient(90deg,var(--purple),#7c3aed)}
 .inv-cat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .inv-cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .cat-prop .inv-cat-icon{background:rgba(212,168,83,.15);color:var(--gold)}
@@ -885,7 +885,7 @@ function renderInversiones(){
       const usd=pv(usdRaw),pesos=pv(pesosRaw);
       if(usd||pesos)gastosMens.push({name:mNames[mi],usd:-Math.abs(usd),pesos:-Math.abs(pesos)});
     }
-    if(gastosMens.length>0)categories.push({id:'gastos',icon:'💸',title:'Gastos Mensuales / Sueldo Martin',items:gastosMens,color:'var(--orange)',cls:'cat-gastos'});
+    if(gastosMens.length>0)categories.push({id:'gastos',icon:'💸',title:'Gastos Mensuales / Sueldo Martin',items:gastosMens,color:'var(--purple)',cls:'cat-gastos'});
   }
   const filteredCats=categories.filter(c=>c.items.length>0);
 

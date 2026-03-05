@@ -1562,10 +1562,10 @@ function renderKPIs(){
     // Gastos Fijos only for these vendedores
     const showGastos=['Inversiones','Creditos','Tecno'].includes(filterVendedor);
     const gastosCardUSD=showGastos?
-      `<div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
+      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
       `<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Mejor Mes U$D</div><div class="kpi-value">${fmtUSD(Math.max(...allVd.map(r=>r.Ganancia_USD||0)))}</div></div>`;
     const gastosCardPesos=showGastos?
-      `<div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
+      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
       `<div class="kpi" data-color="green"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Mejor Mes $</div><div class="kpi-value">${fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0)))}</div></div>`;
 
     kpiEl.innerHTML=`
@@ -1605,13 +1605,13 @@ function renderKPIs(){
 
     kpiEl.innerHTML=`
       <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
-      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
-      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
-      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
-      <div class="kpi" data-color="pink"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
-      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
     `;
   }
 }

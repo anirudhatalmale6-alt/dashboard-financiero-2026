@@ -60,6 +60,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header h2 em{font-style:normal;color:var(--gold)}
 .header-sub{font-size:13px;color:var(--text3);font-weight:300;margin-top:4px}
 .header-date{font-size:12px;color:var(--text3);background:var(--surface2);padding:8px 14px;border-radius:20px;border:1px solid var(--border)}
+.section-divider{margin:48px 0 32px;text-align:center}
+.section-divider::before{content:'';display:block;height:2px;background:linear-gradient(90deg,transparent 5%,var(--gold-dim) 25%,var(--blue) 50%,var(--gold-dim) 75%,transparent 95%);margin-bottom:28px;opacity:.7}
+.section-divider h2{font-family:'Playfair Display',serif;font-size:30px;font-weight:800;letter-spacing:-1px;margin:0}
+.section-divider h2 em{font-style:normal;color:var(--blue)}
+.section-divider .divider-sub{font-size:13px;color:var(--text3);font-weight:300;margin-top:4px}
 
 /* KPI Cards */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
@@ -355,6 +360,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .module-table .negative{color:#dc2626!important}
   .cuotas-cards{grid-template-columns:repeat(6,1fr)!important}
   .cuota-card{border:1px solid #d1d5db!important;break-inside:avoid}
+  .section-divider{margin:30px 0 20px;page-break-before:always}
+  .section-divider::before{background:linear-gradient(90deg,transparent,#999,#3b82f6,#999,transparent)!important}
+  .section-divider h2{color:#111!important}
+  .section-divider h2 em{color:#3b82f6!important}
+  .section-divider .divider-sub{color:#555!important}
   .vd-block{break-inside:avoid;page-break-inside:avoid}
   .vd-cards{grid-template-columns:repeat(6,1fr)!important}
   .acum-card .acum-val{color:#222!important;font-weight:700!important}
@@ -422,6 +432,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>
     <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cronograma Inversiones</a>
+    <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
   </nav>
@@ -536,6 +547,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Seguimiento mensual — ¿sube o baja tu capital?</div>
       <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
     </div>
+  </div>
+
+  <div class="section-divider" id="secDashVendedores">
+    <h2>Dashboard <em>Vendedores</em></h2>
+    <div class="divider-sub">Reportes detallados por vendedor y módulo</div>
   </div>
 
   <h3 class="section-title" id="secVendedorDash">Detalle Mensual por <em>Vendedor / Módulo</em> (Dashboard)</h3>

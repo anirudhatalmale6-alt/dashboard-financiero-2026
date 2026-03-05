@@ -145,20 +145,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
-.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed}
-.ing-month-card table col:nth-child(1){width:30%}
-.ing-month-card table col:nth-child(2){width:30%}
-.ing-month-card table col:nth-child(3){width:40%}
-.ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
+.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
+.ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
 .ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
 .ing-month-card thead th:last-child{border-radius:0 6px 0 0}
-.ing-month-card tbody td{padding:4px 6px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px;font-family:'DM Sans',sans-serif}
+.ing-month-card tbody td{padding:4px 8px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px}
+.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
 .ing-month-card tbody tr:hover{background:var(--surface2)}
 .ing-month-card tbody tr:last-child td{border-bottom:none}
-.ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
-.ing-month-card .uni-row td{border-top:1px solid var(--blue);color:var(--blue);background:rgba(96,165,250,.05)}
-.ing-month-card .positive{color:var(--green)}
+.ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
+.ing-month-card .total-row td:nth-child(2){color:var(--gold)}
+.ing-month-card .total-row td:nth-child(3){color:var(--blue)}
+.ing-month-card .uni-row td{border-top:1px solid var(--purple);background:rgba(167,139,250,.05)}
+.ing-month-card .uni-row td:nth-child(2){color:var(--gold2)}
+.ing-month-card .uni-row td:nth-child(3){color:var(--purple)}
+.ing-month-card tbody td:nth-child(2).positive{color:var(--gold)}
+.ing-month-card tbody td:nth-child(3).positive{color:var(--blue)}
 .ing-month-card .negative{color:var(--red)}
 .ing-month-card.no-data{opacity:.35}
 .acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
@@ -199,6 +201,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-card.acum .pagar{font-size:16px}
 .cuota-card .mes{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px;font-weight:500}
 .cuota-card .cobrar{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--green);margin-bottom:3px}
+#cuotasCardsPesos .cuota-card .cobrar{color:var(--blue)}
+#cuotasCardsPesos .cuota-card .cuota-fill{background:linear-gradient(90deg,var(--blue),#93c5fd)}
+#cuotasCardsPesos .cuota-card::before{background:linear-gradient(90deg,var(--blue),#93c5fd)}
+#cuotasCardsPesos .cuota-card.acum::before{background:linear-gradient(90deg,var(--blue),#93c5fd)}
 .cuota-card .pagar{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--red)}
 .cuota-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
 .cuota-card .cuota-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
@@ -220,8 +226,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .module-table tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
 .module-table tbody tr:hover{background:var(--surface2)}
 .module-table tbody tr:last-child td{border-bottom:none}
-.module-table .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
-.module-table .positive{color:var(--green)}
+.module-table .total-row td{font-weight:700;border-top:1px solid var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
+.module-table .total-row td:nth-child(2){color:var(--gold)}
+.module-table .total-row td:nth-child(3){color:var(--blue)}
+.module-table tbody td:nth-child(2).positive{color:var(--gold)}
+.module-table tbody td:nth-child(3).positive{color:var(--blue)}
 .module-table .negative{color:var(--red)}
 
 /* Investment Portfolio */
@@ -312,8 +321,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .ing-month-card{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
   .ing-month-card thead th{background:#e5e7eb!important;color:#333!important}
   .ing-month-card tbody td{color:#111!important}
-  .ing-month-card .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
-  .ing-month-card .positive{color:#16a34a!important}
+  .ing-month-card .total-row td:nth-child(2){color:#b8860b!important}
+  .ing-month-card .total-row td:nth-child(3){color:#3b82f6!important}
+  .ing-month-card .total-row td{border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
+  .ing-month-card .uni-row td:nth-child(2){color:#d4a853!important}
+  .ing-month-card .uni-row td:nth-child(3){color:#8b5cf6!important}
+  .ing-month-card tbody td:nth-child(2).positive{color:#b8860b!important}
+  .ing-month-card tbody td:nth-child(3).positive{color:#3b82f6!important}
   .ing-month-card .negative{color:#dc2626!important}
   .acum-cards{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
   .acum-card{border:1px solid #d1d5db!important;break-inside:avoid}
@@ -333,8 +347,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .module-detail{border:1px solid #d1d5db!important;break-inside:avoid;page-break-inside:avoid}
   .module-table thead th{background:#e5e7eb!important;color:#333!important}
   .module-table tbody td{color:#111!important}
-  .module-table .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
-  .module-table .positive{color:#16a34a!important}
+  .module-table .total-row td{border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
+  .module-table .total-row td:nth-child(2){color:#b8860b!important}
+  .module-table .total-row td:nth-child(3){color:#3b82f6!important}
+  .module-table tbody td:nth-child(2).positive{color:#b8860b!important}
+  .module-table tbody td:nth-child(3).positive{color:#3b82f6!important}
   .module-table .negative{color:#dc2626!important}
   .cuotas-cards{grid-template-columns:repeat(6,1fr)!important}
   .cuota-card{border:1px solid #d1d5db!important;break-inside:avoid}
@@ -1421,7 +1438,6 @@ function renderDetalleIngresos(){
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
       <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
       <table>
-        <colgroup><col><col><col></colgroup>
         <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
         <tbody>${tbodyHTML}</tbody>
       </table>

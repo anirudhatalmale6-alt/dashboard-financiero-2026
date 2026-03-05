@@ -145,15 +145,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
-.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed}
-.ing-month-card table col:nth-child(1){width:30%}
-.ing-month-card table col:nth-child(2){width:30%}
-.ing-month-card table col:nth-child(3){width:40%}
+.ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
 .ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
 .ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
 .ing-month-card thead th:last-child{border-radius:0 6px 0 0}
-.ing-month-card tbody td{padding:4px 6px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px;font-family:'DM Sans',sans-serif}
+.ing-month-card tbody td{padding:4px 8px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px}
+.ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px}
 .ing-month-card tbody tr:hover{background:var(--surface2)}
 .ing-month-card tbody tr:last-child td{border-bottom:none}
 .ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);color:var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
@@ -206,6 +203,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-card .cuota-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--green),var(--teal));transition:.6s}
 .cuota-card .cuota-pct{font-size:9px;color:var(--text3);margin-top:3px}
 .cuota-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--teal))}
+.cuotas-pesos .cuota-card .cobrar{color:var(--cyan)}
+.cuotas-pesos .cuota-card .cuota-fill{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.cuotas-pesos .cuota-card::before{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.cuotas-pesos .cuota-card.acum{border-color:rgba(34,211,238,.15)}
+.cuotas-pesos .cuota-card.acum::before{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.cuotas-pesos .cuota-card.acum .mes{color:var(--cyan)}
 
 /* Module Detail Tables */
 .module-details-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px}
@@ -506,7 +509,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
-  <div class="cuotas-cards" id="cuotasCardsPesos"></div>
+  <div class="cuotas-cards cuotas-pesos" id="cuotasCardsPesos"></div>
 
   <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
   <div class="inv-section" id="invSection">
@@ -1425,7 +1428,6 @@ function renderDetalleIngresos(){
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
       <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
       <table>
-        <colgroup><col><col><col></colgroup>
         <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
         <tbody>${tbodyHTML}</tbody>
       </table>

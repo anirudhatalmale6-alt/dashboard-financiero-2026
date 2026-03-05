@@ -509,7 +509,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container"><canvas id="chartCuotasUSD"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Cuotas en Pesos</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Cuotas en Pesos</div>
       <div class="chart-subtitle">Cobro de cuotas en pesos por mes</div>
       <div class="chart-container"><canvas id="chartCuotasPesos"></canvas></div>
     </div>
@@ -1953,7 +1953,7 @@ function renderChartCuotasPesos(){
     data:{
       labels:q.labels,
       datasets:[
-        {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.6}
+        {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6,barPercentage:.6}
       ]
     },
     plugins:[ChartDataLabels],

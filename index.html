@@ -1971,7 +1971,6 @@ function renderCuotasCards(){
     const pagar=q.pagarUSD[i]||0;
     totalCobrar+=cobrar;
     totalPagar+=pagar;
-    if(cobrar===0&&pagar===0)return;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
     container.innerHTML+=`
       <div class="cuota-card">
@@ -2008,7 +2007,6 @@ function renderCuotasCardsPesos(){
     const pagar=q.pagarPesos[i]||0;
     totalCobrar+=cobrar;
     totalPagar+=pagar;
-    if(cobrar===0&&pagar===0)return;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
     container.innerHTML+=`
       <div class="cuota-card">

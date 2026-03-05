@@ -146,13 +146,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ing-month-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--gold-dim);color:var(--gold)}
 .ing-month-card table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed}
-.ing-month-card table col:nth-child(1){width:30%}
-.ing-month-card table col:nth-child(2){width:32%}
-.ing-month-card table col:nth-child(3){width:38%}
+.ing-month-card table col:nth-child(1){width:34%}
+.ing-month-card table col:nth-child(2){width:33%}
+.ing-month-card table col:nth-child(3){width:33%}
 .ing-month-card thead th{background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:9px;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
 .ing-month-card thead th:first-child{text-align:left;border-radius:6px 0 0 0}
 .ing-month-card thead th:last-child{border-radius:0 6px 0 0}
-.ing-month-card tbody td{padding:4px 5px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:10px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ing-month-card tbody td{padding:4px 6px;border-bottom:1px solid rgba(42,43,58,.3);text-align:right;color:var(--text);font-size:11px;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ing-month-card tbody td:first-child{text-align:left;color:var(--text3);font-weight:400;font-size:10px;font-family:'DM Sans',sans-serif}
 .ing-month-card tbody tr:hover{background:var(--surface2)}
 .ing-month-card tbody tr:last-child td{border-bottom:none}
@@ -706,6 +706,7 @@ function fmtFullP(n,prefix){
   return prefix+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 function fmtCur(n){return currency==='usd'?fmtUSD(n):fmtPesos(n);}
+function fmtNum(n){if(n===undefined||n===null||isNaN(n))return'—';return Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
 function fmtFull(n){
   if(n===undefined||n===null||isNaN(n))return'—';
@@ -1395,23 +1396,23 @@ function renderDetalleIngresos(){
       if(usd!==0||pesos!==0)hasAnyData=true;
       tbodyHTML+=`<tr>
         <td>${vc.name}</td>
-        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
-        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtNum(usd)}</td>
+        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtNum(pesos)}</td>
       </tr>`;
     });
     tbodyHTML+=`<tr class="total-row">
       <td>TOTAL</td>
-      <td>${fmtUSD(totalUSD)}</td>
-      <td>${fmtPesos(totalPesos)}</td>
+      <td>${fmtNum(totalUSD)}</td>
+      <td>${fmtNum(totalPesos)}</td>
     </tr>`;
 
     // Total Unificado from DASHBOARD summary (rows 2-13, col 8=USD, col 7=Pesos)
     const uniUSD=dashNum(2+mi,8);
     const uniPesos=dashNum(2+mi,7);
     tbodyHTML+=`<tr class="total-row uni-row">
-      <td>TOTAL UNIFICADO</td>
-      <td>${fmtUSD(uniUSD)}</td>
-      <td>${fmtPesos(uniPesos)}</td>
+      <td>TOTAL UNI.</td>
+      <td>${fmtNum(uniUSD)}</td>
+      <td>${fmtNum(uniPesos)}</td>
     </tr>`;
 
     container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">

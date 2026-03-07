@@ -1980,9 +1980,9 @@ function renderModules(){
           <div class="module-stat"><span class="lbl">Ganancia U$D</span><span class="val ${totalUSD>=0?'positive':'negative'}">${fmtUSD(totalUSD)}</span></div>
           <div class="module-stat"><span class="lbl">Ganancia $</span><span class="val ${totalPesos>=0?'positive':'negative'}">${fmtPesos(totalPesos)}</span></div>
           <div class="module-stat"><span class="lbl">Inversión U$D</span><span class="val ${invUSD>=0?'positive':'negative'}">${fmtUSD(invUSD)}</span></div>
-          ${invPesos?`<div class="module-stat"><span class="lbl">Inversión $</span><span class="val ${invPesos>=0?'positive':'negative'}">${fmtPesos(invPesos)}</span></div>`:''}
+          <div class="module-stat"><span class="lbl">Inversión $</span><span class="val ${invPesos>=0?'positive':'negative'}">${fmtPesos(invPesos)}</span></div>
           <div class="module-stat"><span class="lbl">Resta Cobrar U$D</span><span class="val">${fmtUSD(restaUSD)}</span></div>
-          ${restaPesos?`<div class="module-stat"><span class="lbl">Resta Cobrar $</span><span class="val">${fmtPesos(restaPesos)}</span></div>`:''}
+          <div class="module-stat"><span class="lbl">Resta Cobrar $</span><span class="val">${fmtPesos(restaPesos)}</span></div>
           <div class="module-stat"><span class="lbl">Caja Actual U$D</span><span class="val ${caja>=0?'positive':'negative'}">${fmtUSD(caja)}</span></div>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${cuotasPct.toFixed(0)}%"></div></div>

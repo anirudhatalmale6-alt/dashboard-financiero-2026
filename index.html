@@ -720,8 +720,9 @@ function enrichModulesWithPesos(raw){
   allData.modulos.forEach(r=>{
     const cfg=modMap[r.Modulo];
     if(cfg){
-      r.Inversion_Pesos=cellVal(raw,cfg.invP[0],cfg.invP[1]);
-      r.Resta_Cobrar_Pesos=cellVal(raw,cfg.resP[0],cfg.resP[1]);
+      // Only override if LS_Modulos_Negocio didn't provide a value
+      if(!r.Inversion_Pesos)r.Inversion_Pesos=cellVal(raw,cfg.invP[0],cfg.invP[1]);
+      if(!r.Resta_Cobrar_Pesos)r.Resta_Cobrar_Pesos=cellVal(raw,cfg.resP[0],cfg.resP[1]);
     }
   });
 }

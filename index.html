@@ -280,6 +280,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .inv-sum-card .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text3);margin-top:2px}
 /* waterfall chart uses chart-card full styling */
 
+/* Estado de Cuentas y Comisiones */
+.ec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:16px}
+.ec-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;transition:.3s}
+.ec-card:hover{border-color:var(--orange);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.ec-card-header{display:flex;align-items:center;gap:10px;padding:16px 20px;background:linear-gradient(135deg,var(--surface2),var(--surface3));border-bottom:1px solid var(--border)}
+.ec-card-header .ec-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--bg)}
+.ec-card-header h4{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text)}
+.ec-card-body{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.ec-section{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ec-section-header{padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.ec-section-header.usd{background:linear-gradient(135deg,rgba(212,168,83,.15),rgba(212,168,83,.05));color:var(--gold);border-bottom:1px solid rgba(212,168,83,.2)}
+.ec-section-header.pesos{background:linear-gradient(135deg,rgba(96,165,250,.15),rgba(96,165,250,.05));color:var(--blue);border-bottom:1px solid rgba(96,165,250,.2)}
+.ec-section-header.com-usd{background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(167,139,250,.05));color:var(--purple);border-bottom:1px solid rgba(167,139,250,.2)}
+.ec-section-header.com-pesos{background:linear-gradient(135deg,rgba(251,146,60,.15),rgba(251,146,60,.05));color:var(--orange);border-bottom:1px solid rgba(251,146,60,.2)}
+.ec-items{padding:8px 14px}
+.ec-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.03)}
+.ec-item:last-child{border-bottom:none}
+.ec-item .lbl{color:var(--text2);font-weight:400;flex:1}
+.ec-item .val{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right}
+.ec-item .val.gold{color:var(--gold)}
+.ec-item .val.blue{color:var(--blue)}
+.ec-item .val.purple{color:var(--purple)}
+.ec-item .val.orange{color:var(--orange)}
+.ec-item.total{padding-top:8px;margin-top:4px;border-top:1px solid var(--border);border-bottom:none;font-weight:700}
+.ec-item.total .lbl{color:var(--text);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.ec-item.total .val{font-size:14px}
+.ec-empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+@media(max-width:1200px){.ec-grid{grid-template-columns:1fr}}
+
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
@@ -421,6 +450,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
+    <a onclick="document.getElementById('secEstadoCuentas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--orange)"></span>Estado de Cuentas</a>
   </nav>
 
   <div class="sidebar-stats" id="sidebarStats"></div>
@@ -562,6 +592,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
+  <div class="section-divider" id="secEstadoCuentas">
+    <h2>Estado de Cuentas y <em>Comisiones Vendedores</em></h2>
+    <div class="divider-sub">Saldos, comisiones y estado de cada vendedor/módulo</div>
+  </div>
+  <div id="estadoCuentasContainer" class="ec-grid"></div>
+
 </main>
 </div>
 
@@ -572,6 +608,19 @@ let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
 let dashRaw=null;
 let invRaw=null;
 let trackRaw=null;
+let vendorSheetData={};
+const VENDOR_SHEETS=[
+  {name:'Osito S.r.l.',sheet:'OSITO',color:'#d4a853'},
+  {name:'Patito S.A.',sheet:'PATITO',color:'#60a5fa'},
+  {name:'Gonza',sheet:'GONZA',color:'#34d399'},
+  {name:'Mely',sheet:'MELY',color:'#f87171'},
+  {name:'Tobias',sheet:'TOBIAS',color:'#a78bfa'},
+  {name:'Tecno',sheet:'TECNO',color:'#fb923c'},
+  {name:'Inversiones',sheet:'INVERSIONES',color:'#22d3ee'},
+  {name:'Creditos',sheet:'CREDITOS',color:'#f472b6'},
+  {name:'Tino',sheet:'TINO',color:'#2dd4bf'},
+  {name:'Linea 314',sheet:'LINEA 314',color:'#e879f9'}
+];
 let charts={};
 let currency='usd';
 let filterMes='all';
@@ -694,6 +743,17 @@ async function loadAllData(){
     enrichModulesWithPesos(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
+    // Fetch vendor sheets for Estado de Cuentas (rows B51:C89)
+    vendorSheetData={};
+    const vendorPromises=VENDOR_SHEETS.map(async vs=>{
+      try{
+        const raw=await fetchRawSheet(vs.sheet);
+        vendorSheetData[vs.sheet]=raw;
+      }catch(e){
+        console.warn('No se pudo cargar solapa:',vs.sheet,e);
+      }
+    });
+    await Promise.all(vendorPromises);
     populateFilters();
     renderAll();
   }catch(e){
@@ -1447,6 +1507,118 @@ function renderDetalleIngresos(){
   });
 }
 
+function parseEstadoCuentas(raw){
+  // Parse rows 50-89 (0-indexed: 49-88), columns B(1) and C(2)
+  if(!raw||raw.length<89)return null;
+  const sections=[];
+  let currentSection=null;
+  for(let i=49;i<89;i++){
+    const row=raw[i];
+    if(!row)continue;
+    const b=row[1]?String(row[1]).trim():'';
+    const c=row[2];
+    if(!b)continue;
+    const bUp=b.toUpperCase();
+    // Detect section headers
+    if(bUp==='DOLARES'||bUp==='DÓLARES'){
+      currentSection={type:'usd',title:'Dólares',items:[]};
+      sections.push(currentSection);
+      continue;
+    }
+    if(bUp==='PESOS'){
+      currentSection={type:'pesos',title:'Pesos',items:[]};
+      sections.push(currentSection);
+      continue;
+    }
+    if(bUp.includes('COMISIONES')&&bUp.includes('DOLAR')){
+      currentSection={type:'com-usd',title:'Comisiones Dólares',items:[]};
+      sections.push(currentSection);
+      continue;
+    }
+    if(bUp.includes('COMISIONES')&&bUp.includes('PESO')){
+      currentSection={type:'com-pesos',title:'Comisiones Pesos',items:[]};
+      sections.push(currentSection);
+      continue;
+    }
+    // Skip sub-headers like "RESTA COBRAR DE CUOTAS" that are blue headers without values
+    if(c===null||c===undefined||c===''){
+      // Could be a sub-header row, skip
+      continue;
+    }
+    // Parse value
+    let val=0;
+    if(typeof c==='number')val=c;
+    else if(typeof c==='string'){
+      const neg=c.includes('-')?-1:1;
+      const clean=c.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+      const n=parseFloat(clean);
+      val=isNaN(n)?0:n*neg;
+    }
+    if(currentSection&&val!==0){
+      currentSection.items.push({label:b,value:val});
+    }
+  }
+  return sections.length>0?sections:null;
+}
+
+function renderEstadoCuentas(){
+  const container=document.getElementById('estadoCuentasContainer');
+  if(!container)return;
+  container.innerHTML='';
+  const isFiltered=filterVendedor!=='all';
+  const sheetsToRender=isFiltered?VENDOR_SHEETS.filter(vs=>vs.name===filterVendedor):VENDOR_SHEETS;
+
+  let hasAny=false;
+  sheetsToRender.forEach(vs=>{
+    const raw=vendorSheetData[vs.sheet];
+    if(!raw)return;
+    const sections=parseEstadoCuentas(raw);
+    if(!sections)return;
+    hasAny=true;
+
+    let sectionsHTML='';
+    sections.forEach(sec=>{
+      if(sec.items.length===0)return;
+      const colorClass=sec.type;
+      const valColor=sec.type==='usd'||sec.type==='com-usd'?'gold':'blue';
+      const prefix=sec.type==='usd'||sec.type==='com-usd'?'U$D ':'$ ';
+      let itemsHTML='';
+      let total=0;
+      sec.items.forEach(item=>{
+        total+=item.value;
+        itemsHTML+=`<div class="ec-item"><span class="lbl">${item.label}</span><span class="val ${valColor}">${prefix}${Math.round(item.value).toLocaleString('es-AR')}</span></div>`;
+      });
+      if(sec.items.length>1){
+        itemsHTML+=`<div class="ec-item total"><span class="lbl">Total</span><span class="val ${valColor}">${prefix}${Math.round(total).toLocaleString('es-AR')}</span></div>`;
+      }
+      sectionsHTML+=`<div class="ec-section">
+        <div class="ec-section-header ${colorClass}">
+          <span>${sec.type==='usd'?'💵':sec.type==='pesos'?'💰':sec.type==='com-usd'?'📊':'📈'}</span>
+          ${sec.title}
+        </div>
+        <div class="ec-items">${itemsHTML}</div>
+      </div>`;
+    });
+
+    container.innerHTML+=`<div class="ec-card">
+      <div class="ec-card-header">
+        <div class="ec-icon" style="background:${vs.color}">${vs.name.charAt(0)}</div>
+        <h4>${vs.name}</h4>
+      </div>
+      <div class="ec-card-body">${sectionsHTML}</div>
+    </div>`;
+  });
+
+  if(!hasAny){
+    container.innerHTML='<div class="ec-empty">No se encontraron datos de estado de cuentas en las solapas de vendedores.</div>';
+  }
+
+  // Show/hide section based on filter
+  const secTitle=document.getElementById('secEstadoCuentas');
+  if(secTitle)secTitle.style.display='';
+  container.style.display='';
+}
+
 function renderAll(){
   const isFiltered=filterVendedor!=='all';
   renderKPIs();
@@ -1480,6 +1652,7 @@ function renderAll(){
   renderChartVendedores2();
   renderChartAcumVend();
   renderVendedorDetail();
+  renderEstadoCuentas();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }

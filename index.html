@@ -762,6 +762,41 @@ function enrichVendedorFromRaw(raw){
   });
 }
 
+function enrichModulosFromRaw(raw){
+  // Fix modulos Ganancia data where LS_Modulos_Negocio returns 0 due to string-formatted cells
+  // Same dashRaw rows 17-28 (USD) and 32-43 (Pesos), same vendor columns
+  const modCols=[
+    {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
+    {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
+    {name:'Mely',col:10},{name:'Tino',col:11},{name:'Tobias',col:12},
+    {name:'Linea 314',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
+  ];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function parseVal(v){
+    if(typeof v==='number')return v;
+    if(typeof v==='string'){
+      const neg=v.includes('-')?-1:1;
+      const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+      const n=parseFloat(clean);
+      return isNaN(n)?0:n*neg;
+    }
+    return 0;
+  }
+  meses.forEach((mes,mi)=>{
+    const usdRow=raw[17+mi];
+    const pesosRow=raw[32+mi];
+    modCols.forEach(mc=>{
+      const usd=parseVal(usdRow?usdRow[mc.col]:0);
+      const pesos=parseVal(pesosRow?pesosRow[mc.col]:0);
+      const entry=allData.modulos.find(r=>r.Modulo===mc.name&&r.Mes===mes);
+      if(entry){
+        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
+        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
+      }
+    });
+  });
+}
+
 function enrichModulesWithPesos(raw){
   // gviz row/col mapping (1-indexed) - found by scanning raw data for markers
   // gviz rows differ from Excel rows due to hidden/merged rows
@@ -803,6 +838,7 @@ async function loadAllData(){
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
+    enrichModulosFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     // Estado de Cuentas reads from dashRaw directly — no extra sheet needed

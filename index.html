@@ -723,13 +723,14 @@ function addNewModulesFromRaw(raw){
 }
 
 function enrichVendedorFromRaw(raw){
-  // Fix vendedor data where LS_Ganancias_Vendedor returns 0 due to string-formatted cells in DASHBOARD
+  // Always override vendedor data from raw DASHBOARD (source of truth)
   // USD data: gviz rows 17-28 (0-indexed), Pesos data: rows 32-43
+  // Col order: Tecno(4),Inversiones(5),Creditos(6),Osito(7),Patito(8),Gonza(9),Mely(10),Linea314(11),Tobias(12),Tino(13)
   const vendCols=[
     {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
     {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Tino',col:11},{name:'Tobias',col:12},
-    {name:'Linea 314',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
+    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
+    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
   ];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function parseVal(v){
@@ -748,14 +749,12 @@ function enrichVendedorFromRaw(raw){
       const pesosRow=raw[32+mi];
       const usd=parseVal(usdRow?usdRow[vc.col]:0);
       const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
-      // Find existing vendedor entry
       const entry=allData.vendedor.find(r=>r.Vendedor===vc.name&&r.Mes===mes);
       if(entry){
-        // Override if LS returned 0 but raw has data
-        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
-        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
+        // Always override from raw DASHBOARD (LS formulas may reference wrong cells)
+        entry.Ganancia_USD=usd;
+        entry.Ganancia_Pesos=pesos;
       }else if(usd||pesos){
-        // Add missing entry
         allData.vendedor.push({Vendedor:vc.name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
       }
     });
@@ -763,13 +762,13 @@ function enrichVendedorFromRaw(raw){
 }
 
 function enrichModulosFromRaw(raw){
-  // Fix modulos Ganancia data where LS_Modulos_Negocio returns 0 due to string-formatted cells
-  // Same dashRaw rows 17-28 (USD) and 32-43 (Pesos), same vendor columns
+  // Always override modulos Ganancia from raw DASHBOARD (source of truth)
+  // Col order: Tecno(4),Inversiones(5),Creditos(6),Osito(7),Patito(8),Gonza(9),Mely(10),Linea314(11),Tobias(12),Tino(13)
   const modCols=[
     {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
     {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Tino',col:11},{name:'Tobias',col:12},
-    {name:'Linea 314',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
+    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
+    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
   ];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function parseVal(v){
@@ -790,8 +789,8 @@ function enrichModulosFromRaw(raw){
       const pesos=parseVal(pesosRow?pesosRow[mc.col]:0);
       const entry=allData.modulos.find(r=>r.Modulo===mc.name&&r.Mes===mes);
       if(entry){
-        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
-        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
+        entry.Ganancia_USD=usd;
+        entry.Ganancia_Pesos=pesos;
       }
     });
   });
@@ -1533,8 +1532,8 @@ function renderDetalleIngresos(){
   const vendCols=[
     {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
     {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Tino',col:11},{name:'Tobias',col:12},
-    {name:'Linea 314',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
+    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
+    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
   ];
 
   meses.forEach((mes,mi)=>{

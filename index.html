@@ -326,7 +326,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .print-btn svg{width:16px;height:16px;fill:currentColor}
 
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.vd-cards{grid-template-columns:repeat(3,1fr)!important}.ingresos-monthly-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+/* Mobile filter bar */
+.mobile-bar{display:none;position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;gap:8px;align-items:center}
+.mobile-bar .filter-select{padding:8px 10px;font-size:12px;flex:1;min-width:0}
+.mobile-bar .mob-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--gold);white-space:nowrap}
+.mobile-bar .currency-toggle{margin:0;flex-shrink:0}
+.cur-btn{padding:6px 12px;font-family:inherit;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--text3);cursor:pointer;transition:.2s;border-radius:6px}
+.cur-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:16px}.mobile-bar{display:flex;flex-wrap:wrap}.header h2{font-size:22px}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpis{grid-template-columns:1fr}.mobile-bar .filter-select{flex-basis:45%}}
 
 /* Print Styles */
 @media print{
@@ -458,6 +466,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar Datos</button>
 </aside>
 
+<div class="mobile-bar">
+  <span class="mob-title">Admin 2026</span>
+  <div class="currency-toggle" style="margin:0">
+    <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">U$D</button>
+    <button class="cur-btn" data-cur="pesos" onclick="setCurrency('pesos')">$</button>
+  </div>
+  <select class="filter-select" onchange="document.getElementById('filterMes').value=this.value;applyFilters()" id="mobileFilterMes">
+    <option value="all">Todos los meses</option>
+  </select>
+  <select class="filter-select" onchange="document.getElementById('filterVendedor').value=this.value;applyFilters()" id="mobileFilterVend">
+    <option value="all">Todos</option>
+  </select>
+</div>
 <main class="main">
   <div class="header">
     <div>
@@ -751,9 +772,9 @@ function enrichVendedorFromRaw(raw){
       const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
       const entry=allData.vendedor.find(r=>r.Vendedor===vc.name&&r.Mes===mes);
       if(entry){
-        // Always override from raw DASHBOARD (LS formulas may reference wrong cells)
-        entry.Ganancia_USD=usd;
-        entry.Ganancia_Pesos=pesos;
+        // Only override when LS returned 0 (handles string-formatted DASHBOARD cells)
+        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
+        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
       }else if(usd||pesos){
         allData.vendedor.push({Vendedor:vc.name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
       }
@@ -789,8 +810,8 @@ function enrichModulosFromRaw(raw){
       const pesos=parseVal(pesosRow?pesosRow[mc.col]:0);
       const entry=allData.modulos.find(r=>r.Modulo===mc.name&&r.Mes===mes);
       if(entry){
-        entry.Ganancia_USD=usd;
-        entry.Ganancia_Pesos=pesos;
+        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
+        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
       }
     });
   });
@@ -852,13 +873,23 @@ async function loadAllData(){
 function populateFilters(){
   const meses=[...new Set(allData.resumen.map(r=>r.Mes))];
   const sel=document.getElementById('filterMes');
+  const mSel=document.getElementById('mobileFilterMes');
   sel.innerHTML='<option value="all">Todos los meses</option>';
-  meses.forEach(m=>{sel.innerHTML+=`<option value="${m}">${m}</option>`;});
+  if(mSel)mSel.innerHTML='<option value="all">Todos los meses</option>';
+  meses.forEach(m=>{
+    sel.innerHTML+=`<option value="${m}">${m}</option>`;
+    if(mSel)mSel.innerHTML+=`<option value="${m}">${m}</option>`;
+  });
 
   const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
   const sel2=document.getElementById('filterVendedor');
+  const mSel2=document.getElementById('mobileFilterVend');
   sel2.innerHTML='<option value="all">Todos</option>';
-  vends.forEach(v=>{sel2.innerHTML+=`<option value="${v}">${v}</option>`;});
+  if(mSel2)mSel2.innerHTML='<option value="all">Todos</option>';
+  vends.forEach(v=>{
+    sel2.innerHTML+=`<option value="${v}">${v}</option>`;
+    if(mSel2)mSel2.innerHTML+=`<option value="${v}">${v}</option>`;
+  });
 }
 
 function fmt(n,prefix='$'){
@@ -2406,22 +2437,40 @@ function printPrincipal(){
   },300);
 }
 
+// Sync sidebar ↔ mobile filters
+function applyFilters(){
+  filterMes=document.getElementById('filterMes').value;
+  filterVendedor=document.getElementById('filterVendedor').value;
+  const mM=document.getElementById('mobileFilterMes');
+  const mV=document.getElementById('mobileFilterVend');
+  if(mM)mM.value=filterMes;
+  if(mV)mV.value=filterVendedor;
+  renderAll();
+}
+function setCurrency(c){
+  currency=c;
+  document.querySelectorAll('.currency-btn').forEach(b=>b.classList.toggle('active',b.dataset.currency===c));
+  document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.dataset.cur===c));
+  renderAll();
+}
+
 // Event Listeners
 document.getElementById('currencyToggle').addEventListener('click',e=>{
   if(!e.target.classList.contains('currency-btn'))return;
-  document.querySelectorAll('.currency-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  currency=e.target.dataset.currency;
-  renderAll();
+  setCurrency(e.target.dataset.currency);
 });
 
 document.getElementById('filterMes').addEventListener('change',e=>{
   filterMes=e.target.value;
+  const mM=document.getElementById('mobileFilterMes');
+  if(mM)mM.value=filterMes;
   renderAll();
 });
 
 document.getElementById('filterVendedor').addEventListener('change',e=>{
   filterVendedor=e.target.value;
+  const mV=document.getElementById('mobileFilterVend');
+  if(mV)mV.value=filterVendedor;
   renderAll();
 });
 

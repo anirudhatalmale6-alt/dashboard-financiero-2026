@@ -415,6 +415,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="glow"></div>
 <div class="glow2"></div>
 
+<div class="mobile-bar">
+  <span class="mob-title">Admin 2026</span>
+  <div class="currency-toggle" style="margin:0">
+    <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">U$D</button>
+    <button class="cur-btn" data-cur="pesos" onclick="setCurrency('pesos')">$</button>
+  </div>
+  <select class="filter-select" onchange="document.getElementById('filterMes').value=this.value;applyFilters()" id="mobileFilterMes">
+    <option value="all">Todos los meses</option>
+  </select>
+  <select class="filter-select" onchange="document.getElementById('filterVendedor').value=this.value;applyFilters()" id="mobileFilterVend">
+    <option value="all">Todos</option>
+  </select>
+</div>
 <div class="app">
 <aside class="sidebar">
   <div class="logo">
@@ -466,19 +479,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar Datos</button>
 </aside>
 
-<div class="mobile-bar">
-  <span class="mob-title">Admin 2026</span>
-  <div class="currency-toggle" style="margin:0">
-    <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">U$D</button>
-    <button class="cur-btn" data-cur="pesos" onclick="setCurrency('pesos')">$</button>
-  </div>
-  <select class="filter-select" onchange="document.getElementById('filterMes').value=this.value;applyFilters()" id="mobileFilterMes">
-    <option value="all">Todos los meses</option>
-  </select>
-  <select class="filter-select" onchange="document.getElementById('filterVendedor').value=this.value;applyFilters()" id="mobileFilterVend">
-    <option value="all">Todos</option>
-  </select>
-</div>
 <main class="main">
   <div class="header">
     <div>

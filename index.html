@@ -1731,9 +1731,11 @@ function renderEstadoCuentas(){
     let sectionsHTML='';
 
     const sheetRows=ecSheetData[vName];
-    if(sheetRows&&sheetRows.length>0){
+    const parsed=sheetRows&&sheetRows.length>2?parseVendorSheetData(sheetRows):null;
+    const hasSheetData=parsed&&(Object.keys(parsed.usd).length>0||Object.keys(parsed.pesos).length>0);
+    if(hasSheetData){
       // Use vendor sheet data
-      const d=parseVendorSheetData(sheetRows);
+      const d=parsed;
       // USD section
       const usdItems=[];
       if(d.usd.restaCuotas!==undefined)usdItems.push({lbl:'Resta Cobrar Cuotas',val:d.usd.restaCuotas});

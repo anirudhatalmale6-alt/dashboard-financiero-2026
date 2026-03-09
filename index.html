@@ -902,6 +902,30 @@ function enrichResumenFromRaw(raw){
   });
 }
 
+// Enrich allData.modulos balance fields (Inversión, Resta Cobrar, Caja) from DASHBOARD EC section
+// The LS_Modulos_Negocio values don't match the DASHBOARD summary
+function enrichModuloBalancesFromRaw(raw){
+  if(!raw||raw.length<115)return;
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  EC_GROUPS.forEach(g=>{
+    g.vendors.forEach(v=>{
+      const invUSD=pv(raw[g.invR]?raw[g.invR][v.uc]:0);
+      const invPesos=pv(raw[g.invR]?raw[g.invR][v.pc]:0);
+      const restaUSD=pv(raw[g.restaR]?raw[g.restaR][v.uc]:0);
+      const restaPesos=pv(raw[g.restaR]?raw[g.restaR][v.pc]:0);
+      const cajaUSD=pv(raw[g.cajaR]?raw[g.cajaR][v.uc]:0);
+      // Override ALL month rows for this module
+      allData.modulos.filter(r=>r.Modulo===v.name).forEach(r=>{
+        if(invUSD)r.Inversion_USD=invUSD;
+        if(invPesos)r.Inversion_Pesos=invPesos;
+        r.Resta_Cobrar_USD=restaUSD;
+        if(restaPesos)r.Resta_Cobrar_Pesos=restaPesos;
+        r.Caja_Actual_USD=cajaUSD;
+      });
+    });
+  });
+}
+
 async function loadAllData(){
   try{
     const[r,v,m,p,dRaw,iRaw]=await Promise.all([
@@ -919,6 +943,7 @@ async function loadAllData(){
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
     enrichModulosFromRaw(dRaw);
+    enrichModuloBalancesFromRaw(dRaw);
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}

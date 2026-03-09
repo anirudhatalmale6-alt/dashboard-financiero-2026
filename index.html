@@ -107,7 +107,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .chart-card.full{grid-column:1/-1}
 .chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .chart-title .dot{width:8px;height:8px;border-radius:50%}
-.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:18px}
+.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:8px}
+.chart-mode-toggle{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.cm-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.cm-btn:hover{border-color:var(--gold-dim)}
+.cm-btn.active{background:rgba(212,168,83,.15);border-color:var(--gold);color:var(--gold)}
 .chart-container{position:relative;height:300px}
 .chart-container.short{height:250px}
 .chart-container.tall{height:380px}
@@ -512,6 +516,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
       <div class="chart-subtitle">Ingresos vs Gastos Fijos (DASHBOARD) — 2026</div>
+      <div class="chart-mode-toggle" id="chartModeToggle">
+        <button class="cm-btn active" data-mode="solo" onclick="setChartMode('solo')">Solo</button>
+        <button class="cm-btn" data-mode="uni_usd" onclick="setChartMode('uni_usd')">Unificado U$D</button>
+        <button class="cm-btn" data-mode="uni_pesos" onclick="setChartMode('uni_pesos')">Unificado $</button>
+      </div>
       <div class="chart-container" style="height:280px"><canvas id="chartIngresos"></canvas></div>
     </div>
     <div class="chart-card">
@@ -676,6 +685,7 @@ const VENDOR_COLORS={
 };
 let charts={};
 let currency='usd';
+let chartIngresosMode='solo'; // 'solo' = use sidebar currency, 'uni_usd' = unified USD, 'uni_pesos' = unified Pesos
 let filterMes='all';
 let filterVendedor='all';
 
@@ -862,6 +872,36 @@ function enrichModulesWithPesos(raw){
   });
 }
 
+// Enrich allData.resumen with correct totals from DASHBOARD summary block (rows 2-13)
+// LS_Resumen_Mensual misses vendors whose cells have string-formatted values
+function enrichResumenFromRaw(raw){
+  if(!raw||raw.length<14)return;
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  meses.forEach((mes,mi)=>{
+    const row=raw[2+mi];
+    if(!row)return;
+    const ingUSD=pv(row[4]);     // Total income USD
+    const ingPesos=pv(row[5]);   // Total income Pesos
+    const cotiz=pv(row[6]);      // Cotización Dólar
+    const uniPesos=pv(row[7]);   // Total Unificado Pesos
+    const uniUSD=pv(row[8]);     // Total Unificado USD
+    const gastos=pv(row[9]);     // Gastos Fijos USD (negative)
+    const entry=allData.resumen.find(r=>r.Mes===mes);
+    if(entry){
+      if(ingUSD)entry.Ingresos_USD=ingUSD;
+      if(ingPesos)entry.Ingresos_Pesos=ingPesos;
+      if(cotiz)entry.Cotizacion_Dolar=cotiz;
+      if(uniPesos)entry.Total_Unificado_Pesos=uniPesos;
+      if(uniUSD)entry.Total_Unificado_USD=uniUSD;
+      if(gastos)entry.Gastos_Fijos_USD=gastos;
+      // Recalculate finals from unified + gastos
+      entry.Total_Final_USD=(entry.Total_Unificado_USD||0)+(entry.Gastos_Fijos_USD||0);
+      entry.Total_Final_Pesos=(entry.Total_Unificado_Pesos||0)+((entry.Gastos_Fijos_USD||0)*(entry.Cotizacion_Dolar||1));
+    }
+  });
+}
+
 async function loadAllData(){
   try{
     const[r,v,m,p,dRaw,iRaw]=await Promise.all([
@@ -879,6 +919,7 @@ async function loadAllData(){
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
     enrichModulosFromRaw(dRaw);
+    enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     // Fetch Estado de Cuentas from vendor sheets (non-blocking)
@@ -1973,35 +2014,62 @@ function renderKPIs(){
 
 function renderChartIngresos(){
   const isUSD=currency==='usd';
+  const mode=chartIngresosMode; // 'solo','uni_usd','uni_pesos'
+  // Determine effective currency for this chart
+  const showPesos=(mode==='uni_pesos')||(mode==='solo'&&!isUSD);
+  const pre=showPesos?'$ ':'U$D ';
+  // Bar colors: gold for USD, celeste for Pesos
+  const barBg=showPesos?'rgba(56,189,248,.7)':'rgba(212,168,83,.7)';
+  const barBorder=showPesos?'#38bdf8':'#d4a853';
+
   if(charts.ingresos)charts.ingresos.destroy();
-  const pre=isUSD?'U$D ':'$ ';
   const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   if(filterVendedor!=='all'){
-    // Per-vendedor view: show their ganancia by month
     const vd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     let meses=filterMes!=='all'?[filterMes]:allMeses;
-    const data=meses.map(m=>{const row=vd.find(r=>r.Mes===m);return row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;});
+    const data=meses.map(m=>{const row=vd.find(r=>r.Mes===m);if(!row)return 0;
+      if(mode==='uni_usd'){const cotiz=allData.resumen.find(rr=>rr.Mes===m);const c=cotiz?cotiz.Cotizacion_Dolar||1:1;return(row.Ganancia_USD||0)+((row.Ganancia_Pesos||0)/c);}
+      if(mode==='uni_pesos'){const cotiz=allData.resumen.find(rr=>rr.Mes===m);const c=cotiz?cotiz.Cotizacion_Dolar||1:1;return(row.Ganancia_Pesos||0)+((row.Ganancia_USD||0)*c);}
+      return isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0);
+    });
     charts.ingresos=new Chart(document.getElementById('chartIngresos'),{
       type:'bar',
       data:{labels:meses,datasets:[
-        {label:filterVendedor+' '+(isUSD?'U$D':'$'),data,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5}
+        {label:filterVendedor+' '+pre.trim(),data,backgroundColor:barBg,borderColor:barBorder,borderWidth:1,borderRadius:6,barPercentage:.5}
       ]},
       plugins:[ChartDataLabels],
       options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){if(v===0)return '';return v>=1000?fmt(v,pre):pre+Math.round(v);}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11}},grid:{color:'rgba(42,43,58,.5)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:11},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}
     });
   } else {
-    // Aggregate view: ingresos vs gastos vs balance
     let d=allData.resumen;
     if(filterMes!=='all')d=d.filter(r=>r.Mes===filterMes);
+    // Determine income data based on mode
+    const ingData=d.map(r=>{
+      if(mode==='uni_usd')return r.Total_Unificado_USD||0;
+      if(mode==='uni_pesos')return r.Total_Unificado_Pesos||0;
+      return isUSD?(r.Ingresos_USD||0):(r.Ingresos_Pesos||0);
+    });
+    const gasData=d.map(r=>{
+      if(showPesos){const c=r.Cotizacion_Dolar||1;return Math.abs((r.Gastos_Fijos_USD||0)*c);}
+      return Math.abs(r.Gastos_Fijos_USD||0);
+    });
+    const balData=d.map(r=>{
+      if(mode==='uni_usd')return r.Total_Final_USD||0;
+      if(mode==='uni_pesos')return r.Total_Final_Pesos||0;
+      return isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0);
+    });
+    const ingLabel=mode==='uni_usd'?'Ingresos Unif. U$D':mode==='uni_pesos'?'Ingresos Unif. $':isUSD?'Ingresos U$D':'Ingresos $';
+    const gasLabel=showPesos?'Gastos Fijos $':'Gastos Fijos U$D';
+    const balLabel=showPesos?'Balance Final $':'Balance Final U$D';
     charts.ingresos=new Chart(document.getElementById('chartIngresos'),{
       type:'bar',
       data:{
         labels:d.map(r=>r.Mes),
         datasets:[
-          {label:isUSD?'Ingresos U$D':'Ingresos $',data:d.map(r=>isUSD?r.Ingresos_USD:r.Ingresos_Pesos),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
-          {label:isUSD?'Gastos Fijos U$D':'Gastos Fijos U$D',data:d.map(r=>Math.abs(r.Gastos_Fijos_USD||0)),backgroundColor:'rgba(248,113,113,.5)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5},
-          {label:isUSD?'Balance Final U$D':'Balance Final $',data:d.map(r=>isUSD?r.Total_Final_USD:r.Total_Final_Pesos),type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
+          {label:ingLabel,data:ingData,backgroundColor:barBg,borderColor:barBorder,borderWidth:1,borderRadius:6,barPercentage:.5},
+          {label:gasLabel,data:gasData,backgroundColor:'rgba(248,113,113,.5)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5},
+          {label:balLabel,data:balData,type:'line',borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',pointBackgroundColor:'#60a5fa',pointRadius:4,tension:.4,fill:true}
         ]
       },
       plugins:[ChartDataLabels],
@@ -2012,15 +2080,21 @@ function renderChartIngresos(){
 
 function renderChartBalance(){
   const isUSD=currency==='usd';
+  const mode=chartIngresosMode;
+  const showPesos=(mode==='uni_pesos')||(mode==='solo'&&!isUSD);
+  const pre=showPesos?'$ ':'U$D ';
   if(charts.balance)charts.balance.destroy();
-  const pre=isUSD?'U$D ':'$ ';
   const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   if(filterVendedor!=='all'){
-    // Per-vendedor cumulative view
     const vd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     let cum=0;
-    const cumData=allMeses.map(m=>{const row=vd.find(r=>r.Mes===m);cum+=row?(isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0)):0;return cum;});
+    const cumData=allMeses.map(m=>{const row=vd.find(r=>r.Mes===m);if(!row){return cum;}
+      if(mode==='uni_usd'){const cotiz=allData.resumen.find(rr=>rr.Mes===m);const c=cotiz?cotiz.Cotizacion_Dolar||1:1;cum+=(row.Ganancia_USD||0)+((row.Ganancia_Pesos||0)/c);}
+      else if(mode==='uni_pesos'){const cotiz=allData.resumen.find(rr=>rr.Mes===m);const c=cotiz?cotiz.Cotizacion_Dolar||1:1;cum+=(row.Ganancia_Pesos||0)+((row.Ganancia_USD||0)*c);}
+      else{cum+=isUSD?(row.Ganancia_USD||0):(row.Ganancia_Pesos||0);}
+      return cum;
+    });
     let labels=allMeses, data=cumData;
     if(filterMes!=='all'){
       const idx=allMeses.indexOf(filterMes);
@@ -2029,30 +2103,46 @@ function renderChartBalance(){
     charts.balance=new Chart(document.getElementById('chartBalance'),{
       type:'line',
       data:{labels,datasets:[
-        {label:filterVendedor+' Acum. '+(isUSD?'U$D':'$'),data,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',pointBackgroundColor:'#a78bfa',pointRadius:4,tension:.4,borderWidth:2.5,fill:true}
+        {label:filterVendedor+' Acum. '+pre.trim(),data,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',pointBackgroundColor:'#a78bfa',pointRadius:4,tension:.4,borderWidth:2.5,fill:true}
       ]},
       plugins:[ChartDataLabels],
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:2,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:8,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=2000?fmt(v,pre):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{size:10},callback:v=>fmt(v,pre)},grid:{color:'rgba(42,43,58,.3)'}}}}}
     );
   } else {
-    // Aggregate cumulative view
     let d=allData.resumen;
     if(filterMes!=='all'){
       const idx=allMeses.indexOf(filterMes);
       if(idx>=0)d=d.filter(r=>{const mi=allMeses.indexOf(r.Mes);return mi>=0&&mi<=idx;});
     }
     let cumIng=0,cumGas=0,cumBal=0;
-    const cumIngresos=d.map(r=>{cumIng+=isUSD?(r.Ingresos_USD||0):(r.Ingresos_Pesos||0);return cumIng;});
-    const cumGastos=d.map(r=>{cumGas+=Math.abs(r.Gastos_Fijos_USD||0);return cumGas;});
-    const cumBalance=d.map(r=>{cumBal+=isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0);return cumBal;});
+    const cumIngresos=d.map(r=>{
+      if(mode==='uni_usd')cumIng+=(r.Total_Unificado_USD||0);
+      else if(mode==='uni_pesos')cumIng+=(r.Total_Unificado_Pesos||0);
+      else cumIng+=isUSD?(r.Ingresos_USD||0):(r.Ingresos_Pesos||0);
+      return cumIng;
+    });
+    const cumGastos=d.map(r=>{
+      if(showPesos){const c=r.Cotizacion_Dolar||1;cumGas+=Math.abs((r.Gastos_Fijos_USD||0)*c);}
+      else cumGas+=Math.abs(r.Gastos_Fijos_USD||0);
+      return cumGas;
+    });
+    const cumBalance=d.map(r=>{
+      if(mode==='uni_usd')cumBal+=(r.Total_Final_USD||0);
+      else if(mode==='uni_pesos')cumBal+=(r.Total_Final_Pesos||0);
+      else cumBal+=isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0);
+      return cumBal;
+    });
+    const ingLbl=mode==='uni_usd'?'Ingresos Acum. Unif. U$D':mode==='uni_pesos'?'Ingresos Acum. Unif. $':showPesos?'Ingresos Acum. $':'Ingresos Acum. U$D';
+    const gasLbl=showPesos?'Gastos Acum. $':'Gastos Acum. U$D';
+    const balLbl=showPesos?'Balance Acum. $':'Balance Acum. U$D';
     charts.balance=new Chart(document.getElementById('chartBalance'),{
       type:'line',
       data:{
         labels:d.map(r=>r.Mes),
         datasets:[
-          {label:isUSD?'Ingresos Acum. U$D':'Ingresos Acum. $',data:cumIngresos,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.1)',pointBackgroundColor:'#34d399',pointRadius:4,tension:.4,borderWidth:2,fill:true},
-          {label:'Gastos Acum. U$D',data:cumGastos,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',pointBackgroundColor:'#f87171',pointRadius:3,tension:.4,borderWidth:2,fill:true},
-          {label:isUSD?'Balance Acum. U$D':'Balance Acum. $',data:cumBalance,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',pointBackgroundColor:'#a78bfa',pointRadius:4,tension:.4,borderWidth:2.5,fill:true}
+          {label:ingLbl,data:cumIngresos,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.1)',pointBackgroundColor:'#34d399',pointRadius:4,tension:.4,borderWidth:2,fill:true},
+          {label:gasLbl,data:cumGastos,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',pointBackgroundColor:'#f87171',pointRadius:3,tension:.4,borderWidth:2,fill:true},
+          {label:balLbl,data:cumBalance,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',pointBackgroundColor:'#a78bfa',pointRadius:4,tension:.4,borderWidth:2.5,fill:true}
         ]
       },
       plugins:[ChartDataLabels],
@@ -2505,6 +2595,13 @@ function setCurrency(c){
   document.querySelectorAll('.currency-btn').forEach(b=>b.classList.toggle('active',b.dataset.currency===c));
   document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('active',b.dataset.cur===c));
   renderAll();
+}
+
+function setChartMode(mode){
+  chartIngresosMode=mode;
+  document.querySelectorAll('.cm-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  renderChartIngresos();
+  renderChartBalance();
 }
 
 // Event Listeners

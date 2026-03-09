@@ -653,6 +653,18 @@ const EC_GROUPS=[
     {name:'Modulo 1',lc:12,uc:14,pc:15}
   ]}
 ];
+// Estado de Cuentas: vendor sheet ranges (as provided by client)
+const EC_VENDOR_SHEETS=[
+  {name:'Osito S.r.l.',sheet:'OSITO',range:'B51:C62'},
+  {name:'Patito S.A.',sheet:'PATITO',range:'B62:C71'},
+  {name:'Gonza',sheet:'GONZA',range:'B47:C55'},
+  {name:'Mely',sheet:'MELY',range:'E64:F72'},
+  {name:'Tobias',sheet:'TOBIAS',range:'B35:C43'},
+  {name:'Tino',sheet:'TINO',range:'B41:C49'},
+  {name:'Modulo 1',sheet:'MODULO 1',range:'E34:F42'},
+  {name:'Modulo 2',sheet:'MODULO 2',range:'E34:F42'}
+];
+let ecSheetData={};
 // Comisiones row range in DASHBOARD (gviz rows 152-156)
 const EC_COM_START=152,EC_COM_END=156;
 // col2=name, col4=aCobrarUSD, col5=deboUSD, col6=totalUSD, col10=aCobrarPesos, col11=deboPesos
@@ -686,6 +698,14 @@ async function fetchRawSheet(name){
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
+}
+
+async function fetchSheetRange(name,range){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 
 function cellVal(raw,row,col){
@@ -861,7 +881,11 @@ async function loadAllData(){
     enrichModulosFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
-    // Estado de Cuentas reads from dashRaw directly — no extra sheet needed
+    // Fetch Estado de Cuentas from vendor sheets (non-blocking)
+    ecSheetData={};
+    Promise.all(EC_VENDOR_SHEETS.map(v=>
+      fetchSheetRange(v.sheet,v.range).then(rows=>{ecSheetData[v.name]=rows;}).catch(()=>{})
+    )).then(()=>{renderEstadoCuentas();});
     populateFilters();
     renderAll();
   }catch(e){
@@ -1638,89 +1662,116 @@ function ecVal(row,col){
   return 0;
 }
 
+function parseECVal(s){
+  if(typeof s==='number')return s;
+  if(typeof s==='string'){
+    const neg=s.includes('-')?-1:1;
+    const clean=s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+    const n=parseFloat(clean);
+    return isNaN(n)?0:n*neg;
+  }
+  return 0;
+}
+
+function parseVendorSheetData(rows){
+  // Parse Estado de Cuentas data from vendor sheet rows
+  // Format: label in col 0, value in col 1, separated into DOLARES and PESOS sections
+  const result={usd:{},pesos:{}};
+  let section='usd';
+  rows.forEach(row=>{
+    const label=(row[0]||'').toString().trim().toUpperCase();
+    const val=row[1]!==null?parseECVal(row[1]):null;
+    if(label==='DOLARES'||label.includes('DOLARES')){section='usd';return;}
+    if(label==='PESOS'||label.includes('PESOS')){
+      if(!label.includes('COMISION'))section='pesos';
+      return;
+    }
+    if(label.includes('COMISION')&&label.includes('DOLAR')){section='com_usd';return;}
+    if(label.includes('COMISION')&&label.includes('PESO')){section='com_pesos';return;}
+    if(val===null)return;
+    // Store by label pattern
+    if(label.includes('RESTA COBRAR DE CUOTAS')||label.includes('RESTA COBRAR CUOTAS'))result[section].restaCuotas=val;
+    else if(label.includes('GANANCIA'))result[section].ganancia=val;
+    else if(label.includes('RESTA COBRAR'))result[section].restaCobrar=val;
+    else if(label.includes('CAJA'))result[section].caja=val;
+    else if(label.includes('A COBRAR'))result[section].aCobrar=val;
+    else if(label.includes('DEBO'))result[section].debo=val;
+    else if(label.includes('NETO')||label.includes('TOTAL'))result[section].neto=val;
+  });
+  return result;
+}
+
 function renderEstadoCuentas(){
   const container=document.getElementById('estadoCuentasContainer');
   if(!container||!dashRaw)return;
   container.innerHTML='';
   const isFiltered=filterVendedor!=='all';
 
-  // Build vendor data from DASHBOARD raw
-  const vendorData={};
+  // Only show the 8 vendors the client specified
+  const ecVendors=EC_VENDOR_SHEETS.map(v=>v.name);
+
+  // Fallback: build vendor data from DASHBOARD raw (EC_GROUPS)
+  const dashFallback={};
   EC_GROUPS.forEach(g=>{
     g.vendors.forEach(v=>{
-      const ganUSD=ecVal(g.totalR,v.uc);
-      const ganPesos=ecVal(g.totalR,v.pc);
-      const invUSD=ecVal(g.invR,v.uc);
-      const invPesos=ecVal(g.invR,v.pc);
-      const restaUSD=ecVal(g.restaR,v.uc);
-      const restaPesos=ecVal(g.restaR,v.pc);
-      const cajaUSD=ecVal(g.cajaR,v.uc);
-      vendorData[v.name]={ganUSD,ganPesos,invUSD,invPesos,restaUSD,restaPesos,cajaUSD};
+      dashFallback[v.name]={
+        ganUSD:ecVal(g.totalR,v.uc),ganPesos:ecVal(g.totalR,v.pc),
+        invUSD:ecVal(g.invR,v.uc),invPesos:ecVal(g.invR,v.pc),
+        restaUSD:ecVal(g.restaR,v.uc),restaPesos:ecVal(g.restaR,v.pc),
+        cajaUSD:ecVal(g.cajaR,v.uc)
+      };
     });
   });
 
-  // Build commission data from DASHBOARD rows 152-156
-  const comData={};
-  for(let i=EC_COM_START;i<=EC_COM_END;i++){
-    if(!dashRaw[i])continue;
-    const name=dashRaw[i][2];
-    if(!name||typeof name!=='string')continue;
-    comData[name.trim()]={
-      aCobrarUSD:ecVal(i,4),deboUSD:ecVal(i,5),totalUSD:ecVal(i,6),
-      aCobrarPesos:ecVal(i,10),deboPesos:ecVal(i,11)
-    };
-  }
-
   let hasAny=false;
-  const allVendors=Object.keys(vendorData);
-  allVendors.forEach(vName=>{
+  ecVendors.forEach(vName=>{
     if(isFiltered&&vName!==filterVendedor)return;
-    const d=vendorData[vName];
-    const c=comData[vName];
     const color=VENDOR_COLORS[vName]||'#d4a853';
     hasAny=true;
-
-    // Build sections
     let sectionsHTML='';
 
-    // DOLARES section
-    const usdItems=[
-      {lbl:'Ganancia',val:d.ganUSD},
-      {lbl:'Inversión',val:d.invUSD},
-      {lbl:'Resta Cobrar',val:d.restaUSD},
-      {lbl:'Caja Actual',val:d.cajaUSD}
-    ];
-    sectionsHTML+=buildECSection('💵','Dólares','usd','gold','U$D ',usdItems);
-
-    // PESOS section
-    const pesosItems=[
-      {lbl:'Ganancia',val:d.ganPesos},
-      {lbl:'Inversión',val:d.invPesos},
-      {lbl:'Resta Cobrar',val:d.restaPesos}
-    ];
-    if(pesosItems.some(x=>x.val!==0)){
-      sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',pesosItems);
-    }
-
-    // COMISIONES DOLARES
-    if(c){
-      const comUSDItems=[
-        {lbl:'A Cobrar',val:c.aCobrarUSD},
-        {lbl:'Debo',val:c.deboUSD},
-        {lbl:'Neto',val:c.totalUSD}
-      ];
-      sectionsHTML+=buildECSection('📊','Comisiones Dólares','com-usd','purple','U$D ',comUSDItems);
-
-      // COMISIONES PESOS
-      if(c.aCobrarPesos!==0||c.deboPesos!==0){
-        const comPesosItems=[
-          {lbl:'A Cobrar',val:c.aCobrarPesos},
-          {lbl:'Debo',val:c.deboPesos},
-          {lbl:'Neto',val:c.aCobrarPesos+c.deboPesos}
-        ];
-        sectionsHTML+=buildECSection('📈','Comisiones Pesos','com-pesos','orange','$ ',comPesosItems);
+    const sheetRows=ecSheetData[vName];
+    if(sheetRows&&sheetRows.length>0){
+      // Use vendor sheet data
+      const d=parseVendorSheetData(sheetRows);
+      // USD section
+      const usdItems=[];
+      if(d.usd.restaCuotas!==undefined)usdItems.push({lbl:'Resta Cobrar Cuotas',val:d.usd.restaCuotas});
+      if(d.usd.ganancia!==undefined)usdItems.push({lbl:'Ganancia',val:d.usd.ganancia});
+      if(d.usd.restaCobrar!==undefined)usdItems.push({lbl:'Resta Cobrar',val:d.usd.restaCobrar});
+      if(d.usd.caja!==undefined)usdItems.push({lbl:'Caja Actual',val:d.usd.caja});
+      if(usdItems.length)sectionsHTML+=buildECSection('💵','Dólares','usd','gold','U$D ',usdItems);
+      // Pesos section
+      const pesosItems=[];
+      if(d.pesos.restaCuotas!==undefined)pesosItems.push({lbl:'Resta Cobrar Cuotas',val:d.pesos.restaCuotas});
+      if(d.pesos.ganancia!==undefined)pesosItems.push({lbl:'Ganancia',val:d.pesos.ganancia});
+      if(d.pesos.restaCobrar!==undefined)pesosItems.push({lbl:'Resta Cobrar',val:d.pesos.restaCobrar});
+      if(pesosItems.length)sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',pesosItems);
+      // Comisiones USD
+      if(d.com_usd&&Object.keys(d.com_usd).length){
+        const ci=[];
+        if(d.com_usd.ganancia!==undefined)ci.push({lbl:'Ganancia',val:d.com_usd.ganancia});
+        if(d.com_usd.aCobrar!==undefined)ci.push({lbl:'A Cobrar',val:d.com_usd.aCobrar});
+        if(ci.length)sectionsHTML+=buildECSection('📊','Comisiones Dólares','com-usd','purple','U$D ',ci);
+      }
+    }else{
+      // Fallback to DASHBOARD data
+      const fb=dashFallback[vName];
+      if(fb){
+        sectionsHTML+=buildECSection('💵','Dólares','usd','gold','U$D ',[
+          {lbl:'Ganancia',val:fb.ganUSD},{lbl:'Inversión',val:fb.invUSD},
+          {lbl:'Resta Cobrar',val:fb.restaUSD},{lbl:'Caja Actual',val:fb.cajaUSD}
+        ]);
+        if(fb.ganPesos||fb.invPesos||fb.restaPesos){
+          sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',[
+            {lbl:'Ganancia',val:fb.ganPesos},{lbl:'Inversión',val:fb.invPesos},
+            {lbl:'Resta Cobrar',val:fb.restaPesos}
+          ]);
+        }
       }
     }
+
+    if(!sectionsHTML)sectionsHTML='<div class="ec-empty" style="padding:12px;font-size:12px;color:var(--text3)">Sin datos disponibles</div>';
 
     container.innerHTML+=`<div class="ec-card">
       <div class="ec-card-header">

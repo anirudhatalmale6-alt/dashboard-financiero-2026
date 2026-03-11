@@ -812,40 +812,7 @@ function enrichVendedorFromRaw(raw){
   });
 }
 
-function enrichModulosFromRaw(raw){
-  // Always override modulos Ganancia from raw DASHBOARD (source of truth)
-  // Col order: Tecno(4),Inversiones(5),Creditos(6),Osito(7),Patito(8),Gonza(9),Mely(10),Linea314(11),Tobias(12),Tino(13)
-  const modCols=[
-    {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
-    {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
-    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
-  ];
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  function parseVal(v){
-    if(typeof v==='number')return v;
-    if(typeof v==='string'){
-      const neg=v.includes('-')?-1:1;
-      const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
-      const n=parseFloat(clean);
-      return isNaN(n)?0:n*neg;
-    }
-    return 0;
-  }
-  meses.forEach((mes,mi)=>{
-    const usdRow=raw[17+mi];
-    const pesosRow=raw[32+mi];
-    modCols.forEach(mc=>{
-      const usd=parseVal(usdRow?usdRow[mc.col]:0);
-      const pesos=parseVal(pesosRow?pesosRow[mc.col]:0);
-      const entry=allData.modulos.find(r=>r.Modulo===mc.name&&r.Mes===mes);
-      if(entry){
-        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
-        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
-      }
-    });
-  });
-}
+// enrichModulosFromRaw removed — rebuildModulosFromDashboard handles all module data
 
 function enrichModulesWithPesos(raw){
   // gviz row/col mapping (1-indexed) - found by scanning raw data for markers
@@ -902,25 +869,44 @@ function enrichResumenFromRaw(raw){
   });
 }
 
-// Enrich allData.modulos balance fields (Inversión, Resta Cobrar, Caja) from DASHBOARD EC section
-// The LS_Modulos_Negocio values don't match the DASHBOARD summary
-function enrichModuloBalancesFromRaw(raw){
+// Rebuild allData.modulos entirely from DASHBOARD "GANANCIA POR MODULO DE VENTAS" table
+// This is the single source of truth (starting at C81 in the client's sheet)
+function rebuildModulosFromDashboard(raw){
   if(!raw||raw.length<115)return;
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   EC_GROUPS.forEach(g=>{
+    // Monthly data starts at totalR - 12 (12 months before Total row)
+    const monthStart=g.totalR-12;
     g.vendors.forEach(v=>{
+      // Read balance data
       const invUSD=pv(raw[g.invR]?raw[g.invR][v.uc]:0);
       const invPesos=pv(raw[g.invR]?raw[g.invR][v.pc]:0);
       const restaUSD=pv(raw[g.restaR]?raw[g.restaR][v.uc]:0);
       const restaPesos=pv(raw[g.restaR]?raw[g.restaR][v.pc]:0);
       const cajaUSD=pv(raw[g.cajaR]?raw[g.cajaR][v.uc]:0);
-      // Override ALL month rows for this module
-      allData.modulos.filter(r=>r.Modulo===v.name).forEach(r=>{
-        if(invUSD)r.Inversion_USD=invUSD;
-        if(invPesos)r.Inversion_Pesos=invPesos;
-        r.Resta_Cobrar_USD=restaUSD;
-        if(restaPesos)r.Resta_Cobrar_Pesos=restaPesos;
-        r.Caja_Actual_USD=cajaUSD;
+      // Override EVERY month row for this module
+      meses.forEach((mes,mi)=>{
+        const ganUSD=pv(raw[monthStart+mi]?raw[monthStart+mi][v.uc]:0);
+        const ganPesos=pv(raw[monthStart+mi]?raw[monthStart+mi][v.pc]:0);
+        const entry=allData.modulos.find(r=>r.Modulo===v.name&&r.Mes===mes);
+        if(entry){
+          entry.Ganancia_USD=ganUSD;
+          entry.Ganancia_Pesos=ganPesos;
+          entry.Inversion_USD=invUSD;
+          entry.Inversion_Pesos=invPesos;
+          entry.Resta_Cobrar_USD=restaUSD;
+          entry.Resta_Cobrar_Pesos=restaPesos;
+          entry.Caja_Actual_USD=cajaUSD;
+        }else{
+          allData.modulos.push({
+            Modulo:v.name,Mes:mes,
+            Ganancia_USD:ganUSD,Ganancia_Pesos:ganPesos,
+            Inversion_USD:invUSD,Inversion_Pesos:invPesos,
+            Resta_Cobrar_USD:restaUSD,Resta_Cobrar_Pesos:restaPesos,
+            Caja_Actual_USD:cajaUSD
+          });
+        }
       });
     });
   });
@@ -942,8 +928,7 @@ async function loadAllData(){
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
-    enrichModulosFromRaw(dRaw);
-    enrichModuloBalancesFromRaw(dRaw);
+    rebuildModulosFromDashboard(dRaw);
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}

@@ -1893,8 +1893,8 @@ function renderIngresosTotales(){
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const mesCorto=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
-  function fU(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+' U$D '+s;}
-  function fP(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+' $'+s;}
+  function fU(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'U$D '+s;}
+  function fP(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'$'+s;}
   function fC(v){if(!v&&v!==0)return'—';return '$'+Math.round(v).toLocaleString('es-AR');}
   // Determine active months (current month or filtered)
   const now=new Date();
@@ -1910,8 +1910,7 @@ function renderIngresosTotales(){
     totUSD+=usd;totPesos+=pesos;totUniP+=uniPesos;totUniU+=uniUSD;totGastos+=gastos;totFP+=finalPesos;totFU+=finalUSD;
     const isActive=mi<=currentMonthIdx+1&&(usd||pesos);
     const activeClass=mi<3?'it-active':'';
-    const dimClass=(!usd&&!pesos&&mi>2)?'style="opacity:.45"':'';
-    tbody+=`<tr class="${activeClass}" ${dimClass}>
+    tbody+=`<tr class="${activeClass}">
       <td>${mes}</td>
       <td class="col-usd">${fU(usd)}</td>
       <td class="col-pesos">${fP(pesos)}</td>

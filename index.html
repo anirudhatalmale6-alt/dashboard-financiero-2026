@@ -2659,11 +2659,14 @@ function printVendedores(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
-  const hideIds=['kpis','acumCards','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secInversiones','invSection'];
+  // Hide ALL non-vendedor sections (principal)
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
+  const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];
   hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
   if(cuotasCharts){hidden.push({el:cuotasCharts,prev:cuotasCharts.style.display});cuotasCharts.style.display='none';}
+  if(cuotasPesosCharts){hidden.push({el:cuotasPesosCharts,prev:cuotasPesosCharts.style.display});cuotasPesosCharts.style.display='none';}
   const headerDiv=document.querySelector('.header');
   if(headerDiv){hidden.push({el:headerDiv,prev:headerDiv.style.display});headerDiv.style.display='none';}
   setTimeout(()=>{
@@ -2678,7 +2681,8 @@ function printPrincipal(){
   const{ph,fi}=buildPrintHeader();
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
-  const hideIds=['secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
+  // Hide ALL vendedor sections
+  const hideIds=['secDashVendedores','secVendedorDash','vendedorDashContainer','secVendedorCharts','secVendedorDetail','vendedorDetailContainer','secAcumVendChart','secEstadoCuentas','estadoCuentasContainer'];
   const hidden=[];
   hideIds.forEach(id=>{const el=document.getElementById(id);if(el){hidden.push({el,prev:el.style.display});el.style.display='none';}});
   const headerDiv=document.querySelector('.header');

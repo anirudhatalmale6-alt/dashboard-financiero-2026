@@ -1887,25 +1887,25 @@ function buildECSection(icon,title,colorClass,valColor,prefix,items){
 
 function renderIngresosTotales(){
   if(!dashRaw||dashRaw.length<15)return;
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const mesCorto=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
   function fU(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'U$D '+s;}
   function fP(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'$'+s;}
   function fC(v){if(!v&&v!==0)return'—';return '$'+Math.round(v).toLocaleString('es-AR');}
-  // Determine active months (current month or filtered)
-  const now=new Date();
-  const currentMonthIdx=now.getMonth(); // 0=Jan
+  // Read section title from Excel (row 2, col C)
+  const sectionTitle=dashRaw[1]&&dashRaw[1][2]?String(dashRaw[1][2]).trim():'Ingresos Totales';
+  const titleEl=document.querySelector('#secIngresosTotales');
+  if(titleEl){const parts=sectionTitle.split(' ');const last=parts.pop();titleEl.innerHTML=`<span class="dot" style="background:var(--gold)"></span>${parts.join(' ')} <em>${last}</em>`;}
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
-  meses.forEach((mes,mi)=>{
+  // Read 12 months dynamically from Excel (rows 2-13, col C = month name)
+  for(let mi=0;mi<12;mi++){
     const row=dashRaw[2+mi];
-    if(!row)return;
+    if(!row)continue;
+    const mes=row[2]?String(row[2]):'';
     const usd=pv(row[4]);const pesos=pv(row[5]);const cotiz=pv(row[6]);
     const uniPesos=pv(row[7]);const uniUSD=pv(row[8]);
     const gastos=pv(row[9]);const finalPesos=pv(row[10]);const finalUSD=pv(row[11]);
     totUSD+=usd;totPesos+=pesos;totUniP+=uniPesos;totUniU+=uniUSD;totGastos+=gastos;totFP+=finalPesos;totFU+=finalUSD;
-    const isActive=mi<=currentMonthIdx+1&&(usd||pesos);
     const activeClass=mi<3?'it-active':'';
     tbody+=`<tr class="${activeClass}">
       <td>${mes}</td>

@@ -1925,9 +1925,9 @@ function renderIngresosTotales(){
   // Read column headers from Excel row 1 (dashRaw[1]) with fallbacks
   const hr=dashRaw[1]||[];
   function hdr(col,fb){return hr[col]?String(hr[col]).trim():fb;}
-  const h4=hdr(4,'Ingresos U$D'),h5=hdr(5,'Ingresos $'),h6=hdr(6,'Cotización');
-  const h7=hdr(7,'Unificado $'),h8=hdr(8,'Unificado U$D');
-  const h9=hdr(9,'Gastos Fijos'),h10=hdr(10,'Total Final $'),h11=hdr(11,'Total Final U$D');
+  const h4=hdr(4,'Ingresos U$D'),h5=hdr(5,'Ingresos $'),h6=hdr(6,'Cotización Dolar');
+  const h7=hdr(7,'Total unificado en Pesos'),h8=hdr(8,'Total unificado en Dolares');
+  const h9=hdr(9,'Gastos Fijos e Inversiones'),h10=hdr(10,'Total Neto Pesos'),h11=hdr(11,'Total Neto Dolares');
   table.innerHTML=`
     <thead><tr>
       <th>Mes</th>

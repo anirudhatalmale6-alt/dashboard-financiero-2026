@@ -115,11 +115,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .it-table .col-usd{color:var(--gold)}
 .it-table .col-pesos{color:var(--blue)}
 .it-table .col-cotiz{color:var(--text2)}
-.it-table .col-uni-pesos{color:var(--purple)}
-.it-table .col-uni-usd{color:var(--gold2)}
-.it-table .col-gastos{color:var(--red)}
+.it-table .col-uni-pesos{color:var(--blue)}
+.it-table .col-uni-usd{color:var(--gold)}
+.it-table .col-gastos{color:silver}
 .it-table .col-final-pesos{color:var(--teal)}
-.it-table .col-final-usd{font-weight:700}
+.it-table .col-final-usd{font-weight:700;color:var(--gold2)}
 .it-table tfoot td{padding:11px 14px;text-align:right;font-weight:700;border-top:2px solid var(--gold);background:rgba(212,168,83,.06);font-size:13px}
 .it-table tfoot td:first-child{text-align:left;padding-left:24px;color:var(--gold);font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:11px}
 .it-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:.5px}
@@ -1912,7 +1912,7 @@ function renderIngresosTotales(){
       <td class="col-uni-usd">${fU(uniUSD)}</td>
       <td class="col-gastos">${fU(gastos)}</td>
       <td class="col-final-pesos">${fP(finalPesos)}</td>
-      <td class="col-final-usd col-usd">${fU(finalUSD)}</td>
+      <td class="col-final-usd">${fU(finalUSD)}</td>
     </tr>`;
   }
   // Total row from dashRaw[14]
@@ -1950,7 +1950,7 @@ function renderIngresosTotales(){
       <td class="col-uni-usd">${fU(totUniU)}</td>
       <td class="col-gastos">${fU(totGastos)}</td>
       <td class="col-final-pesos">${fP(totFP)}</td>
-      <td class="col-usd">${fU(totFU)}</td>
+      <td class="col-final-usd">${fU(totFU)}</td>
     </tr></tfoot>`;
 }
 

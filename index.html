@@ -102,9 +102,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Ingresos Totales Table */
 .it-wrap{margin-bottom:32px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
-.it-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%)}
-.it-header h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:10px}
-.it-header h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
 .it-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .it-table{width:100%;border-collapse:collapse;font-size:13px;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
 .it-table thead th{padding:10px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;border-bottom:2px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:1}
@@ -494,7 +491,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <nav class="sidebar-nav">
     <div class="sidebar-nav-title">Navegación</div>
     <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen General</a>
-    <a onclick="document.getElementById('ingresosTotalesWrap').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
+    <a onclick="document.getElementById('secIngresosTotales').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
     <a onclick="document.getElementById('secDetalleIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Detalle Ingresos</a>
     <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>
     <a onclick="document.getElementById('secGraficos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Ingresos Mensuales</a>
@@ -537,8 +534,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
   </div>
 
+  <h2 class="section-title" id="secIngresosTotales"><span class="dot" style="background:var(--gold)"></span>Ingresos <em>Totales</em></h2>
   <div class="it-wrap" id="ingresosTotalesWrap">
-    <div class="it-header"><h3><span class="dot"></span>Ingresos Totales — DASHBOARD</h3></div>
     <div class="it-scroll"><table class="it-table" id="ingresosTotalesTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div>
   </div>
 

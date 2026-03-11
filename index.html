@@ -1922,17 +1922,23 @@ function renderIngresosTotales(){
     totGastos=pv(tRow[9])||totGastos;totFP=pv(tRow[10])||totFP;totFU=pv(tRow[11])||totFU;
   }
   const table=document.getElementById('ingresosTotalesTable');
+  // Read column headers from Excel row 1 (dashRaw[1]) with fallbacks
+  const hr=dashRaw[1]||[];
+  function hdr(col,fb){return hr[col]?String(hr[col]).trim():fb;}
+  const h4=hdr(4,'Ingresos U$D'),h5=hdr(5,'Ingresos $'),h6=hdr(6,'Cotización');
+  const h7=hdr(7,'Unificado $'),h8=hdr(8,'Unificado U$D');
+  const h9=hdr(9,'Gastos Fijos'),h10=hdr(10,'Total Final $'),h11=hdr(11,'Total Final U$D');
   table.innerHTML=`
     <thead><tr>
       <th>Mes</th>
-      <th>Ingresos U$D</th>
-      <th>Ingresos $</th>
-      <th>Cotización</th>
-      <th>Unificado $</th>
-      <th>Unificado U$D</th>
-      <th>Gastos Fijos</th>
-      <th>Total Final $</th>
-      <th>Total Final U$D</th>
+      <th>${h4}</th>
+      <th>${h5}</th>
+      <th>${h6}</th>
+      <th>${h7}</th>
+      <th>${h8}</th>
+      <th>${h9}</th>
+      <th>${h10}</th>
+      <th>${h11}</th>
     </tr></thead>
     <tbody>${tbody}</tbody>
     <tfoot><tr>

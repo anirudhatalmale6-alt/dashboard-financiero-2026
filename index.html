@@ -1891,10 +1891,6 @@ function renderIngresosTotales(){
   function fU(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'U$D '+s;}
   function fP(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'$'+s;}
   function fC(v){if(!v&&v!==0)return'—';return '$'+Math.round(v).toLocaleString('es-AR');}
-  // Read section title from Excel (row 2, col C)
-  const sectionTitle=dashRaw[1]&&dashRaw[1][2]?String(dashRaw[1][2]).trim():'Ingresos Totales';
-  const titleEl=document.querySelector('#secIngresosTotales');
-  if(titleEl){const parts=sectionTitle.split(' ');const last=parts.pop();titleEl.innerHTML=`<span class="dot" style="background:var(--gold)"></span>${parts.join(' ')} <em>${last}</em>`;}
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
   // Read 12 months dynamically from Excel (rows 2-13, col C = month name)
@@ -1952,8 +1948,36 @@ function renderIngresosTotales(){
     </tr></tfoot>`;
 }
 
+function updateDynamicTitles(){
+  if(!dashRaw)return;
+  function setT(id,row,col,fallback,dotColor){
+    const t=dashRaw[row]&&dashRaw[row][col]?String(dashRaw[row][col]).trim():fallback;
+    const el=document.getElementById(id);if(!el)return;
+    const parts=t.split(' ');const last=parts.pop();
+    const dot=dotColor?'<span class="dot" style="background:var('+dotColor+')"></span>':'';
+    el.innerHTML=dot+parts.join(' ')+' <em>'+last+'</em>';
+  }
+  function setDiv(id,row,col,fallback){
+    const t=dashRaw[row]&&dashRaw[row][col]?String(dashRaw[row][col]).trim():fallback;
+    const el=document.getElementById(id);if(!el)return;
+    const h2=el.querySelector('h2');if(!h2)return;
+    const parts=t.split(' ');const last=parts.pop();
+    h2.innerHTML=parts.join(' ')+' <em>'+last+'</em>';
+  }
+  // Section titles from DASHBOARD sheet
+  setT('secIngresosTotales',1,2,'Ingresos Totales','--gold');
+  setT('secDetalleIngresos',15,2,'Detalle Ingresos Mensuales','--gold');
+  setT('secModulos',45,2,'Módulos de Negocio',null);
+  setT('secCuotasPesos',114,2,'Cuotas a Cobrar vs Pagar en Pesos',null);
+  setT('secCuotas',130,2,'Cuotas a Cobrar vs Pagar en Dólares',null);
+  setT('secVendedorDash',183,2,'Detalle Mensual por Vendedor / Módulo',null);
+  // Section dividers
+  setDiv('secEstadoCuentas',149,2,'Estado de Cuentas y Comisiones Vendedores');
+}
+
 function renderAll(){
   const isFiltered=filterVendedor!=='all';
+  updateDynamicTitles();
   renderKPIs();
   renderIngresosTotales();
   renderDetalleIngresos();

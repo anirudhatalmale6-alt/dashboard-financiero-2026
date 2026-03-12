@@ -1646,10 +1646,13 @@ function renderChartVendedores2(){
   if(charts.vendedores2)charts.vendedores2.destroy();
   if(isAmbas){
     const datasets=[];
+    const useCurrencyColors=filteredVends.length===1;
     filteredVends.forEach((vObj,i)=>{
       const ci=vendNames.indexOf(vObj.name);
-      datasets.push({label:vObj.name+' U$D',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.usd||0):0;}),backgroundColor:COLORS[ci%COLORS.length]+'99',borderColor:COLORS[ci%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'});
-      datasets.push({label:vObj.name+' $',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.pesos||0):0;}),backgroundColor:COLORS[ci%COLORS.length]+'44',borderColor:COLORS[ci%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,borderDash:[3,3],yAxisID:'yPesos'});
+      const usdColor=useCurrencyColors?'#d4a853':COLORS[ci%COLORS.length];
+      const pesosColor=useCurrencyColors?'#60a5fa':COLORS[ci%COLORS.length];
+      datasets.push({label:vObj.name+' U$D',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.usd||0):0;}),backgroundColor:usdColor+'99',borderColor:usdColor,borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'});
+      datasets.push({label:vObj.name+' $',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.pesos||0):0;}),backgroundColor:pesosColor+'44',borderColor:pesosColor,borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,borderDash:[3,3],yAxisID:'yPesos'});
     });
     charts.vendedores2=new Chart(document.getElementById('chartVendedores2'),{
       type:'bar',data:{labels:allMeses,datasets},plugins:[ChartDataLabels],
@@ -1678,13 +1681,16 @@ function renderChartAcumVend(){
   if(charts.acumVend)charts.acumVend.destroy();
   if(isAmbas){
     const datasets=[];
+    const useCurrencyColors=filteredVends.length===1;
     filteredVends.forEach((vObj,i)=>{
       const ci=vendNames.indexOf(vObj.name);
+      const usdColor=useCurrencyColors?'#d4a853':COLORS[ci%COLORS.length];
+      const pesosColor=useCurrencyColors?'#60a5fa':COLORS[ci%COLORS.length];
       let cumU=0,cumP=0;
       const cumUSD=allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);cumU+=mData?(mData.usd||0):0;return cumU;});
       const cumPesos=allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);cumP+=mData?(mData.pesos||0):0;return cumP;});
-      datasets.push({label:vObj.name+' U$D',data:cumUSD,borderColor:COLORS[ci%COLORS.length],backgroundColor:COLORS[ci%COLORS.length]+'18',pointBackgroundColor:COLORS[ci%COLORS.length],pointRadius:3,tension:.4,borderWidth:2,fill:filteredVends.length===1,yAxisID:'yUSD'});
-      datasets.push({label:vObj.name+' $',data:cumPesos,borderColor:COLORS[ci%COLORS.length],backgroundColor:COLORS[ci%COLORS.length]+'08',pointBackgroundColor:COLORS[ci%COLORS.length],pointRadius:3,tension:.4,borderWidth:2,borderDash:[5,3],fill:false,yAxisID:'yPesos'});
+      datasets.push({label:vObj.name+' U$D',data:cumUSD,borderColor:usdColor,backgroundColor:usdColor+'18',pointBackgroundColor:usdColor,pointRadius:3,tension:.4,borderWidth:2,fill:filteredVends.length===1,yAxisID:'yUSD'});
+      datasets.push({label:vObj.name+' $',data:cumPesos,borderColor:pesosColor,backgroundColor:pesosColor+'08',pointBackgroundColor:pesosColor,pointRadius:3,tension:.4,borderWidth:2,borderDash:[5,3],fill:false,yAxisID:'yPesos'});
     });
     charts.acumVend=new Chart(document.getElementById('chartAcumVend'),{
       type:'line',data:{labels:allMeses,datasets},plugins:[ChartDataLabels],
@@ -2771,6 +2777,8 @@ function setChartPrintMode(dark){
   const legColor=dark?'#555':'#9a98a0';
   const tickColor=dark?'#666':'#5c5a65';
   const gridColor=dark?'rgba(0,0,0,.1)':'rgba(42,43,58,.3)';
+  const goldPrint=dark?'#b8860b':'#d4a853';
+  const bluePrint=dark?'#2563eb':'#60a5fa';
   Object.values(charts).forEach(c=>{
     if(!c||!c.options)return;
     if(c.options.plugins&&c.options.plugins.datalabels){
@@ -2781,9 +2789,11 @@ function setChartPrintMode(dark){
       c.options.plugins.legend.labels.color=legColor;
     }
     if(c.options.scales){
-      ['x','y'].forEach(ax=>{
+      ['x','y','yUSD','yPesos'].forEach(ax=>{
         if(c.options.scales[ax]){
-          if(c.options.scales[ax].ticks)c.options.scales[ax].ticks.color=tickColor;
+          if(ax==='yUSD'&&c.options.scales[ax].ticks){c.options.scales[ax].ticks.color=dark?'#8B7355':goldPrint;}
+          else if(ax==='yPesos'&&c.options.scales[ax].ticks){c.options.scales[ax].ticks.color=dark?'#1d4ed8':bluePrint;}
+          else if(c.options.scales[ax].ticks){c.options.scales[ax].ticks.color=tickColor;}
           if(c.options.scales[ax].grid)c.options.scales[ax].grid.color=gridColor;
         }
       });
@@ -2835,11 +2845,16 @@ function printVendedores(){
   if(cuotasPesosCharts){hidden.push({el:cuotasPesosCharts,prev:cuotasPesosCharts.style.display});cuotasPesosCharts.style.display='none';}
   const headerDiv=document.querySelector('.header');
   if(headerDiv){hidden.push({el:headerDiv,prev:headerDiv.style.display});headerDiv.style.display='none';}
+  // Remove page-break on first vendedor section so it flows right after print header (no blank page 1)
+  const firstVendDiv=document.getElementById('secDashVendedores');
+  let prevPageBreak='';
+  if(firstVendDiv){prevPageBreak=firstVendDiv.style.pageBreakBefore;firstVendDiv.style.pageBreakBefore='auto';firstVendDiv.style.breakBefore='auto';}
   setTimeout(()=>{
     window.print();
     ph.style.display='none';fi.style.display='none';
     setChartPrintMode(false);
     hidden.forEach(h=>{h.el.style.display=h.prev;});
+    if(firstVendDiv){firstVendDiv.style.pageBreakBefore=prevPageBreak;firstVendDiv.style.breakBefore='';}
   },300);
 }
 

@@ -373,6 +373,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .noise,.glow,.glow2{display:none!important}
   .sidebar{display:none!important}
+  .mobile-bar{display:none!important}
   .main{margin-left:0!important;padding:10px!important}
   .print-btn{display:none!important}
   .refresh-btn{display:none!important}
@@ -2779,8 +2780,11 @@ function setChartPrintMode(dark){
   const gridColor=dark?'rgba(0,0,0,.1)':'rgba(42,43,58,.3)';
   const goldPrint=dark?'#b8860b':'#d4a853';
   const bluePrint=dark?'#2563eb':'#60a5fa';
+  const dpr=dark?3:(window.devicePixelRatio||1);
   Object.values(charts).forEach(c=>{
     if(!c||!c.options)return;
+    // Boost resolution for print quality
+    c.options.devicePixelRatio=dpr;
     if(c.options.plugins&&c.options.plugins.datalabels){
       c.options.plugins.datalabels.color=dlColor;
       c.options.plugins.datalabels.font.weight='700';
@@ -2798,6 +2802,7 @@ function setChartPrintMode(dark){
         }
       });
     }
+    c.resize();
     c.update('none');
   });
 }

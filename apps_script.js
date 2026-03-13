@@ -1,233 +1,471 @@
-/**
- * DASHBOARD LOOKER STUDIO - Script Automático
- *
- * INSTRUCCIONES:
- * 1. Abrí tu Google Sheets
- * 2. Menú: Extensiones > Apps Script
- * 3. Borrá todo el código que aparece
- * 4. Pegá este código completo
- * 5. Hacé click en el botón ▶ (Ejecutar)
- * 6. La primera vez te va a pedir permisos - aceptá todo
- * 7. Esperá a que termine (te aparece un mensaje de éxito)
- *
- * El script crea 4 hojas nuevas optimizadas para Looker Studio.
- * Podés ejecutarlo cada vez que actualices datos para refrescar las tablas.
- */
+// ============================================================
+// CONFIGURACION
+// ============================================================
+var VENDEDORES = [
+  {id: '1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw', nombre: 'LINEA 314', filas: [8,10,12,14,16,18,20,22,24,26,28,30], cols: ['D','E']},
+  {id: '1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c', nombre: 'OSITO S.R.L', filas: [6,8,10,12,14,16,18,20,22,24,26,28], cols: ['D','E','F','G']},
+  {id: '1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4', nombre: 'MELY', filas: [8,10,12,14,16,18,20,22,24,26,28,30], cols: ['D','E','F','H','I','J']},
+  {id: '1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag', nombre: 'GONZA', filas: [6,8,10,12,14,16,18,20,22,24,26,28], cols: ['D','E','F']},
+  {id: '1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q', nombre: 'TOBIAS', filas: [6,8,10,12,14,16,18,20,22,24,26,28], cols: ['D','E','F']},
+  {id: '1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM', nombre: 'TINO', filas: [6,8,10,12,14,16,18,20,22,24,26,28], cols: ['D','E','F','G']},
+  {id: '1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78', nombre: 'PATO', filas: [6,8,10,12,14,16,18,20,22,24,26,28], cols: ['D','E']},
+  {id: '1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U', nombre: 'MODULO 1', filas: [8,10,12,14,16,18,20,22,24,26,28,30], cols: ['D','E','F','H','I','J']},
+  {id: '1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA', nombre: 'MODULO 2', filas: [8,10,12,14,16,18,20,22,24,26,28,30], cols: ['D','E','F','H','I','J']}
+];
+var MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 
-function crearTablasLookerStudio() {
+// ============================================================
+// BOTON PRINCIPAL - CONGELAR MES
+// ============================================================
+function congelarMes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var panel = ss.getSheetByName('PANEL DE CONTROL');
   var dash = ss.getSheetByName('DASHBOARD');
+  var ui = SpreadsheetApp.getUi();
 
-  if (!dash) {
-    SpreadsheetApp.getUi().alert('ERROR: No se encontró la hoja "DASHBOARD". Verificá que existe.');
+  // Config planilla principal
+  var filasPesos = [17,22,27,32,37,42,47,52,57,62,67,72];
+  var filasUSD = [18,23,28,33,38,43,48,53,58,63,68,73];
+  var filasCotiz = [12,13,14,15,16,17,18,19,20,21,22,23];
+
+  // Buscar mes activo (el que tiene formulas)
+  var mesCongelar = -1;
+  for (var m = 0; m < 12; m++) {
+    if (panel.getRange('E' + filasPesos[m]).getFormula() ||
+        panel.getRange('E' + filasUSD[m]).getFormula() ||
+        panel.getRange('I' + filasPesos[m]).getFormula() ||
+        panel.getRange('I' + filasUSD[m]).getFormula()) {
+      mesCongelar = m;
+      break;
+    }
+  }
+
+  if (mesCongelar < 0) {
+    // Buscar en vendedores
+    for (var vi = 0; vi < VENDEDORES.length && mesCongelar < 0; vi++) {
+      try {
+        var extSS = SpreadsheetApp.openById(VENDEDORES[vi].id);
+        var vP = extSS.getSheetByName('PANEL DE CONTROL');
+        if (!vP) continue;
+        for (var m = 0; m < 12; m++) {
+          if (vP.getRange(VENDEDORES[vi].cols[0] + VENDEDORES[vi].filas[m]).getFormula()) {
+            mesCongelar = m;
+            break;
+          }
+        }
+      } catch(e) {}
+    }
+  }
+
+  if (mesCongelar < 0) {
+    ui.alert('No se encontro un mes con formulas para congelar.');
     return;
   }
 
-  // =============================================
-  // HOJA 1: Resumen_Mensual
-  // =============================================
-  var sheet1 = getOrCreateSheet(ss, 'LS_Resumen_Mensual');
-  sheet1.clear();
-
-  var headers1 = ['Mes', 'Num_Mes', 'Año', 'Ingresos_USD', 'Ingresos_Pesos',
-                  'Cotizacion_Dolar', 'Total_Unificado_Pesos', 'Total_Unificado_USD',
-                  'Gastos_Fijos_USD', 'Total_Final_Pesos', 'Total_Final_USD'];
-  sheet1.getRange(1, 1, 1, headers1.length).setValues([headers1]);
-  styleHeader(sheet1, 1, headers1.length, '#2C3E50');
-
-  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-  for (var i = 0; i < 12; i++) {
-    var row = i + 2;
-    var srcRow = 12 + i; // Dashboard rows 12-23
-    sheet1.getRange(row, 1).setValue(meses[i]);
-    sheet1.getRange(row, 2).setValue(i + 1);
-    sheet1.getRange(row, 3).setValue(2026);
-    // Formulas that reference DASHBOARD directly
-    sheet1.getRange(row, 4).setFormula("=DASHBOARD!E" + srcRow);   // USD
-    sheet1.getRange(row, 5).setFormula("=DASHBOARD!F" + srcRow);   // Pesos
-    sheet1.getRange(row, 6).setFormula("=DASHBOARD!G" + srcRow);   // Cotización
-    sheet1.getRange(row, 7).setFormula("=DASHBOARD!H" + srcRow);   // Total Unificado Pesos
-    sheet1.getRange(row, 8).setFormula("=DASHBOARD!I" + srcRow);   // Total Unificado USD
-    sheet1.getRange(row, 9).setFormula("=DASHBOARD!J" + srcRow);   // Gastos
-    sheet1.getRange(row, 10).setFormula("=DASHBOARD!K" + srcRow);  // Total Final Pesos
-    sheet1.getRange(row, 11).setFormula("=DASHBOARD!L" + srcRow);  // Total Final USD
+  if (mesCongelar > 10) {
+    ui.alert('Diciembre es el ultimo mes del año.');
+    return;
   }
 
-  autoResize(sheet1, headers1.length);
+  var mesSig = mesCongelar + 1;
 
-  // =============================================
-  // HOJA 2: Ganancias_Vendedor (flat table)
-  // =============================================
-  var sheet2 = getOrCreateSheet(ss, 'LS_Ganancias_Vendedor');
-  sheet2.clear();
+  var resp = ui.alert(
+    'CONGELAR ' + MESES[mesCongelar],
+    'Se va a:\n' +
+    '1. Congelar ' + MESES[mesCongelar] + ' (valores fijos)\n' +
+    '2. Crear formulas para ' + MESES[mesSig] + '\n\n' +
+    'En: Tu planilla + 7 vendedores\n\n' +
+    'Continuar?',
+    ui.ButtonSet.YES_NO
+  );
+  if (resp !== ui.Button.YES) return;
 
-  var headers2 = ['Mes', 'Num_Mes', 'Año', 'Vendedor', 'Ganancia_USD', 'Ganancia_Pesos'];
-  sheet2.getRange(1, 1, 1, headers2.length).setValues([headers2]);
-  styleHeader(sheet2, 1, headers2.length, '#1ABC9C');
+  var log = [];
 
-  var vendedores = ['Tecno','Inversiones','Creditos','Osito S.r.l.','Patito S.A.',
-                    'Gonza','Mely','Linea 314','Tobias','Tino'];
-  // USD: rows 35-46, cols E-N (5-14)
-  // Pesos: rows 57-68, cols E-N (5-14)
+  // === PLANILLA PRINCIPAL - PANEL DE CONTROL ===
+  congelarCelda(panel, 'E' + filasPesos[mesCongelar], 'E' + filasPesos[mesSig], log, 'TECNO Pesos');
+  congelarCelda(panel, 'E' + filasUSD[mesCongelar], 'E' + filasUSD[mesSig], log, 'TECNO USD');
+  congelarCelda(panel, 'I' + filasPesos[mesCongelar], 'I' + filasPesos[mesSig], log, 'CREDITOS Pesos');
+  congelarCelda(panel, 'I' + filasUSD[mesCongelar], 'I' + filasUSD[mesSig], log, 'CREDITOS USD');
 
-  var row2 = 2;
-  for (var m = 0; m < 12; m++) {
-    for (var v = 0; v < vendedores.length; v++) {
-      var usdRow = 35 + m;
-      var pesosRow = 57 + m;
-      var col = 5 + v; // E=5, F=6, ... N=14
-      var colLetter = columnToLetter(col);
-
-      sheet2.getRange(row2, 1).setValue(meses[m]);
-      sheet2.getRange(row2, 2).setValue(m + 1);
-      sheet2.getRange(row2, 3).setValue(2026);
-      sheet2.getRange(row2, 4).setValue(vendedores[v]);
-      sheet2.getRange(row2, 5).setFormula("=DASHBOARD!" + colLetter + usdRow);
-      sheet2.getRange(row2, 6).setFormula("=DASHBOARD!" + colLetter + pesosRow);
-      row2++;
-    }
+  // === PLANILLA PRINCIPAL - DASHBOARD COTIZACION ===
+  var cotizCell = 'G' + filasCotiz[mesCongelar];
+  var cotizFormula = dash.getRange(cotizCell).getFormula();
+  var cotizValor = dash.getRange(cotizCell).getValue();
+  if (cotizFormula) {
+    dash.getRange(cotizCell).setValue(cotizValor);
+    dash.getRange('G' + filasCotiz[mesSig]).setFormula(cotizFormula);
+    log.push('COTIZACION: congelado $' + cotizValor);
+  } else {
+    log.push('COTIZACION: sin formula');
   }
 
-  autoResize(sheet2, headers2.length);
+  // === VENDEDORES ===
+  VENDEDORES.forEach(function(v) {
+    try {
+      var extSS = SpreadsheetApp.openById(v.id);
+      var vPanel = extSS.getSheetByName('PANEL DE CONTROL');
+      if (!vPanel) { log.push(v.nombre + ': ERROR - No PANEL DE CONTROL'); return; }
+      v.cols.forEach(function(col) {
+        congelarCelda(vPanel, col + v.filas[mesCongelar], col + v.filas[mesSig], log, v.nombre + ' ' + col);
+      });
+    } catch(e) { log.push(v.nombre + ': ERROR - ' + e.message); }
+  });
 
-  // =============================================
-  // HOJA 3: Modulos_Negocio (detail per module)
-  // =============================================
-  var sheet3 = getOrCreateSheet(ss, 'LS_Modulos_Negocio');
-  sheet3.clear();
-
-  var headers3 = ['Mes', 'Num_Mes', 'Año', 'Modulo', 'Ganancia_USD', 'Ganancia_Pesos',
-                  'Inversion_USD', 'Resta_Cobrar_USD', 'Caja_Actual_USD',
-                  'Inversion_Pesos', 'Resta_Cobrar_Pesos'];
-  sheet3.getRange(1, 1, 1, headers3.length).setValues([headers3]);
-  styleHeader(sheet3, 1, headers3.length, '#E74C3C');
-
-  // Module layout on DASHBOARD:
-  // Row 81: Osito(C), Patito(H), Gonza(M) - data rows 83-94, totals 96, invest 98, resta 100, caja 101
-  // Row 105: Mely(C), VendedorX(H), Tobias(M) - data rows 107-118, totals 120, invest 122, resta 124, caja 125
-  // Row 129: Tecno(C), Inversiones(H), Creditos(M) - data rows 131-142, totals 144, invest 146, resta 148, caja 149
-  // Row 153: Tino(C), Linea314(H) - data rows 155-166, totals 168, invest 170, resta 172, caja 173
-
-  var moduleConfig = [
-    // [name, usdCol, pesosCol, dataStartRow, investRow, restaRow, cajaRow, investPesosCol, restaPesosCol]
-    {name:'Osito S.r.l.', usdCol:'E', pesosCol:'F', startRow:83, investRow:98, investCol:'E', restaRow:100, restaCol:'E', cajaRow:101, cajaCol:'E', investPesosCol:'F', restaPesosCol:'F'},
-    {name:'Patito S.A.', usdCol:'J', pesosCol:'K', startRow:83, investRow:98, investCol:'J', restaRow:100, restaCol:'J', cajaRow:101, cajaCol:'J', investPesosCol:'K', restaPesosCol:'K'},
-    {name:'Gonza', usdCol:'O', pesosCol:'P', startRow:83, investRow:98, investCol:'O', restaRow:100, restaCol:'O', cajaRow:101, cajaCol:'O', investPesosCol:'P', restaPesosCol:'P'},
-    {name:'Mely', usdCol:'E', pesosCol:'F', startRow:107, investRow:122, investCol:'E', restaRow:124, restaCol:'E', cajaRow:125, cajaCol:'E', investPesosCol:'F', restaPesosCol:'F'},
-    {name:'Tobias', usdCol:'O', pesosCol:'P', startRow:107, investRow:122, investCol:'O', restaRow:124, restaCol:'O', cajaRow:125, cajaCol:'O', investPesosCol:'P', restaPesosCol:'P'},
-    {name:'Tecno', usdCol:'E', pesosCol:'F', startRow:131, investRow:146, investCol:'E', restaRow:148, restaCol:'E', cajaRow:149, cajaCol:'E', investPesosCol:'F', restaPesosCol:'F'},
-    {name:'Inversiones', usdCol:'J', pesosCol:'K', startRow:131, investRow:146, investCol:'J', restaRow:148, restaCol:'J', cajaRow:149, cajaCol:'J', investPesosCol:'K', restaPesosCol:'K'},
-    {name:'Creditos', usdCol:'O', pesosCol:'P', startRow:131, investRow:146, investCol:'O', restaRow:148, restaCol:'O', cajaRow:149, cajaCol:'O', investPesosCol:'P', restaPesosCol:'P'},
-    {name:'Tino', usdCol:'E', pesosCol:'F', startRow:155, investRow:170, investCol:'E', restaRow:172, restaCol:'E', cajaRow:173, cajaCol:'E', investPesosCol:'F', restaPesosCol:'F'},
-    {name:'Linea 314', usdCol:'J', pesosCol:'K', startRow:155, investRow:170, investCol:'J', restaRow:172, restaCol:'J', cajaRow:173, cajaCol:'J', investPesosCol:'K', restaPesosCol:'K'},
-  ];
-
-  var row3 = 2;
-  for (var mc = 0; mc < moduleConfig.length; mc++) {
-    var mod = moduleConfig[mc];
-    for (var m = 0; m < 12; m++) {
-      var dataRow = mod.startRow + m;
-      sheet3.getRange(row3, 1).setValue(meses[m]);
-      sheet3.getRange(row3, 2).setValue(m + 1);
-      sheet3.getRange(row3, 3).setValue(2026);
-      sheet3.getRange(row3, 4).setValue(mod.name);
-      sheet3.getRange(row3, 5).setFormula("=DASHBOARD!" + mod.usdCol + dataRow);
-      sheet3.getRange(row3, 6).setFormula("=DASHBOARD!" + mod.pesosCol + dataRow);
-      sheet3.getRange(row3, 7).setFormula("=DASHBOARD!" + mod.investCol + mod.investRow);
-      sheet3.getRange(row3, 8).setFormula("=DASHBOARD!" + mod.restaCol + mod.restaRow);
-      sheet3.getRange(row3, 9).setFormula("=DASHBOARD!" + mod.cajaCol + mod.cajaRow);
-      sheet3.getRange(row3, 10).setFormula("=DASHBOARD!" + mod.investPesosCol + mod.investRow);
-      sheet3.getRange(row3, 11).setFormula("=DASHBOARD!" + mod.restaPesosCol + mod.restaRow);
-      row3++;
-    }
-  }
-
-  autoResize(sheet3, headers3.length);
-
-  // =============================================
-  // HOJA 4: Panel_Control
-  // =============================================
-  var sheet4 = getOrCreateSheet(ss, 'LS_Panel_Control');
-  sheet4.clear();
-
-  var headers4 = ['Mes', 'Num_Mes', 'Año', 'Totales_USD', 'Totales_Pesos',
-                  'Gastos_USD', 'Balance_USD'];
-  sheet4.getRange(1, 1, 1, headers4.length).setValues([headers4]);
-  styleHeader(sheet4, 1, headers4.length, '#3498DB');
-
-  // PANEL DE CONTROL sheet: Row 6=Totales USD, Row 7=Totales $, Row 8=Gastos, Row 9=Balance
-  // Columns: C=Enero, E=Febrero, G=Marzo, I=Abril, K=Mayo, M=Junio, O=Julio, Q=Agosto, S=Sept, U=Oct, W=Nov, Y=Dic
-  var panelCols = ['C','E','G','I','K','M','O','Q','S','U','W','Y'];
-
-  var panelSheet = ss.getSheetByName('PANEL DE CONTROL');
-  if (panelSheet) {
-    for (var m = 0; m < 12; m++) {
-      var r4 = m + 2;
-      var pc = panelCols[m];
-      sheet4.getRange(r4, 1).setValue(meses[m]);
-      sheet4.getRange(r4, 2).setValue(m + 1);
-      sheet4.getRange(r4, 3).setValue(2026);
-      sheet4.getRange(r4, 4).setFormula("='PANEL DE CONTROL'!" + pc + "6");
-      sheet4.getRange(r4, 5).setFormula("='PANEL DE CONTROL'!" + pc + "7");
-      sheet4.getRange(r4, 6).setFormula("='PANEL DE CONTROL'!" + pc + "8");
-      sheet4.getRange(r4, 7).setFormula("='PANEL DE CONTROL'!" + pc + "9");
-    }
-  }
-
-  autoResize(sheet4, headers4.length);
-
-  // =============================================
-  // Success message
-  // =============================================
-  SpreadsheetApp.getUi().alert(
-    '✅ ¡LISTO!\n\n' +
-    'Se crearon 4 hojas nuevas:\n' +
-    '• LS_Resumen_Mensual\n' +
-    '• LS_Ganancias_Vendedor\n' +
-    '• LS_Modulos_Negocio\n' +
-    '• LS_Panel_Control\n\n' +
-    'Estas hojas se actualizan automáticamente cuando modificás datos en DASHBOARD.\n\n' +
-    'Ahora podés conectar estas hojas a Looker Studio.'
+  ui.alert(
+    'LISTO - ' + MESES[mesCongelar] + ' CONGELADO',
+    MESES[mesCongelar] + ' congelado\n' +
+    MESES[mesSig] + ' configurado\n\n' +
+    log.join('\n'),
+    ui.ButtonSet.OK
   );
 }
 
-// =============================================
-// Helper functions
-// =============================================
+// ============================================================
+// SIMULACION - muestra que pasaria sin tocar nada
+// ============================================================
+function simularCongelamiento() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var panel = ss.getSheetByName('PANEL DE CONTROL');
+  var dash = ss.getSheetByName('DASHBOARD');
+  var ui = SpreadsheetApp.getUi();
 
-function getOrCreateSheet(ss, name) {
-  var sheet = ss.getSheetByName(name);
-  if (sheet) {
-    return sheet;
+  var filasPesos = [17,22,27,32,37,42,47,52,57,62,67,72];
+  var filasUSD = [18,23,28,33,38,43,48,53,58,63,68,73];
+  var filasCotiz = [12,13,14,15,16,17,18,19,20,21,22,23];
+
+  // Buscar mes activo
+  var mesCongelar = -1;
+  for (var m = 0; m < 12; m++) {
+    if (panel.getRange('E' + filasPesos[m]).getFormula() ||
+        panel.getRange('E' + filasUSD[m]).getFormula() ||
+        panel.getRange('I' + filasPesos[m]).getFormula() ||
+        panel.getRange('I' + filasUSD[m]).getFormula()) {
+      mesCongelar = m;
+      break;
+    }
   }
-  return ss.insertSheet(name);
+  if (mesCongelar < 0) {
+    for (var vi = 0; vi < VENDEDORES.length && mesCongelar < 0; vi++) {
+      try {
+        var extSS = SpreadsheetApp.openById(VENDEDORES[vi].id);
+        var vP = extSS.getSheetByName('PANEL DE CONTROL');
+        if (!vP) continue;
+        for (var m = 0; m < 12; m++) {
+          if (vP.getRange(VENDEDORES[vi].cols[0] + VENDEDORES[vi].filas[m]).getFormula()) {
+            mesCongelar = m;
+            break;
+          }
+        }
+      } catch(e) {}
+    }
+  }
+  if (mesCongelar < 0) { ui.alert('No se encontro un mes con formulas para simular.'); return; }
+  if (mesCongelar > 10) { ui.alert('Diciembre es el ultimo mes.'); return; }
+  var mesSig = mesCongelar + 1;
+
+  // Crear o limpiar hoja SIMULACION
+  var sim = ss.getSheetByName('SIMULACION');
+  if (sim) ss.deleteSheet(sim);
+  sim = ss.insertSheet('SIMULACION');
+
+  // Titulo
+  sim.getRange('A1').setValue('SIMULACION DE CONGELAMIENTO - ' + MESES[mesCongelar]).setFontSize(14).setFontWeight('bold');
+  sim.getRange('A2').setValue('Esta hoja es solo una SIMULACION. No se modifico ninguna celda original.').setFontColor('red').setFontWeight('bold');
+
+  // Encabezados
+  var headers = ['PLANILLA','COLUMNA','CELDA ACTUAL','FORMULA ACTUAL','VALOR ACTUAL','SE CONGELA A','CELDA SIGUIENTE','FORMULA SIGUIENTE'];
+  for (var h = 0; h < headers.length; h++) {
+    sim.getRange(4, h + 1).setValue(headers[h]);
+  }
+  sim.getRange('A4:H4').setFontWeight('bold').setBackground('#4a86c8').setFontColor('white');
+
+  var row = 5;
+
+  // --- PLANILLA PRINCIPAL ---
+  var mainCells = [
+    {col: 'E', fila: filasPesos[mesCongelar], label: 'TECNO Pesos', filaSig: filasPesos[mesSig]},
+    {col: 'E', fila: filasUSD[mesCongelar], label: 'TECNO USD', filaSig: filasUSD[mesSig]},
+    {col: 'I', fila: filasPesos[mesCongelar], label: 'CREDITOS Pesos', filaSig: filasPesos[mesSig]},
+    {col: 'I', fila: filasUSD[mesCongelar], label: 'CREDITOS USD', filaSig: filasUSD[mesSig]}
+  ];
+  mainCells.forEach(function(c) {
+    var cellRef = c.col + c.fila;
+    var formula = panel.getRange(cellRef).getFormula();
+    var valor = panel.getRange(cellRef).getValue();
+    var nextFormula = '';
+    var nextCell = c.col + c.filaSig;
+    if (formula) {
+      var match = formula.match(/^='?([^'!]+)'?!([A-Z]+\d+)-(.+)$/);
+      if (match) { nextFormula = "='" + match[1] + "'!" + match[2] + '-' + (parseFloat(match[3]) + valor); }
+    }
+    sim.getRange(row, 1).setValue('PRINCIPAL');
+    sim.getRange(row, 2).setValue(c.label);
+    sim.getRange(row, 3).setValue(cellRef);
+    sim.getRange(row, 4).setValue(formula || '(sin formula)');
+    sim.getRange(row, 5).setValue(valor);
+    sim.getRange(row, 6).setValue(formula ? valor : '(manual - no cambia)');
+    sim.getRange(row, 7).setValue(nextCell);
+    sim.getRange(row, 8).setValue(nextFormula || '(no aplica)');
+    row++;
+  });
+
+  // Cotizacion
+  var cotizCell = 'G' + filasCotiz[mesCongelar];
+  var cotizFormula = dash.getRange(cotizCell).getFormula();
+  var cotizValor = dash.getRange(cotizCell).getValue();
+  sim.getRange(row, 1).setValue('DASHBOARD');
+  sim.getRange(row, 2).setValue('COTIZACION');
+  sim.getRange(row, 3).setValue(cotizCell);
+  sim.getRange(row, 4).setValue(cotizFormula || '(sin formula)');
+  sim.getRange(row, 5).setValue(cotizValor);
+  sim.getRange(row, 6).setValue(cotizFormula ? cotizValor : '(manual - no cambia)');
+  sim.getRange(row, 7).setValue('G' + filasCotiz[mesSig]);
+  sim.getRange(row, 8).setValue(cotizFormula || '(no aplica)');
+  row++;
+
+  // Separador
+  row++;
+  sim.getRange(row, 1).setValue('--- VENDEDORES ---').setFontWeight('bold').setFontSize(12);
+  row++;
+
+  // --- VENDEDORES ---
+  VENDEDORES.forEach(function(v) {
+    try {
+      var extSS = SpreadsheetApp.openById(v.id);
+      var vPanel = extSS.getSheetByName('PANEL DE CONTROL');
+      if (!vPanel) {
+        sim.getRange(row, 1).setValue(v.nombre);
+        sim.getRange(row, 2).setValue('ERROR: No tiene PANEL DE CONTROL');
+        sim.getRange(row, 1, 1, 8).setBackground('#ffcccc');
+        row++; return;
+      }
+      v.cols.forEach(function(col) {
+        var cellRef = col + v.filas[mesCongelar];
+        var cellSig = col + v.filas[mesSig];
+        var formula = vPanel.getRange(cellRef).getFormula();
+        var valor = vPanel.getRange(cellRef).getValue();
+        var nextFormula = '';
+        if (formula) {
+          var match = formula.match(/^='?([^'!]+)'?!([A-Z]+\d+)-(.+)$/);
+          if (match) { nextFormula = "='" + match[1] + "'!" + match[2] + '-' + (parseFloat(match[3]) + valor); }
+        }
+        sim.getRange(row, 1).setValue(v.nombre);
+        sim.getRange(row, 2).setValue('Col ' + col);
+        sim.getRange(row, 3).setValue(cellRef);
+        sim.getRange(row, 4).setValue(formula || '(sin formula)');
+        sim.getRange(row, 5).setValue(valor);
+        sim.getRange(row, 6).setValue(formula ? valor : '(manual - no cambia)');
+        sim.getRange(row, 7).setValue(cellSig);
+        sim.getRange(row, 8).setValue(nextFormula || '(no aplica)');
+        if (!formula && valor) sim.getRange(row, 1, 1, 8).setBackground('#fff3cd');
+        row++;
+      });
+    } catch(e) {
+      sim.getRange(row, 1).setValue(v.nombre);
+      sim.getRange(row, 2).setValue('ERROR: ' + e.message);
+      sim.getRange(row, 1, 1, 8).setBackground('#ffcccc');
+      row++;
+    }
+  });
+
+  // Resumen
+  row++;
+  sim.getRange(row, 1).setValue('LEYENDA:').setFontWeight('bold');
+  row++;
+  sim.getRange(row, 1).setValue('Fondo blanco = tiene formula, se va a congelar');
+  row++;
+  sim.getRange(row, 1).setValue('Fondo amarillo = valor manual, no necesita congelamiento (ya es fijo)');
+  sim.getRange(row, 1, 1, 8).setBackground('#fff3cd');
+  row++;
+  sim.getRange(row, 1).setValue('Fondo rojo = error al leer la planilla');
+  sim.getRange(row, 1, 1, 8).setBackground('#ffcccc');
+
+  // Autoajustar
+  for (var c = 1; c <= 8; c++) { sim.autoResizeColumn(c); }
+
+  ui.alert(
+    'SIMULACION COMPLETA',
+    'Se creo la hoja "SIMULACION" en tu planilla principal.\n\n' +
+    'Muestra que pasaria al congelar ' + MESES[mesCongelar] + '.\n\n' +
+    'NO se modifico ninguna celda original de ninguna planilla.\n\n' +
+    'Podes borrar la hoja SIMULACION cuando quieras.',
+    ui.ButtonSet.OK
+  );
 }
 
-function styleHeader(sheet, row, numCols, color) {
-  var range = sheet.getRange(row, 1, 1, numCols);
-  range.setBackground(color);
-  range.setFontColor('#FFFFFF');
-  range.setFontWeight('bold');
-  range.setHorizontalAlignment('center');
-  range.setBorder(true, true, true, true, true, true);
+// ============================================================
+// VERIFICAR MES - Parte 1 (vendedores 1-5)
+// ============================================================
+function verificarMes() {
+  var ui = SpreadsheetApp.getUi();
+  var mesCongelar = detectarMesActivo_();
+  if (mesCongelar < 0) { ui.alert('No se encontro un mes con formulas.'); return; }
+  if (mesCongelar > 10) { ui.alert('Diciembre es el ultimo mes.'); return; }
+
+  var resp = ui.alert(
+    'VERIFICAR ' + MESES[mesCongelar] + ' (Parte 1/2)',
+    'Escribe verificacion en: LINEA 314, OSITO, MELY, GONZA, TOBIAS\n\nContinuar?',
+    ui.ButtonSet.YES_NO
+  );
+  if (resp !== ui.Button.YES) return;
+
+  var log = procesarVendedores_(0, 5, mesCongelar);
+  ui.alert('PARTE 1 COMPLETA', log.join('\n') + '\n\nAhora ejecuta verificarMes2 para el resto.', ui.ButtonSet.OK);
 }
 
-function autoResize(sheet, numCols) {
-  for (var i = 1; i <= numCols; i++) {
-    sheet.setColumnWidth(i, 180);
-  }
-  // Freeze header row
-  sheet.setFrozenRows(1);
+// ============================================================
+// VERIFICAR MES - Parte 2 (vendedores 6-9 + principal)
+// ============================================================
+function verificarMes2() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var panel = ss.getSheetByName('PANEL DE CONTROL');
+  var dash = ss.getSheetByName('DASHBOARD');
+  var ui = SpreadsheetApp.getUi();
+  var mesCongelar = detectarMesActivo_();
+  if (mesCongelar < 0) { ui.alert('No se encontro un mes con formulas.'); return; }
+
+  var filasPesos = [17,22,27,32,37,42,47,52,57,62,67,72];
+  var filasUSD = [18,23,28,33,38,43,48,53,58,63,68,73];
+  var filasCotiz = [12,13,14,15,16,17,18,19,20,21,22,23];
+
+  var resp = ui.alert(
+    'VERIFICAR ' + MESES[mesCongelar] + ' (Parte 2/2)',
+    'Escribe verificacion en: TINO, PATO, MODULO 1, MODULO 2 + principal\n\nContinuar?',
+    ui.ButtonSet.YES_NO
+  );
+  if (resp !== ui.Button.YES) return;
+
+  var log = procesarVendedores_(5, VENDEDORES.length, mesCongelar);
+
+  var ep = panel.getRange('E' + filasPesos[mesCongelar]).getValue();
+  var eu = panel.getRange('E' + filasUSD[mesCongelar]).getValue();
+  var ip = panel.getRange('I' + filasPesos[mesCongelar]).getValue();
+  var iu = panel.getRange('I' + filasUSD[mesCongelar]).getValue();
+  var cot = dash.getRange('G' + filasCotiz[mesCongelar]).getValue();
+
+  ui.alert(
+    'VERIFICACION ' + MESES[mesCongelar] + ' COMPLETA',
+    'PLANILLA PRINCIPAL:\n' +
+    '  TECNO $: ' + ep + '  |  TECNO USD: ' + eu + '\n' +
+    '  CRED $: ' + ip + '  |  CRED USD: ' + iu + '\n' +
+    '  COTIZ: ' + cot + '\n\n' +
+    'VENDEDORES:\n' + log.join('\n') + '\n\n' +
+    'Ahora congela manualmente y compara con columnas V.',
+    ui.ButtonSet.OK
+  );
 }
 
-function columnToLetter(column) {
-  var temp, letter = '';
-  while (column > 0) {
-    temp = (column - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    column = (column - temp - 1) / 26;
+// ============================================================
+// FUNCIONES INTERNAS DE VERIFICACION
+// ============================================================
+function detectarMesActivo_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var panel = ss.getSheetByName('PANEL DE CONTROL');
+  var filasPesos = [17,22,27,32,37,42,47,52,57,62,67,72];
+  var filasUSD = [18,23,28,33,38,43,48,53,58,63,68,73];
+  for (var m = 0; m < 12; m++) {
+    if (panel.getRange('E' + filasPesos[m]).getFormula() ||
+        panel.getRange('E' + filasUSD[m]).getFormula() ||
+        panel.getRange('I' + filasPesos[m]).getFormula() ||
+        panel.getRange('I' + filasUSD[m]).getFormula()) return m;
   }
-  return letter;
+  for (var vi = 0; vi < VENDEDORES.length; vi++) {
+    try {
+      var vP = SpreadsheetApp.openById(VENDEDORES[vi].id).getSheetByName('PANEL DE CONTROL');
+      if (!vP) continue;
+      for (var m = 0; m < 12; m++) {
+        if (vP.getRange(VENDEDORES[vi].cols[0] + VENDEDORES[vi].filas[m]).getFormula()) return m;
+      }
+    } catch(e) {}
+  }
+  return -1;
+}
+
+function procesarVendedores_(desde, hasta, mesCongelar) {
+  var VERIF_START = {
+    'LINEA 314': 7, 'OSITO S.R.L': 14, 'MELY': 18, 'GONZA': 13,
+    'TOBIAS': 13, 'TINO': 13, 'PATO': 12, 'MODULO 1': 18, 'MODULO 2': 18
+  };
+  var mesNombre = MESES[mesCongelar];
+  var log = [];
+
+  for (var i = desde; i < hasta && i < VENDEDORES.length; i++) {
+    var v = VENDEDORES[i];
+    try {
+      var extSS = SpreadsheetApp.openById(v.id);
+      var vPanel = extSS.getSheetByName('PANEL DE CONTROL');
+      if (!vPanel) { log.push(v.nombre + ': ERROR'); continue; }
+
+      var startCol = VERIF_START[v.nombre] || 20;
+      var numCols = v.cols.length;
+
+      // Leer todos los valores en batch
+      var colNums = [];
+      for (var ci = 0; ci < numCols; ci++) { colNums.push(v.cols[ci].charCodeAt(0) - 64); }
+      var minC = Math.min.apply(null, colNums);
+      var maxC = Math.max.apply(null, colNums);
+      var rowData = vPanel.getRange(v.filas[mesCongelar], minC, 1, maxC - minC + 1).getValues()[0];
+      var verifValues = [];
+      for (var ci = 0; ci < numCols; ci++) { verifValues.push(rowData[colNums[ci] - minC]); }
+
+      // Escribir titulo en una celda (sin merge para velocidad)
+      vPanel.getRange(Math.max(1, v.filas[0] - 2), startCol)
+        .setValue('VERIF ' + mesNombre)
+        .setFontWeight('bold')
+        .setBackground('#c8e6c9');
+
+      // Escribir encabezados en batch
+      var headers = [];
+      for (var ci = 0; ci < numCols; ci++) { headers.push('V.' + v.cols[ci]); }
+      vPanel.getRange(Math.max(2, v.filas[0] - 1), startCol, 1, numCols)
+        .setValues([headers])
+        .setFontWeight('bold')
+        .setBackground('#e8f5e9');
+
+      // Escribir valores en batch
+      vPanel.getRange(v.filas[mesCongelar], startCol, 1, numCols)
+        .setValues([verifValues])
+        .setBackground('#f1f8e9');
+
+      SpreadsheetApp.flush();
+      log.push(v.nombre + ': OK');
+    } catch(e) {
+      log.push(v.nombre + ': ERROR - ' + e.message);
+    }
+  }
+  return log;
+}
+
+// ============================================================
+// FUNCION AUXILIAR - congela una celda y crea la formula siguiente
+// ============================================================
+function congelarCelda(sheet, cellActual, cellSiguiente, log, label) {
+  var formula = sheet.getRange(cellActual).getFormula();
+  var valor = sheet.getRange(cellActual).getValue();
+
+  if (!formula) {
+    if (valor !== '' && valor !== 0 && valor !== null) {
+      log.push(label + ': ya congelado (' + valor + ')');
+    }
+    return;
+  }
+
+  var match = formula.match(/^='?([^'!]+)'?!([A-Z]+\d+)-(.+)$/);
+  if (match) {
+    var source = match[1];
+    var cell = match[2];
+    var offset = parseFloat(match[3]);
+
+    // Congelar
+    sheet.getRange(cellActual).setValue(valor);
+
+    // Formula siguiente
+    var newOffset = offset + valor;
+    sheet.getRange(cellSiguiente).setFormula("='" + source + "'!" + cell + '-' + newOffset);
+
+    log.push(label + ': ' + valor + ' -> prox offset ' + newOffset);
+  } else {
+    log.push(label + ': formula no estandar');
+  }
 }

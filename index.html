@@ -2066,26 +2066,24 @@ function renderAll(){
   const isFiltered=filterVendedor!=='all';
   updateDynamicTitles();
   renderKPIs();
-  renderIngresosTotales();
-  renderDetalleIngresos();
-  renderAcumuladoCards();
-  renderChartIngresos();
-  renderChartBalance();
-  renderChartPie();
-  renderChartVendedores();
-  renderRankings();
-  renderModules();
-  renderModuleDetails();
-  // Hide cuotas & inversiones when filtering by vendedor (they are global data)
-  const cuotasTitle=document.getElementById('secCuotas');
-  const cuotasContainer=document.getElementById('cuotasCards');
-  const cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
-  const cuotasPesosTitle=document.getElementById('secCuotasPesos');
-  const cuotasPesosContainer=document.getElementById('cuotasCardsPesos');
-  const invTitle=document.getElementById('secInversiones');
-  const invSection=document.getElementById('invSection');
-  [cuotasTitle,cuotasContainer,cuotasCharts,cuotasPesosTitle,cuotasPesosContainer,invTitle,invSection].forEach(el=>{if(el)el.style.display=isFiltered?'none':'';});
+  // Hide global sections when filtering by vendedor
+  var globalIds=['secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
+  globalIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
+  // Also hide chart containers next to cuotas
+  var cuotasContainer=document.getElementById('cuotasCards');
+  var cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
+  if(cuotasCharts)cuotasCharts.style.display=isFiltered?'none':'';
   if(!isFiltered){
+    renderIngresosTotales();
+    renderDetalleIngresos();
+    renderAcumuladoCards();
+    renderChartIngresos();
+    renderChartBalance();
+    renderChartPie();
+    renderChartVendedores();
+    renderRankings();
+    renderModules();
+    renderModuleDetails();
     renderCuotasCards();
     renderCuotasCardsPesos();
     renderChartCuotasUSD();

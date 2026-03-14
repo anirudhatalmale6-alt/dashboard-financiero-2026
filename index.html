@@ -1682,8 +1682,8 @@ function renderChartVendedores2(){
       const ci=vendNames.indexOf(vObj.name);
       const usdColor=useCurrencyColors?'#d4a853':COLORS[ci%COLORS.length];
       const pesosColor=useCurrencyColors?'#60a5fa':COLORS[ci%COLORS.length];
-      datasets.push({label:vObj.name+' U$D',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.usd||0):0;}),backgroundColor:usdColor+'99',borderColor:usdColor,borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'});
-      datasets.push({label:vObj.name+' $',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.pesos||0):0;}),backgroundColor:pesosColor+'44',borderColor:pesosColor,borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,borderDash:[3,3],yAxisID:'yPesos'});
+      datasets.push({label:vObj.name+' U$D',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.usd||0):0;}),backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'});
+      datasets.push({label:vObj.name+' $',data:allMeses.map(m=>{const mData=vObj.months.find(x=>x.mes===m);return mData?(mData.pesos||0):0;}),backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yPesos'});
     });
     charts.vendedores2=new Chart(document.getElementById('chartVendedores2'),{
       type:'bar',data:{labels:allMeses,datasets},plugins:[ChartDataLabels],
@@ -1972,9 +1972,27 @@ function renderIngresosTotales(){
   function fU(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'U$D '+s;}
   function fP(v){if(!v&&v!==0)return'—';const abs=Math.abs(v);const s=abs>=1000?Math.round(abs).toLocaleString('es-AR'):abs.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});return (v<0?'-':'')+'$'+s;}
   function fC(v){if(!v&&v!==0)return'—';return '$'+Math.round(v).toLocaleString('es-AR');}
+  const table=document.getElementById('ingresosTotalesTable');
+  const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Vendedor-filtered mode: show vendedor data from allData.vendedor
+  if(filterVendedor!=='all'&&allData.vendedor){
+    const vData=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
+    let tbody='',totU=0,totP=0;
+    allMeses.forEach(function(mes,mi){
+      const row=vData.find(r=>r.Mes===mes);
+      const usd=row?row.Ganancia_USD:0;
+      const pesos=row?row.Ganancia_Pesos:0;
+      totU+=usd;totP+=pesos;
+      const activeClass=(usd||pesos)?'it-active':'';
+      tbody+=`<tr class="${activeClass}"><td>${mes}</td><td class="col-usd">${fU(usd)}</td><td class="col-pesos">${fP(pesos)}</td></tr>`;
+    });
+    table.innerHTML=`<thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead><tbody>${tbody}</tbody><tfoot><tr><td>TOTAL ANUAL</td><td class="col-usd">${fU(totU)}</td><td class="col-pesos">${fP(totP)}</td></tr></tfoot>`;
+    return;
+  }
+
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
-  // Read 12 months dynamically from Excel (rows 2-13, col C = month name)
   for(let mi=0;mi<12;mi++){
     const row=dashRaw[2+mi];
     if(!row)continue;
@@ -1996,14 +2014,11 @@ function renderIngresosTotales(){
       <td class="col-final-usd">${fU(finalUSD)}</td>
     </tr>`;
   }
-  // Total row from dashRaw[14]
   const tRow=dashRaw[14];
   if(tRow){
     totPesos=pv(tRow[5])||totPesos;totUniP=pv(tRow[7])||totUniP;totUniU=pv(tRow[8])||totUniU;
     totGastos=pv(tRow[9])||totGastos;totFP=pv(tRow[10])||totFP;totFU=pv(tRow[11])||totFU;
   }
-  const table=document.getElementById('ingresosTotalesTable');
-  // Read column headers from Excel row 1 (dashRaw[1]) with fallbacks
   const hr=dashRaw[1]||[];
   function hdr(col,fb){return hr[col]?String(hr[col]).trim():fb;}
   const h4=hdr(4,'Ventas U$D'),h5=hdr(5,'Ventas $'),h6=hdr(6,'Dolar');
@@ -2066,24 +2081,23 @@ function renderAll(){
   const isFiltered=filterVendedor!=='all';
   updateDynamicTitles();
   renderKPIs();
-  // Hide global sections when filtering by vendedor
-  var globalIds=['secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
-  globalIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
-  // Also hide chart containers next to cuotas
+  renderIngresosTotales();
+  renderDetalleIngresos();
+  renderAcumuladoCards();
+  renderChartIngresos();
+  renderChartBalance();
+  renderChartPie();
+  renderChartVendedores();
+  renderRankings();
+  renderModules();
+  renderModuleDetails();
+  // Cuotas & inversiones & evolucion: global-only data, hide when filtered
+  var globalOnlyIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
+  globalOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
   var cuotasContainer=document.getElementById('cuotasCards');
   var cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
   if(cuotasCharts)cuotasCharts.style.display=isFiltered?'none':'';
   if(!isFiltered){
-    renderIngresosTotales();
-    renderDetalleIngresos();
-    renderAcumuladoCards();
-    renderChartIngresos();
-    renderChartBalance();
-    renderChartPie();
-    renderChartVendedores();
-    renderRankings();
-    renderModules();
-    renderModuleDetails();
     renderCuotasCards();
     renderCuotasCardsPesos();
     renderChartCuotasUSD();
@@ -2481,16 +2495,17 @@ function renderChartVendedores(){
   if(charts.vendedores)charts.vendedores.destroy();
   if(isAmbas){
     const datasets=[];
+    const singleVend=filteredVends.length===1;
     filteredVends.forEach((v,i)=>{
       datasets.push({
         label:v+' U$D',
         data:meses.map(m=>{const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);return row?(row.Ganancia_USD||0):0;}),
-        backgroundColor:COLORS[i%COLORS.length]+'99',borderColor:COLORS[i%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'
+        backgroundColor:singleVend?'rgba(212,168,83,.7)':(COLORS[i%COLORS.length]+'99'),borderColor:singleVend?'#d4a853':COLORS[i%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yUSD'
       });
       datasets.push({
         label:v+' $',
         data:meses.map(m=>{const row=allData.vendedor.find(r=>r.Vendedor===v&&r.Mes===m);return row?(row.Ganancia_Pesos||0):0;}),
-        backgroundColor:COLORS[i%COLORS.length]+'44',borderColor:COLORS[i%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,borderDash:[3,3],yAxisID:'yPesos'
+        backgroundColor:singleVend?'rgba(96,165,250,.7)':(COLORS[i%COLORS.length]+'99'),borderColor:singleVend?'#60a5fa':COLORS[i%COLORS.length],borderWidth:1,borderRadius:4,barPercentage:.8,categoryPercentage:.85,yAxisID:'yPesos'
       });
     });
     charts.vendedores=new Chart(document.getElementById('chartVendedores'),{

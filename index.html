@@ -456,7 +456,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .collapsible-toggle .chevron{transition:transform .3s;font-size:14px;color:var(--text3);margin-left:12px}
 .collapsible-toggle.open .chevron{transform:rotate(180deg)}
 .collapsible-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
-.collapsible-body.open{max-height:600px}
+.collapsible-body.open{max-height:5000px}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
 </style>
 </head>
@@ -644,11 +644,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-container tall"><canvas id="chartInvWaterfall"></canvas></div>
     </div>
     <div class="chart-card full" style="margin-top:16px" id="evolCard">
-      <div class="chart-title collapsible-toggle" onclick="toggleCollapse(this)"><span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--green)"></span>Evolución del Patrimonio</span><span class="chevron">&#9660;</span></div>
-      <div class="collapsible-body" id="evolBody">
-        <div class="chart-subtitle" style="margin-top:8px">Seguimiento mensual — ¿sube o baja tu capital?</div>
-        <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
-      </div>
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Evolución del Patrimonio</div>
+      <div class="chart-subtitle">Seguimiento mensual — ¿sube o baja tu capital?</div>
+      <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Venta en Dólares - Collapsible -->
+  <div class="chart-card full" style="margin-top:24px" id="ventaDolaresCard">
+    <div class="chart-title collapsible-toggle" onclick="toggleCollapse(this)">
+      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--gold)"></span>Venta en Dólares — Cronograma de Cobros</span>
+      <span class="chevron">&#9660;</span>
+    </div>
+    <div class="collapsible-body" id="ventaDolaresBody">
+      <div class="chart-subtitle" style="margin-top:8px">Detalle de ventas, cuotas y estado de cobro</div>
+      <div class="it-wrap" style="margin-top:12px"><div class="it-scroll"><table class="it-table" id="ventaDolaresTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div></div>
     </div>
   </div>
 
@@ -695,6 +705,7 @@ let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
 let dashRaw=null;
 let invRaw=null;
 let trackRaw=null;
+let ventaDolaresRaw=null;
 // Estado de Cuentas: module balance data layout in DASHBOARD raw (gviz rows)
 // Each group has 3 vendors in positions: pos1(col2/4/5), pos2(col7/9/10), pos3(col12/14/15)
 const EC_GROUPS=[
@@ -1010,6 +1021,8 @@ async function loadAllData(){
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
+    // Fetch Venta en Dolares (non-blocking)
+    fetchRawSheet('VENTA EN DOLARES').then(function(rows){ventaDolaresRaw=rows;renderVentaDolares();}).catch(function(){});
     // Fetch Estado de Cuentas from vendor sheets (non-blocking)
     ecSheetData={};
     Promise.all(EC_VENDOR_SHEETS.map(v=>
@@ -2126,6 +2139,7 @@ function renderAll(){
   renderChartAcumVend();
   renderVendedorDetail();
   renderEstadoCuentas();
+  renderVentaDolares();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -2829,6 +2843,45 @@ function renderSidebarStats(){
     <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
     <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">${fmtUSD(promMensual)}</span></div>
   `;
+}
+
+// Venta en Dólares
+function renderVentaDolares(){
+  var card=document.getElementById('ventaDolaresCard');
+  var table=document.getElementById('ventaDolaresTable');
+  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';return;}
+  if(card)card.style.display='';
+  // Row 2 (index 2) has headers: B=VENDEDOR, C=CLIENTES, D=DETALLE, E=FECHA, F=COSTO, G=PR, H=INV, I=CUOTAS, J=VALOR CUOTA, K=COMISION, L=VENTA
+  // Data rows start at index 3, every other row is a boolean tracking row (skip those)
+  // AP(41)=Resta Cobrar, AQ(42)=Ganancia, AR(43)=Cobrado, AS(44)=Estado
+  function fv(v){if(typeof v==='number')return'U$D '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
+  function fd(v){if(!v)return'—';if(typeof v==='string')return v;var s=String(v);var m=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m)return parseInt(m[3])+'/'+((parseInt(m[2])+1))+'/'+m[1];return'—';}
+  var rows=[];
+  for(var i=3;i<ventaDolaresRaw.length;i++){
+    var r=ventaDolaresRaw[i];
+    if(!r||!r[1])continue; // skip empty or boolean rows
+    var estado=r[44]?String(r[44]).trim():'';
+    if(!estado)continue; // skip rows without status (boolean tracking rows)
+    rows.push({
+      vendedor:r[1]||'',cliente:r[2]||'',detalle:r[3]||'',
+      fecha:fd(r[4]),costo:fv(r[5]),cuotas:r[8]||'',valorCuota:fv(r[9]),
+      venta:fv(r[11]),restaCobrar:fv(r[41]),ganancia:fv(r[42]),cobrado:fv(r[43]),estado:estado
+    });
+  }
+  // Apply vendedor filter
+  if(filterVendedor!=='all'){
+    var fv2=filterVendedor.toLowerCase();
+    rows=rows.filter(function(r){return r.vendedor.toLowerCase().indexOf(fv2)>=0;});
+  }
+  var tbody='';
+  rows.forEach(function(r){
+    var estadoClass=r.estado==='VIGENTE'?'color:var(--green)':r.estado==='CANCELADO'?'color:var(--red)':'color:var(--text3)';
+    tbody+='<tr><td>'+r.vendedor+'</td><td>'+r.cliente+'</td><td>'+r.detalle+'</td><td>'+r.fecha+'</td><td class="col-usd">'+r.costo+'</td><td>'+r.cuotas+'</td><td class="col-usd">'+r.valorCuota+'</td><td class="col-usd">'+r.venta+'</td><td class="col-usd">'+r.restaCobrar+'</td><td class="col-usd">'+r.ganancia+'</td><td class="col-usd">'+r.cobrado+'</td><td style="'+estadoClass+';font-weight:600">'+r.estado+'</td></tr>';
+  });
+  table.innerHTML='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th><th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead><tbody>'+tbody+'</tbody>';
+  // Summary row
+  var vigentes=rows.filter(function(r){return r.estado==='VIGENTE';}).length;
+  table.innerHTML+='<tfoot><tr><td colspan="12" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
 }
 
 // Print / Export PDF

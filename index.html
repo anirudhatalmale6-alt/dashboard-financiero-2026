@@ -2852,12 +2852,12 @@ function renderVentaDolares(){
   if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';return;}
   if(card)card.style.display='';
   // Row 2 (index 2) has headers: B=VENDEDOR, C=CLIENTES, D=DETALLE, E=FECHA, F=COSTO, G=PR, H=INV, I=CUOTAS, J=VALOR CUOTA, K=COMISION, L=VENTA
-  // Data rows start at index 3, every other row is a boolean tracking row (skip those)
+  // Data rows start at index 2, every other row is a boolean tracking row (skip those)
   // AP(41)=Resta Cobrar, AQ(42)=Ganancia, AR(43)=Cobrado, AS(44)=Estado
   function fv(v){if(typeof v==='number')return'U$D '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
-  function fd(v){if(!v)return'—';if(typeof v==='string')return v;var s=String(v);var m=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m)return parseInt(m[3])+'/'+((parseInt(m[2])+1))+'/'+m[1];return'—';}
+  function fd(v){if(!v)return'—';var s=String(v);var m=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m)return parseInt(m[3])+'/'+((parseInt(m[2])+1))+'/'+m[1];if(typeof v==='string')return v;return'—';}
   var rows=[];
-  for(var i=3;i<ventaDolaresRaw.length;i++){
+  for(var i=2;i<ventaDolaresRaw.length;i++){
     var r=ventaDolaresRaw[i];
     if(!r||!r[1])continue; // skip empty or boolean rows
     var estado=r[44]?String(r[44]).trim():'';

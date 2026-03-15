@@ -2303,6 +2303,8 @@ function updateDynamicTitles(){
   // Section titles from DASHBOARD sheet
   setT('secIngresosTotales',1,2,'Ingresos Totales','--gold');
   setT('secDetalleIngresos',15,2,'Detalle Ingresos Mensuales','--gold');
+  // Client request: title should include "Y PESOS"
+  (function(){var el=document.getElementById('secDetalleIngresos');if(el&&el.textContent.includes('GANANCIA EN DOLARES')&&!el.textContent.includes('PESOS')){el.innerHTML='<span class="dot" style="background:var(--gold)"></span>GANANCIA EN DOLARES Y <em>PESOS</em>';}})();
   setT('secModulos',45,2,'Módulos de Negocio',null);
   setT('secCuotasPesos',114,2,'Cuotas a Cobrar vs Pagar en Pesos',null);
   setT('secCuotas',130,2,'Cuotas a Cobrar vs Pagar en Dólares',null);

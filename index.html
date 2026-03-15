@@ -1325,10 +1325,13 @@ function populateFilters(){
     sel.innerHTML+=`<option value="${m}">${m}</option>`;
     if(mSel)mSel.innerHTML+=`<option value="${m}">${m}</option>`;
   });
-  // Default to current month
+  // Default to current month (but "all" for vendor links)
   var mesNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var curMes=mesNames[new Date().getMonth()];
-  if(meses.includes(curMes)){
+  if(urlVendedor){
+    sel.value='all';filterMes='all';
+    if(mSel)mSel.value='all';
+  } else if(meses.includes(curMes)){
     sel.value=curMes;filterMes=curMes;
     if(mSel)mSel.value=curMes;
   }
@@ -1376,12 +1379,20 @@ function populateFilters(){
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Also hide chart containers after cuotasCards
     document.querySelectorAll('#cuotasCards+.charts,#cuotasCardsPesos+.charts').forEach(function(el){el.style.display='none';});
-    // Simplify sidebar nav for vendor dashboard
+    // Reorder sections: move GANANCIAS (secVendedorDetail) to top, before Acumulado Anual
+    var mainEl=document.querySelector('.main');
+    var acumTitle=document.getElementById('secAcumuladoAnual');
+    if(mainEl&&acumTitle){
+      // Move vendedor detail (ganancias) section before acumulado
+      var moveIds=['secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
+      moveIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,acumTitle);});
+    }
+    // Simplify sidebar nav for vendor dashboard (Ganancias first)
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
+      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
       '<a onclick="document.getElementById(\'secAcumuladoAnual\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
-      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}
   }
 }

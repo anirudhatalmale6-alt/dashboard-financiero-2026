@@ -2474,7 +2474,7 @@ function renderIngresosTotales(){
 
 function updateDynamicTitles(){
   if(!dashRaw)return;
-  function toTitleCase(s){return s.replace(/\w\S*/g,function(w){return w.charAt(0).toUpperCase()+w.substring(1).toLowerCase();});}
+  function toTitleCase(s){var lowWords=['de','del','en','y','a','la','las','los','el','por','vs','con'];return s.replace(/\S+/g,function(w,i){var lw=w.toLowerCase();if(i>0&&lowWords.indexOf(lw)>=0)return lw;return w.charAt(0).toUpperCase()+w.substring(1).toLowerCase();});}
   function setT(id,row,col,fallback,dotColor){
     var t=dashRaw[row]&&dashRaw[row][col]?String(dashRaw[row][col]).trim():fallback;
     t=toTitleCase(t);

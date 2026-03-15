@@ -460,6 +460,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-cell{display:inline-block;width:28px;height:18px;border-radius:4px;margin:1px;text-align:center;font-size:9px;line-height:18px;font-weight:700}
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
+.panel-buttons{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 8px}
+.panel-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .25s;letter-spacing:.3px}
+.panel-btn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,168,83,.15)}
+.panel-btn.active{border-color:var(--gold);background:rgba(212,168,83,.1);color:var(--gold);box-shadow:0 0 16px rgba(212,168,83,.12)}
+.panel-btn .pbtn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.panel-btn .pbtn-chevron{font-size:10px;transition:transform .3s;margin-left:4px}
+.panel-btn.active .pbtn-chevron{transform:rotate(180deg)}
+.panel-section{max-height:0;overflow:hidden;transition:max-height .4s ease;margin-bottom:0}
+.panel-section.open{max-height:none;overflow:hidden;margin-bottom:16px}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
 </style>
 </head>
@@ -637,6 +646,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
+  <!-- Expandable Data Panels -->
+  <div id="secVentaDolares"></div>
+  <div class="panel-buttons" id="panelButtons">
+    <button class="panel-btn" onclick="togglePanel('ventaDolares')" id="btnVentaDolares">
+      <span class="pbtn-dot" style="background:var(--gold)"></span>
+      Venta en Dólares
+      <span class="pbtn-chevron">&#9660;</span>
+    </button>
+  </div>
+  <div class="panel-section" id="panelVentaDolares">
+    <div class="chart-card full" id="ventaDolaresCard" style="margin-top:0">
+      <div class="chart-subtitle" style="margin-bottom:8px">Cronograma de cobros — detalle de ventas, cuotas y estado de pago</div>
+      <div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="ventaDolaresTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div></div>
+    </div>
+  </div>
+
   <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
   <div class="inv-section" id="invSection">
     <div class="inv-header" id="invHeader"></div>
@@ -651,22 +676,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Evolución del Patrimonio</div>
       <div class="chart-subtitle">Seguimiento mensual — ¿sube o baja tu capital?</div>
       <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Venta en Dólares - Section with collapsible table -->
-  <div class="section-divider" id="secVentaDolares">
-    <h2>Venta en <em>Dólares</em></h2>
-    <div class="divider-sub">Cronograma de cobros y pagos — clic para desplegar la tabla</div>
-  </div>
-  <div class="chart-card full" id="ventaDolaresCard">
-    <div class="chart-title collapsible-toggle" onclick="toggleCollapse(this)" style="cursor:pointer">
-      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--gold)"></span>Ver Cronograma de Cobros</span>
-      <span class="chevron" style="font-size:16px">&#9660;</span>
-    </div>
-    <div class="collapsible-body" id="ventaDolaresBody">
-      <div class="chart-subtitle" style="margin-top:8px">Detalle de ventas, cuotas y estado de cobro</div>
-      <div class="it-wrap" style="margin-top:12px"><div class="it-scroll"><table class="it-table" id="ventaDolaresTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div></div>
     </div>
   </div>
 
@@ -775,6 +784,15 @@ function toggleCollapse(el){
   el.classList.toggle('open');
   var body=el.nextElementSibling;
   if(body)body.classList.toggle('open');
+}
+function togglePanel(name){
+  var btn=document.getElementById('btn'+name.charAt(0).toUpperCase()+name.slice(1));
+  var panel=document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(!btn||!panel)return;
+  var isOpen=btn.classList.contains('active');
+  btn.classList.toggle('active');
+  panel.classList.toggle('open');
+  if(!isOpen){panel.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 function toggleTheme(){
   var isLight=document.documentElement.getAttribute('data-theme')==='light';
@@ -2860,10 +2878,10 @@ function renderSidebarStats(){
 // Venta en Dólares
 function renderVentaDolares(){
   var card=document.getElementById('ventaDolaresCard');
-  var sec=document.getElementById('secVentaDolares');
+  var btn=document.getElementById('btnVentaDolares');
   var table=document.getElementById('ventaDolaresTable');
-  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';if(sec)sec.style.display='none';return;}
-  if(card)card.style.display='';if(sec)sec.style.display='';
+  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
+  if(card)card.style.display='';if(btn)btn.style.display='';
   // Row 0: month headers in cols 12-40 as Date strings
   // Row 1: column labels (sparse)
   // Rows 2+: alternating data row / boolean tracking row

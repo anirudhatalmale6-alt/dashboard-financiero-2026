@@ -457,7 +457,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .collapsible-toggle.open .chevron{transform:rotate(180deg)}
 .collapsible-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
 .collapsible-body.open{max-height:none;overflow:hidden}
-.cuota-cell{display:inline-block;min-width:32px;height:20px;border-radius:4px;margin:1px;text-align:center;font-size:8px;line-height:20px;font-weight:700;padding:0 3px}
+.cuota-cell{display:inline-block;min-width:52px;height:26px;border-radius:5px;margin:1px;text-align:center;font-size:11px;line-height:26px;font-weight:700;padding:0 4px}
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
 .panel-area{margin:32px 0 16px}
@@ -922,7 +922,7 @@ function renderCuotasPanel(panelKey){
   // Hide panel if no data rows found
   if(rows.length===0){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
   var mthHdr='';
-  monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:36px;padding:6px 2px;font-size:8px">'+h+'</th>';});
+  monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:56px;padding:6px 3px;font-size:9px">'+h+'</th>';});
   var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';
   var tbody='';
   rows.forEach(function(r){
@@ -1340,7 +1340,7 @@ function populateFilters(){
     // Hide financial-only sections for vendor dashboard
     var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
-      'secAcumuladoAnual','acumCards','secGraficos',
+      'secGraficos',
       'secRanking','rankings','secModulos','modules',
       'secDetalle','moduleDetails','secCuotas','cuotasCards',
       'secCuotasPesos','cuotasCardsPesos',
@@ -1352,6 +1352,7 @@ function populateFilters(){
     // Simplify sidebar nav for vendor dashboard
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
+      '<a onclick="document.getElementById(\'secAcumuladoAnual\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
       '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}

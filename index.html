@@ -460,12 +460,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-cell{display:inline-block;width:28px;height:18px;border-radius:4px;margin:1px;text-align:center;font-size:9px;line-height:18px;font-weight:700}
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
-.panel-buttons{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 8px}
-.panel-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .25s;letter-spacing:.3px}
+.panel-area{margin:32px 0 16px}
+.panel-area-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px}
+.panel-area-title em{color:var(--gold);font-style:normal}
+.panel-area-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.panel-groups{display:flex;flex-direction:column;gap:16px}
+.panel-group{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px}
+.panel-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.panel-group-label .pgl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.panel-group-btns{display:flex;flex-wrap:wrap;gap:8px}
+.panel-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .25s;letter-spacing:.2px}
 .panel-btn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,168,83,.15)}
-.panel-btn.active{border-color:var(--gold);background:rgba(212,168,83,.1);color:var(--gold);box-shadow:0 0 16px rgba(212,168,83,.12)}
-.panel-btn .pbtn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.panel-btn .pbtn-chevron{font-size:10px;transition:transform .3s;margin-left:4px}
+.panel-btn.active{border-color:var(--gold);background:rgba(212,168,83,.12);color:var(--gold);box-shadow:0 0 12px rgba(212,168,83,.1)}
+.panel-btn .pbtn-icon{font-size:11px}
+.panel-btn .pbtn-chevron{font-size:9px;transition:transform .3s;margin-left:2px;opacity:.6}
 .panel-btn.active .pbtn-chevron{transform:rotate(180deg)}
 .panel-section{max-height:0;overflow:hidden;transition:max-height .4s ease;margin-bottom:0}
 .panel-section.open{max-height:none;overflow:hidden;margin-bottom:16px}
@@ -646,18 +654,57 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
-  <!-- Expandable Data Panels -->
-  <div id="secVentaDolares"></div>
-  <div class="panel-buttons" id="panelButtons">
-    <button class="panel-btn" onclick="togglePanel('ventaDolares')" id="btnVentaDolares">
-      <span class="pbtn-dot" style="background:var(--gold)"></span>
-      Venta en Dólares
-      <span class="pbtn-chevron">&#9660;</span>
-    </button>
+  <!-- Control de Cuotas a Cobrar — Expandable Data Panels -->
+  <div class="panel-area" id="secVentaDolares">
+    <div class="panel-area-title">Control de Cuotas a <em>Cobrar</em></div>
+    <div class="panel-area-sub">Desplegá cada sección para ver el cronograma detallado de cobros y pagos</div>
+    <div class="panel-groups" id="panelGroups">
+
+      <div class="panel-group">
+        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--gold)"></span>Tecno</div>
+        <div class="panel-group-btns">
+          <button class="panel-btn" onclick="togglePanel('ventaDolares')" id="btnVentaDolares">
+            <span class="pbtn-icon">U$D</span> Venta en Dólares
+            <span class="pbtn-chevron">&#9660;</span>
+          </button>
+          <button class="panel-btn" onclick="togglePanel('ventaPesos')" id="btnVentaPesos" style="display:none">
+            <span class="pbtn-icon">$</span> Venta en Pesos
+            <span class="pbtn-chevron">&#9660;</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-group" id="grpCreditos" style="display:none">
+        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--purple)"></span>Créditos</div>
+        <div class="panel-group-btns">
+          <button class="panel-btn" onclick="togglePanel('creditosPesos')" id="btnCreditosPesos">
+            <span class="pbtn-icon">$</span> Créditos en Pesos
+            <span class="pbtn-chevron">&#9660;</span>
+          </button>
+          <button class="panel-btn" onclick="togglePanel('creditosDolares')" id="btnCreditosDolares">
+            <span class="pbtn-icon">U$D</span> Créditos en Dólares
+            <span class="pbtn-chevron">&#9660;</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-group" id="grpInversiones" style="display:none">
+        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--green)"></span>Inversiones</div>
+        <div class="panel-group-btns">
+          <button class="panel-btn" onclick="togglePanel('inversionesCobro')" id="btnInversionesCobro">
+            <span class="pbtn-icon">U$D</span> Cronograma Inversiones
+            <span class="pbtn-chevron">&#9660;</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
+
+  <!-- Panel content areas (expand below buttons) -->
   <div class="panel-section" id="panelVentaDolares">
     <div class="chart-card full" id="ventaDolaresCard" style="margin-top:0">
-      <div class="chart-subtitle" style="margin-bottom:8px">Cronograma de cobros — detalle de ventas, cuotas y estado de pago</div>
+      <div class="chart-subtitle" style="margin-bottom:8px">TECNO — Cronograma de cobros en dólares</div>
       <div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="ventaDolaresTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div></div>
     </div>
   </div>

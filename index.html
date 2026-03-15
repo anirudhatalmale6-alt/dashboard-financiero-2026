@@ -851,11 +851,23 @@ function renderCuotasPanel(panelKey){
     var estado=r[44]?String(r[44]).trim():'';
     if(!estado)continue;
     var boolRow=d.raw[i+1]||[];
+    var numC=parseInt(r[8])||0;
+    // Find first TRUE to anchor cuota start; if none, estimate from sale date
+    var cuotaStart=-1;
+    for(var c=12;c<=40;c++){if(boolRow[c]===true){cuotaStart=c-12;break;}}
+    if(cuotaStart<0&&r[4]){
+      // Estimate from sale date: col 12=Aug 2025
+      var ds=String(r[4]);var dm=ds.match(/Date\((\d+),(\d+),(\d+)\)/);
+      if(dm){var sy=parseInt(dm[1]);var sm=parseInt(dm[2]);cuotaStart=(sy-2025)*12+(sm-7);if(cuotaStart<0)cuotaStart=0;}
+    }
+    if(cuotaStart<0)cuotaStart=0;
+    var cuotaEnd=cuotaStart+numC-1;
     var payments=[];
     for(var c=12;c<=40;c++){
-      if(boolRow[c]===true)payments.push('paid');
-      else if(boolRow[c]===false)payments.push('unpaid');
-      else payments.push('none');
+      var idx=c-12;
+      if(idx>=cuotaStart&&idx<=cuotaEnd){
+        payments.push(boolRow[c]===true?'paid':'unpaid');
+      }else{payments.push('none');}
     }
     var rawCuota=typeof r[9]==='number'?Math.round(r[9]):0;
     rows.push({

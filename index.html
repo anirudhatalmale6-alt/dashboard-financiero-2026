@@ -457,7 +457,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .collapsible-toggle.open .chevron{transform:rotate(180deg)}
 .collapsible-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
 .collapsible-body.open{max-height:none;overflow:hidden}
-.cuota-cell{display:inline-block;width:28px;height:18px;border-radius:4px;margin:1px;text-align:center;font-size:9px;line-height:18px;font-weight:700}
+.cuota-cell{display:inline-block;min-width:32px;height:20px;border-radius:4px;margin:1px;text-align:center;font-size:8px;line-height:20px;font-weight:700;padding:0 3px}
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
 .panel-area{margin:32px 0 16px}
@@ -541,7 +541,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>
     <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cronograma Inversiones</a>
-    <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Venta en Dólares</a>
+    <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>
     <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
@@ -654,60 +654,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
-  <!-- Control de Cuotas a Cobrar — Expandable Data Panels -->
+  <!-- Control de Cuotas a Cobrar — Expandable Data Panels (dynamically generated) -->
   <div class="panel-area" id="secVentaDolares">
     <div class="panel-area-title">Control de Cuotas a <em>Cobrar</em></div>
     <div class="panel-area-sub">Desplegá cada sección para ver el cronograma detallado de cobros y pagos</div>
-    <div class="panel-groups" id="panelGroups">
-
-      <div class="panel-group">
-        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--gold)"></span>Tecno</div>
-        <div class="panel-group-btns">
-          <button class="panel-btn" onclick="togglePanel('ventaDolares')" id="btnVentaDolares">
-            <span class="pbtn-icon">U$D</span> Venta en Dólares
-            <span class="pbtn-chevron">&#9660;</span>
-          </button>
-          <button class="panel-btn" onclick="togglePanel('ventaPesos')" id="btnVentaPesos" style="display:none">
-            <span class="pbtn-icon">$</span> Venta en Pesos
-            <span class="pbtn-chevron">&#9660;</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="panel-group" id="grpCreditos" style="display:none">
-        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--purple)"></span>Créditos</div>
-        <div class="panel-group-btns">
-          <button class="panel-btn" onclick="togglePanel('creditosPesos')" id="btnCreditosPesos">
-            <span class="pbtn-icon">$</span> Créditos en Pesos
-            <span class="pbtn-chevron">&#9660;</span>
-          </button>
-          <button class="panel-btn" onclick="togglePanel('creditosDolares')" id="btnCreditosDolares">
-            <span class="pbtn-icon">U$D</span> Créditos en Dólares
-            <span class="pbtn-chevron">&#9660;</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="panel-group" id="grpInversiones" style="display:none">
-        <div class="panel-group-label"><span class="pgl-dot" style="background:var(--green)"></span>Inversiones</div>
-        <div class="panel-group-btns">
-          <button class="panel-btn" onclick="togglePanel('inversionesCobro')" id="btnInversionesCobro">
-            <span class="pbtn-icon">U$D</span> Cronograma Inversiones
-            <span class="pbtn-chevron">&#9660;</span>
-          </button>
-        </div>
-      </div>
-
-    </div>
+    <div class="panel-groups" id="panelGroups"></div>
   </div>
-
-  <!-- Panel content areas (expand below buttons) -->
-  <div class="panel-section" id="panelVentaDolares">
-    <div class="chart-card full" id="ventaDolaresCard" style="margin-top:0">
-      <div class="chart-subtitle" style="margin-bottom:8px">TECNO — Cronograma de cobros en dólares</div>
-      <div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="ventaDolaresTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div></div>
-    </div>
-  </div>
+  <div id="panelSections"></div>
 
   <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
   <div class="inv-section" id="invSection">
@@ -841,6 +794,102 @@ function togglePanel(name){
   panel.classList.toggle('open');
   if(!isOpen){panel.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
+
+// Build panel groups and sections dynamically from CUOTAS_PANELS config
+function buildCuotasPanels(){
+  var groups={};
+  CUOTAS_PANELS.forEach(function(p){
+    if(!groups[p.vendor])groups[p.vendor]={color:p.color,panels:[]};
+    groups[p.vendor].panels.push(p);
+  });
+  var grpHtml='';
+  var secHtml='';
+  var vendors=Object.keys(groups);
+  vendors.forEach(function(v){
+    var g=groups[v];
+    grpHtml+='<div class="panel-group" id="grp'+v.replace(/[^a-zA-Z0-9]/g,'')+'"><div class="panel-group-label"><span class="pgl-dot" style="background:'+g.color+'"></span>'+v+'</div><div class="panel-group-btns">';
+    g.panels.forEach(function(p){
+      var K=p.key.charAt(0).toUpperCase()+p.key.slice(1);
+      grpHtml+='<button class="panel-btn" onclick="togglePanel(\''+p.key+'\')" id="btn'+K+'"><span class="pbtn-icon">'+p.icon+'</span> '+p.label+'<span class="pbtn-chevron">&#9660;</span></button>';
+      secHtml+='<div class="panel-section" id="panel'+K+'"><div class="chart-card full" id="'+p.key+'Card" style="margin-top:0"><div class="chart-subtitle" style="margin-bottom:8px">'+v+' — Cronograma de cobros en '+(p.currency==='U$D'?'dólares':'pesos')+'</div><div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="'+p.key+'Table"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando...</td></tr></tbody></table></div></div></div></div>';
+    });
+    grpHtml+='</div></div>';
+  });
+  document.getElementById('panelGroups').innerHTML=grpHtml;
+  document.getElementById('panelSections').innerHTML=secHtml;
+}
+
+// Generic cuotas panel render function
+function renderCuotasPanel(panelKey){
+  var cfg=null;
+  for(var i=0;i<CUOTAS_PANELS.length;i++){if(CUOTAS_PANELS[i].key===panelKey){cfg=CUOTAS_PANELS[i];break;}}
+  if(!cfg)return;
+  var K=panelKey.charAt(0).toUpperCase()+panelKey.slice(1);
+  var card=document.getElementById(panelKey+'Card');
+  var btn=document.getElementById('btn'+K);
+  var table=document.getElementById(panelKey+'Table');
+  var d=cuotasPanelData[panelKey];
+  if(!d||!d.raw||d.raw.length<4){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
+  if(card)card.style.display='';if(btn)btn.style.display='';
+  var MESES_ES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var monthHeaders=[];
+  if(d.months&&d.months.length>0){
+    d.months.forEach(function(v){
+      if(!v){monthHeaders.push('');return;}
+      var parts=String(v).split('/');
+      if(parts.length===3){var m=parseInt(parts[1]);var y=parts[2].substring(2);monthHeaders.push((MESES_ES[m]||'')+' '+y);}
+      else{monthHeaders.push(String(v));}
+    });
+  }
+  var cur=cfg.currency;
+  function fv(v){if(typeof v==='number')return cur+' '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
+  function fd(v){if(!v)return'—';var s=String(v);var m2=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m2)return parseInt(m2[3])+'/'+((parseInt(m2[2])+1))+'/'+m2[1];if(typeof v==='string')return v;return'—';}
+  var rows=[];
+  for(var i=2;i<d.raw.length;i++){
+    var r=d.raw[i];
+    if(!r||!r[1])continue;
+    var estado=r[44]?String(r[44]).trim():'';
+    if(!estado)continue;
+    var boolRow=d.raw[i+1]||[];
+    var payments=[];
+    for(var c=12;c<=40;c++){
+      if(boolRow[c]===true)payments.push('paid');
+      else if(boolRow[c]===false)payments.push('unpaid');
+      else payments.push('none');
+    }
+    var rawCuota=typeof r[9]==='number'?Math.round(r[9]):0;
+    rows.push({
+      vendedor:r[1]||'',cliente:r[2]||'',detalle:r[3]||'',
+      fecha:fd(r[4]),costo:fv(r[5]),cuotas:r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
+      venta:fv(r[11]),restaCobrar:fv(r[41]),ganancia:fv(r[42]),cobrado:fv(r[43]),estado:estado,
+      payments:payments,numCuotas:parseInt(r[8])||0
+    });
+  }
+  if(filterVendedor!=='all'){
+    var fv2=filterVendedor.toLowerCase();
+    rows=rows.filter(function(r){return r.vendedor.toLowerCase().indexOf(fv2)>=0;});
+  }
+  var mthHdr='';
+  monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:36px;padding:6px 2px;font-size:8px">'+h+'</th>';});
+  var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';
+  var tbody='';
+  rows.forEach(function(r){
+    var estadoClass=r.estado==='VIGENTE'?'color:var(--green)':r.estado==='CANCELADO'?'color:var(--red)':'color:var(--text3)';
+    var mthCells='';
+    monthHeaders.forEach(function(h,idx){
+      if(!h)return;
+      var st=r.payments[idx];
+      var amt=r.rawCuota?r.rawCuota.toLocaleString('es-AR'):'';
+      if(st==='paid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-paid">'+amt+'</span></td>';}
+      else if(st==='unpaid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-unpaid">'+amt+'</span></td>';}
+      else{mthCells+='<td style="text-align:center;padding:4px 2px"></td>';}
+    });
+    tbody+='<tr><td>'+r.vendedor+'</td><td>'+r.cliente+'</td><td>'+r.detalle+'</td><td>'+r.fecha+'</td><td class="col-usd">'+r.costo+'</td><td>'+r.cuotas+'</td><td class="col-usd">'+r.valorCuota+'</td><td class="col-usd">'+r.venta+'</td>'+mthCells+'<td class="col-usd">'+r.restaCobrar+'</td><td class="col-usd">'+r.ganancia+'</td><td class="col-usd">'+r.cobrado+'</td><td style="'+estadoClass+';font-weight:600">'+r.estado+'</td></tr>';
+  });
+  var vigentes=rows.filter(function(r){return r.estado==='VIGENTE';}).length;
+  var totalCols=12+monthHeaders.filter(function(h){return!!h;}).length;
+  table.innerHTML=thead+'<tbody>'+tbody+'</tbody><tfoot><tr><td colspan="'+totalCols+'" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
+}
 function toggleTheme(){
   var isLight=document.documentElement.getAttribute('data-theme')==='light';
   document.documentElement.setAttribute('data-theme',isLight?'dark':'light');
@@ -880,6 +929,62 @@ async function fetchSheetRange(name,range){
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
+
+// Generic fetch functions for any spreadsheet by ID
+async function fetchRawSheetById(sheetId,name){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
+}
+async function fetchSheetRangeById(sheetId,name,range){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
+}
+
+// ============================================================
+// CUOTAS PANEL CONFIGURATION
+// Each panel: { key, vendor, label, icon, currency, sheetId, tab }
+// ============================================================
+var CUOTAS_PANELS=[
+  {key:'ventaDolares',vendor:'TECNO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA EN DOLARES',color:'var(--gold)'},
+  {key:'ventaPesos',vendor:'TECNO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTA EN PESOS',color:'var(--gold)'},
+  {key:'creditosPesos',vendor:'CRÉDITOS',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'CREDITOS',color:'var(--purple)'},
+  {key:'inversionesDolares',vendor:'INVERSIONES',label:'Inversiones en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'INVERSIONES',color:'var(--green)'},
+  // LINEA 314
+  {key:'linea314Dolares',vendor:'LINEA 314',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTA EN DOLARES',color:'var(--blue)'},
+  {key:'linea314Pesos',vendor:'LINEA 314',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTA EN PESOS',color:'var(--blue)'},
+  // OSITO
+  {key:'ositoDolares',vendor:'OSITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN DOLARES',color:'var(--orange)'},
+  {key:'ositoPesos',vendor:'OSITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN PESOS',color:'var(--orange)'},
+  {key:'ositoCreditos',vendor:'OSITO',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA DE CREDITOS EN PESOS',color:'var(--orange)'},
+  // MELY
+  {key:'melyDolares',vendor:'MELY',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN DOLARES',color:'var(--pink)'},
+  {key:'melyPesos',vendor:'MELY',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN PESOS',color:'var(--pink)'},
+  // GONZA
+  {key:'gonzaDolares',vendor:'GONZA',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN DOLARES',color:'var(--teal)'},
+  {key:'gonzaPesos',vendor:'GONZA',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN PESOS',color:'var(--teal)'},
+  // TOBIAS
+  {key:'tobiasDolares',vendor:'TOBIAS',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTA EN DOLARES',color:'var(--cyan)'},
+  {key:'tobiasPesos',vendor:'TOBIAS',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTA EN PESOS',color:'var(--cyan)'},
+  // TINO
+  {key:'tinoDolares',vendor:'TINO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTA EN DOLARES',color:'var(--red)'},
+  {key:'tinoPesos',vendor:'TINO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTA EN PESOS',color:'var(--red)'},
+  // PATO (PATITO)
+  {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN DOLARES',color:'#e879f9'},
+  {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN PESOS',color:'#e879f9'},
+  // MODULO 1
+  {key:'modulo1Dolares',vendor:'MÓDULO 1',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN DOLARES',color:'#94a3b8'},
+  {key:'modulo1Pesos',vendor:'MÓDULO 1',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN PESOS',color:'#94a3b8'},
+  // MODULO 2
+  {key:'modulo2Dolares',vendor:'MÓDULO 2',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN DOLARES',color:'#cbd5e1'},
+  {key:'modulo2Pesos',vendor:'MÓDULO 2',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN PESOS',color:'#cbd5e1'}
+];
+var cuotasPanelData={};
 
 function cellVal(raw,row,col){
   if(!raw||row<1||row>raw.length)return 0;
@@ -1095,11 +1200,22 @@ async function loadAllData(){
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
-    // Fetch Venta en Dolares (non-blocking)
-    Promise.all([
-      fetchRawSheet('VENTA EN DOLARES'),
-      fetchSheetRange('VENTA EN DOLARES','M2:AO2')
-    ]).then(function(res){ventaDolaresRaw=res[0];ventaDolaresMonths=res[1][0]||[];renderVentaDolares();}).catch(function(){});
+    // Build cuotas panel HTML
+    buildCuotasPanels();
+    // Fetch all cuotas panels data (non-blocking)
+    CUOTAS_PANELS.forEach(function(p){
+      var sid=p.sheetId;
+      var tab=p.tab;
+      Promise.all([
+        fetchRawSheetById(sid,tab),
+        fetchSheetRangeById(sid,tab,'M2:AO2')
+      ]).then(function(res){
+        cuotasPanelData[p.key]={raw:res[0],months:res[1][0]||[]};
+        // Keep legacy variables for backward compat
+        if(p.key==='ventaDolares'){ventaDolaresRaw=res[0];ventaDolaresMonths=res[1][0]||[];}
+        renderCuotasPanel(p.key);
+      }).catch(function(e){console.log('Panel '+p.key+' no data:',e);});
+    });
     // Fetch Estado de Cuentas from vendor sheets (non-blocking)
     ecSheetData={};
     Promise.all(EC_VENDOR_SHEETS.map(v=>
@@ -2216,7 +2332,7 @@ function renderAll(){
   renderChartAcumVend();
   renderVendedorDetail();
   renderEstadoCuentas();
-  renderVentaDolares();
+  renderAllCuotasPanels();
   renderSidebarStats();
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -2924,72 +3040,12 @@ function renderSidebarStats(){
 
 // Venta en Dólares
 function renderVentaDolares(){
-  var card=document.getElementById('ventaDolaresCard');
-  var btn=document.getElementById('btnVentaDolares');
-  var table=document.getElementById('ventaDolaresTable');
-  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
-  if(card)card.style.display='';if(btn)btn.style.display='';
-  // Row 0: month headers in cols 12-40 as Date strings
-  // Row 1: column labels (sparse)
-  // Rows 2+: alternating data row / boolean tracking row
-  // Data: [1]=Vendedor [2]=Cliente [3]=Detalle [4]=Fecha [5]=Costo [8]=Cuotas [9]=ValorCuota [11]=Venta [41]=RestaCobrar [42]=Ganancia [43]=Cobrado [44]=Estado
-  // Boolean: cols 12-40 true=paid false=unpaid
-  // Month headers fetched from row 2 M:AO via fetchSheetRange (format: d/M/yyyy)
-  var MESES_ES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var monthHeaders=[];
-  if(ventaDolaresMonths&&ventaDolaresMonths.length>0){
-    ventaDolaresMonths.forEach(function(v){
-      if(!v){monthHeaders.push('');return;}
-      var parts=String(v).split('/');
-      if(parts.length===3){
-        var m=parseInt(parts[1]);
-        var y=parts[2].substring(2);
-        monthHeaders.push((MESES_ES[m]||'')+' '+y);
-      }else{monthHeaders.push(String(v));}
-    });
-  }
-  function fv(v){if(typeof v==='number')return'U$D '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
-  function fd(v){if(!v)return'—';var s=String(v);var m=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m)return parseInt(m[3])+'/'+((parseInt(m[2])+1))+'/'+m[1];if(typeof v==='string')return v;return'—';}
-  var rows=[];
-  for(var i=2;i<ventaDolaresRaw.length;i++){
-    var r=ventaDolaresRaw[i];
-    if(!r||!r[1])continue;
-    var estado=r[44]?String(r[44]).trim():'';
-    if(!estado)continue;
-    // Get the boolean tracking row (next row)
-    var boolRow=ventaDolaresRaw[i+1]||[];
-    var payments=[];
-    for(var c=12;c<=40;c++){payments.push(boolRow[c]===true);}
-    rows.push({
-      vendedor:r[1]||'',cliente:r[2]||'',detalle:r[3]||'',
-      fecha:fd(r[4]),costo:fv(r[5]),cuotas:r[8]||'',valorCuota:fv(r[9]),
-      venta:fv(r[11]),restaCobrar:fv(r[41]),ganancia:fv(r[42]),cobrado:fv(r[43]),estado:estado,
-      payments:payments,numCuotas:parseInt(r[8])||0
-    });
-  }
-  if(filterVendedor!=='all'){
-    var fv2=filterVendedor.toLowerCase();
-    rows=rows.filter(function(r){return r.vendedor.toLowerCase().indexOf(fv2)>=0;});
-  }
-  // Build month header cells
-  var mthHdr='';
-  monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:36px;padding:6px 2px;font-size:8px">'+h+'</th>';});
-  var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';
-  var tbody='';
-  rows.forEach(function(r){
-    var estadoClass=r.estado==='VIGENTE'?'color:var(--green)':r.estado==='CANCELADO'?'color:var(--red)':'color:var(--text3)';
-    var mthCells='';
-    monthHeaders.forEach(function(h,idx){
-      if(!h)return;
-      var paid=r.payments[idx];
-      if(paid){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-paid">$</span></td>';}
-      else{mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-unpaid">—</span></td>';}
-    });
-    tbody+='<tr><td>'+r.vendedor+'</td><td>'+r.cliente+'</td><td>'+r.detalle+'</td><td>'+r.fecha+'</td><td class="col-usd">'+r.costo+'</td><td>'+r.cuotas+'</td><td class="col-usd">'+r.valorCuota+'</td><td class="col-usd">'+r.venta+'</td>'+mthCells+'<td class="col-usd">'+r.restaCobrar+'</td><td class="col-usd">'+r.ganancia+'</td><td class="col-usd">'+r.cobrado+'</td><td style="'+estadoClass+';font-weight:600">'+r.estado+'</td></tr>';
-  });
-  var vigentes=rows.filter(function(r){return r.estado==='VIGENTE';}).length;
-  var totalCols=12+monthHeaders.filter(function(h){return!!h;}).length;
-  table.innerHTML=thead+'<tbody>'+tbody+'</tbody><tfoot><tr><td colspan="'+totalCols+'" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
+  // Legacy wrapper — now uses generic system
+  if(ventaDolaresRaw){cuotasPanelData['ventaDolares']={raw:ventaDolaresRaw,months:ventaDolaresMonths};}
+  renderCuotasPanel('ventaDolares');
+}
+function renderAllCuotasPanels(){
+  CUOTAS_PANELS.forEach(function(p){renderCuotasPanel(p.key);});
 }
 
 // Print / Export PDF

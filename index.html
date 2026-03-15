@@ -942,6 +942,9 @@ function toggleTheme(){
 (function(){var t=localStorage.getItem('dashTheme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('themeToggle');if(b)b.innerHTML='&#9728;';});}})(); // 'solo' = use sidebar currency, 'uni_usd' = unified USD, 'uni_pesos' = unified Pesos
 let filterMes='all';
 let filterVendedor='all';
+// URL parameter: ?vendedor=TINO locks the dashboard to that vendor
+var urlVendedor=(function(){var p=new URLSearchParams(window.location.search);return p.get('vendedor')||'';})();
+if(urlVendedor)filterVendedor=urlVendedor;
 
 async function fetchSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
@@ -1295,6 +1298,22 @@ function populateFilters(){
     sel2.innerHTML+=`<option value="${v}">${v}</option>`;
     if(mSel2)mSel2.innerHTML+=`<option value="${v}">${v}</option>`;
   });
+  // Lock filter if URL vendedor param is set
+  if(urlVendedor){
+    sel2.value=urlVendedor;
+    sel2.disabled=true;sel2.style.opacity='0.6';
+    if(mSel2){mSel2.value=urlVendedor;mSel2.disabled=true;mSel2.style.opacity='0.6';}
+    filterVendedor=urlVendedor;
+    // Update header title
+    var headerTitle=document.querySelector('.logo h1');
+    if(headerTitle)headerTitle.textContent='Dashboard '+urlVendedor;
+    var headerSub=document.querySelector('.logo span');
+    if(headerSub)headerSub.textContent='PANEL VENDEDOR';
+    var logoIcon=document.querySelector('.logo-icon');
+    if(logoIcon)logoIcon.textContent=urlVendedor.charAt(0);
+    var mobTitle=document.querySelector('.mob-title');
+    if(mobTitle)mobTitle.textContent='Dashboard '+urlVendedor;
+  }
 }
 
 function fmt(n,prefix='$'){

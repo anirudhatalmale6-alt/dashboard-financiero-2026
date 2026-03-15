@@ -99,9 +99,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-flag{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
 .kpi-flag.usd{background:rgba(52,211,153,.15);color:var(--green)}
 .kpi-flag.ars{background:rgba(96,165,250,.15);color:var(--blue)}
-.kpi-unificado{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.06) 50%,rgba(96,165,250,.06) 100%)!important}
-.kpi-unificado[data-color="green"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.08) 100%)!important}
-.kpi-unificado[data-color="blue"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(96,165,250,.08) 100%)!important}
+.kpi-unificado{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.10) 50%,rgba(96,165,250,.10) 100%)!important;border-color:rgba(52,211,153,.25)!important;box-shadow:0 0 20px rgba(52,211,153,.08),inset 0 1px 0 rgba(255,255,255,.03)!important}
+.kpi-unificado[data-color="green"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.14) 100%)!important;border-color:rgba(52,211,153,.30)!important;box-shadow:0 0 24px rgba(52,211,153,.10),inset 0 1px 0 rgba(255,255,255,.03)!important}
+.kpi-unificado[data-color="blue"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(96,165,250,.14) 100%)!important;border-color:rgba(96,165,250,.30)!important;box-shadow:0 0 24px rgba(96,165,250,.10),inset 0 1px 0 rgba(255,255,255,.03)!important}
 
 /* Ingresos Totales Table */
 .it-wrap{margin-bottom:32px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
@@ -135,7 +135,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s}
 .chart-card:hover{border-color:rgba(212,168,83,.3)}
 .chart-card.full{grid-column:1/-1}
-.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;text-transform:uppercase}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .chart-title .dot{width:8px;height:8px;border-radius:50%}
 .chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:8px}
 .chart-mode-toggle{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
@@ -175,7 +175,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .progress-bar{height:6px;background:var(--surface3);border-radius:3px;margin-top:10px;overflow:hidden}
 .progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:.6s}
 
-.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px;text-transform:uppercase}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
 .section-title em{font-style:normal;color:var(--gold)}
 
 /* Acumulado Monthly Cards */
@@ -464,20 +464,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
 .panel-area{margin:32px 0 16px}
-.panel-area-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase}
+.panel-area-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px}
 .panel-area-title em{color:var(--gold);font-style:normal}
 .panel-area-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
-.panel-groups{display:flex;flex-direction:column;gap:16px}
-.panel-group{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px}
-.panel-group-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.panel-group-label .pgl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.panel-group-btns{display:flex;flex-wrap:wrap;gap:8px}
-.panel-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .25s;letter-spacing:.2px}
+.panel-groups{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.panel-group{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;transition:.3s}
+.panel-group:hover{border-color:rgba(212,168,83,.3);transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3)}
+.panel-group::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--teal))}
+.panel-group-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel-group-label .pgl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.panel-group-btns{display:flex;flex-direction:column;gap:6px}
+.panel-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .25s;letter-spacing:.2px;width:100%}
 .panel-btn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,168,83,.15)}
 .panel-btn.active{border-color:var(--gold);background:rgba(212,168,83,.12);color:var(--gold);box-shadow:0 0 12px rgba(212,168,83,.1)}
 .panel-btn .pbtn-icon{font-size:11px}
-.panel-btn .pbtn-chevron{font-size:9px;transition:transform .3s;margin-left:2px;opacity:.6}
+.panel-btn .pbtn-chevron{font-size:9px;transition:transform .3s;margin-left:auto;opacity:.6}
 .panel-btn.active .pbtn-chevron{transform:rotate(180deg)}
+@media(max-width:1100px){.panel-groups{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.panel-groups{grid-template-columns:1fr}}
 .panel-section{max-height:0;overflow:hidden;transition:max-height .4s ease;margin-bottom:0}
 .panel-section.open{max-height:none;overflow:hidden;margin-bottom:16px}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}

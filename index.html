@@ -132,7 +132,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s}
 .chart-card:hover{border-color:rgba(212,168,83,.3)}
 .chart-card.full{grid-column:1/-1}
-.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;text-transform:uppercase}
 .chart-title .dot{width:8px;height:8px;border-radius:50%}
 .chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:8px}
 .chart-mode-toggle{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
@@ -172,7 +172,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .progress-bar{height:6px;background:var(--surface3);border-radius:3px;margin-top:10px;overflow:hidden}
 .progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:.6s}
 
-.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
+.section-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:18px;letter-spacing:-.5px;text-transform:uppercase}
 .section-title em{font-style:normal;color:var(--gold)}
 
 /* Acumulado Monthly Cards */
@@ -461,7 +461,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cuota-paid{background:var(--green);color:#000}
 .cuota-unpaid{background:rgba(180,180,180,.25);color:var(--text3)}
 .panel-area{margin:32px 0 16px}
-.panel-area-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px}
+.panel-area-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase}
 .panel-area-title em{color:var(--gold);font-style:normal}
 .panel-area-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
 .panel-groups{display:flex;flex-direction:column;gap:16px}
@@ -529,7 +529,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </select>
   </div>
 
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" id="sidebarNav">
     <div class="sidebar-nav-title">Navegación</div>
     <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen General</a>
     <a onclick="document.getElementById('secIngresosTotales').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
@@ -798,7 +798,17 @@ function togglePanel(name){
 // Build panel groups and sections dynamically from CUOTAS_PANELS config
 function buildCuotasPanels(){
   var groups={};
-  CUOTAS_PANELS.forEach(function(p){
+  var panelsToShow=CUOTAS_PANELS;
+  // When vendor link is active, only show panels for that vendor
+  if(urlVendedor&&filterVendedor!=='all'){
+    var vl=filterVendedor.toLowerCase();
+    panelsToShow=CUOTAS_PANELS.filter(function(p){return p.vendor.toLowerCase().indexOf(vl)>=0||vl.indexOf(p.vendor.toLowerCase())>=0;});
+    // Also include TECNO panels since admin data contains all vendors
+    if(panelsToShow.length===0){
+      panelsToShow=CUOTAS_PANELS.filter(function(p){return p.vendor==='TECNO';});
+    }
+  }
+  panelsToShow.forEach(function(p){
     if(!groups[p.vendor])groups[p.vendor]={color:p.color,panels:[]};
     groups[p.vendor].panels.push(p);
   });
@@ -1288,6 +1298,13 @@ function populateFilters(){
     sel.innerHTML+=`<option value="${m}">${m}</option>`;
     if(mSel)mSel.innerHTML+=`<option value="${m}">${m}</option>`;
   });
+  // Default to current month
+  var mesNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var curMes=mesNames[new Date().getMonth()];
+  if(meses.includes(curMes)){
+    sel.value=curMes;filterMes=curMes;
+    if(mSel)mSel.value=curMes;
+  }
 
   const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
   const sel2=document.getElementById('filterVendedor');
@@ -1314,6 +1331,30 @@ function populateFilters(){
     if(logoIcon)logoIcon.textContent=matchedVend.charAt(0);
     var mobTitle=document.querySelector('.mob-title');
     if(mobTitle)mobTitle.textContent='Dashboard '+matchedVend;
+    // Update main header and page title for vendor dashboard
+    var mainH2=document.querySelector('.header h2');
+    if(mainH2)mainH2.innerHTML='Dashboard <em>'+matchedVend+'</em>';
+    var mainSub=document.querySelector('.header-sub');
+    if(mainSub)mainSub.textContent='Panel exclusivo de vendedor — solo tu información';
+    document.title='Dashboard '+matchedVend+' 2026';
+    // Hide financial-only sections for vendor dashboard
+    var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
+      'secDetalleIngresos','ingresosMensualContainer',
+      'secAcumuladoAnual','acumCards','secGraficos',
+      'secRanking','rankings','secModulos','modules',
+      'secDetalle','moduleDetails','secCuotas','cuotasCards',
+      'secCuotasPesos','cuotasCardsPesos',
+      'secInversiones','invSection','secEstadoCuentas','ecSection',
+      'secDashVendedores'];
+    hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+    // Also hide chart containers after cuotasCards
+    document.querySelectorAll('#cuotasCards+.charts,#cuotasCardsPesos+.charts').forEach(function(el){el.style.display='none';});
+    // Simplify sidebar nav for vendor dashboard
+    var navEl=document.getElementById('sidebarNav');
+    if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
+      '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
+      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
+      '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}
   }
 }
 

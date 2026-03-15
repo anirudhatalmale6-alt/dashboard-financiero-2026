@@ -862,7 +862,6 @@ function renderCuotasPanel(panelKey){
   // Helper: find date column in a row (returns col index or -1)
   function findDateCol(r){for(var c=3;c<=5;c++){if(r[c]&&String(r[c]).indexOf('Date(')>=0)return c;}return-1;}
   var rows=[];
-  var dataRowIdx=0;
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];
     if(!r)continue;
@@ -896,51 +895,41 @@ function renderCuotasPanel(panelKey){
     var estado='';
     if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado)estado='VIGENTE';
-    // Cuota payment tracking — MIRROR of spreadsheet using CSV data
-    // gviz JSON loses cuota amounts (coerced to boolean), so we use CSV
-    // CSV data row: has "U$D 130" text in payment cells for unpaid months
-    // CSV bool row: TRUE=paid, empty=has amount, FALSE=no cuota
+    // Cuota payment tracking using numCuotas + gviz bool row
+    // Bool row TRUE = cuota cell (paid or has amount, gviz coerces both to TRUE)
+    // Strategy: find first TRUE = plan start, take numCuotas cells from there
+    // Paid count estimated from cobrado/rawCuota
     var payments=[];
     var paymentAmts=[];
     var actualCuotaCount=0;
-    var csvPair=d.csvPairs?d.csvPairs[dataRowIdx]:null;
-    if(csvPair){
-      var csvData=csvPair.data;
-      var csvBool=csvPair.bool;
+    var planStart=-1;
+    for(var c=12;c<=40;c++){if(boolRow[c]===true){planStart=c;break;}}
+    if(planStart>=0&&numC>0){
+      // Calculate paid count from cobrado/rawCuota
+      var cobradoVal=typeof r[43]==='number'?r[43]:0;
+      var calcPaid=rawCuota>0?Math.round(cobradoVal/rawCuota):0;
+      if(calcPaid>numC)calcPaid=numC;
+      var cellsAssigned=0;
       for(var c=12;c<=40;c++){
-        var cellText=(csvData[c]||'').trim();
-        var boolText=(csvBool[c]||'').trim().toUpperCase();
-        var hasAmount=(cellText.length>0&&cellText!=='TRUE'&&cellText!=='FALSE');
-        var isPaid=(boolText==='TRUE');
-        if(hasAmount||isPaid){
-          // Parse amount from cell text: "U$D 130" or "$ 1.500" → number
-          var cellAmt=0;
-          if(hasAmount){
-            var numStr=cellText.replace(/[^\d.,\-]/g,'').replace(/\./g,'').replace(',','.');
-            cellAmt=Math.round(parseFloat(numStr))||rawCuota;
-          }else{cellAmt=rawCuota;}
-          payments.push(isPaid?'paid':'unpaid');
-          paymentAmts.push(cellAmt);
-          actualCuotaCount++;
+        if(c<planStart||cellsAssigned>=numC){
+          payments.push('none');paymentAmts.push(0);
         }else{
-          payments.push('none');
-          paymentAmts.push(0);
+          var isPaid3=(cellsAssigned<calcPaid);
+          payments.push(isPaid3?'paid':'unpaid');
+          paymentAmts.push(rawCuota);
+          cellsAssigned++;
+          actualCuotaCount++;
         }
       }
-    }else{
-      // Fallback: no CSV data, use numCuotas + bool row from gviz
-      var paidCount=0;
-      for(var c=12;c<=40;c++){if(boolRow[c]===true)paidCount++;}
-      var totalC=numC||paidCount;
+    }else if(numC>0){
+      // No TRUE found but has numCuotas — show all as unpaid starting from col 12
       for(var c=12;c<=40;c++){
-        if(actualCuotaCount>=totalC){payments.push('none');paymentAmts.push(0);continue;}
-        var isPaid2=(boolRow[c]===true);
-        if(isPaid2){payments.push('paid');paymentAmts.push(rawCuota);actualCuotaCount++;}
-        else if(actualCuotaCount>0&&actualCuotaCount<totalC){payments.push('unpaid');paymentAmts.push(rawCuota);actualCuotaCount++;}
-        else{payments.push('none');paymentAmts.push(0);}
+        if(actualCuotaCount>=numC){payments.push('none');paymentAmts.push(0);}
+        else{payments.push('unpaid');paymentAmts.push(rawCuota);actualCuotaCount++;}
       }
+    }else{
+      for(var c=12;c<=40;c++){payments.push('none');paymentAmts.push(0);}
     }
-    dataRowIdx++;
     rows.push({
       vendedor:vendedor,cliente:cliente,detalle:detalle,
       fecha:fd(fecha),costo:fv(monto),cuotas:actualCuotaCount||r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
@@ -1035,52 +1024,6 @@ async function fetchSheetRangeById(sheetId,name,range){
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 
-// CSV fetch for cuotas — gviz JSON coerces text amounts to boolean, losing per-cell cuota values
-// CSV preserves the actual "U$D 130" text in payment grid cells
-async function fetchCSVSheetById(sheetId,name){
-  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}&range=A1:AO500`;
-  const r=await fetch(url);
-  const text=await r.text();
-  return parseCSV(text);
-}
-function parseCSV(text){
-  var rows=[];var row=[];var field='';var inQuote=false;
-  for(var i=0;i<text.length;i++){
-    var ch=text[i];
-    if(inQuote){
-      if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}
-      else if(ch==='"'){inQuote=false;}
-      else{field+=ch;}
-    }else{
-      if(ch==='"'){inQuote=true;}
-      else if(ch===','){row.push(field);field='';}
-      else if(ch==='\n'||ch==='\r'){
-        if(ch==='\r'&&text[i+1]==='\n')i++;
-        row.push(field);field='';rows.push(row);row=[];
-      }else{field+=ch;}
-    }
-  }
-  if(field||row.length>0){row.push(field);rows.push(row);}
-  return rows;
-}
-// Build paired CSV data: extract (dataRow, boolRow) pairs from CSV for cuotas payment grid
-function buildCSVPairs(csvRows){
-  var pairs=[];
-  for(var i=0;i<csvRows.length;i++){
-    var r=csvRows[i];
-    // A data row has a non-empty value in col 2 (client name) that's not a header
-    var c2=(r[2]||'').trim();
-    if(!c2||c2==='CLIENTES'||c2==='CLIENTE')continue;
-    // Check if this row has some sale info (col 4 or 3 should have a date-like string)
-    var hasDate=false;
-    for(var dc=3;dc<=5;dc++){if(r[dc]&&/\d{1,2}\/\d{1,2}\/\d{4}/.test(r[dc])){hasDate=true;break;}}
-    if(!hasDate)continue;
-    // Next row should be the bool tracking row
-    var boolR=csvRows[i+1]||[];
-    pairs.push({data:r,bool:boolR,csvIdx:i});
-  }
-  return pairs;
-}
 // ============================================================
 // CUOTAS PANEL CONFIGURATION
 // Each panel: { key, vendor, label, icon, currency, sheetId, tab }
@@ -1347,11 +1290,9 @@ async function loadAllData(){
       var tab=p.tab;
       Promise.all([
         fetchRawSheetById(sid,tab),
-        fetchSheetRangeById(sid,tab,'M2:AO2'),
-        fetchCSVSheetById(sid,tab)
+        fetchSheetRangeById(sid,tab,'M2:AO2')
       ]).then(function(res){
-        var csvPairs=buildCSVPairs(res[2]);
-        cuotasPanelData[p.key]={raw:res[0],months:res[1][0]||[],csvPairs:csvPairs};
+        cuotasPanelData[p.key]={raw:res[0],months:res[1][0]||[]};
         // Keep legacy variables for backward compat
         if(p.key==='ventaDolares'){ventaDolaresRaw=res[0];ventaDolaresMonths=res[1][0]||[];}
         renderCuotasPanel(p.key);

@@ -521,6 +521,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>
     <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cronograma Inversiones</a>
+    <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Venta en Dólares</a>
     <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
@@ -650,11 +651,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <!-- Venta en Dólares - Collapsible -->
-  <div class="chart-card full" style="margin-top:24px" id="ventaDolaresCard">
-    <div class="chart-title collapsible-toggle" onclick="toggleCollapse(this)">
-      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--gold)"></span>Venta en Dólares — Cronograma de Cobros</span>
-      <span class="chevron">&#9660;</span>
+  <!-- Venta en Dólares - Section with collapsible table -->
+  <div class="section-divider" id="secVentaDolares">
+    <h2>Venta en <em>Dólares</em></h2>
+    <div class="divider-sub">Cronograma de cobros y pagos — clic para desplegar la tabla</div>
+  </div>
+  <div class="chart-card full" id="ventaDolaresCard">
+    <div class="chart-title collapsible-toggle" onclick="toggleCollapse(this)" style="cursor:pointer">
+      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--gold)"></span>Ver Cronograma de Cobros</span>
+      <span class="chevron" style="font-size:16px">&#9660;</span>
     </div>
     <div class="collapsible-body" id="ventaDolaresBody">
       <div class="chart-subtitle" style="margin-top:8px">Detalle de ventas, cuotas y estado de cobro</div>
@@ -2848,9 +2853,10 @@ function renderSidebarStats(){
 // Venta en Dólares
 function renderVentaDolares(){
   var card=document.getElementById('ventaDolaresCard');
+  var sec=document.getElementById('secVentaDolares');
   var table=document.getElementById('ventaDolaresTable');
-  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';return;}
-  if(card)card.style.display='';
+  if(!ventaDolaresRaw||ventaDolaresRaw.length<4){if(card)card.style.display='none';if(sec)sec.style.display='none';return;}
+  if(card)card.style.display='';if(sec)sec.style.display='';
   // Row 2 (index 2) has headers: B=VENDEDOR, C=CLIENTES, D=DETALLE, E=FECHA, F=COSTO, G=PR, H=INV, I=CUOTAS, J=VALOR CUOTA, K=COMISION, L=VENTA
   // Data rows start at index 2, every other row is a boolean tracking row (skip those)
   // AP(41)=Resta Cobrar, AQ(42)=Ganancia, AR(43)=Cobrado, AS(44)=Estado

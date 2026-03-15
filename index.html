@@ -97,8 +97,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-trend.down{background:rgba(248,113,113,.12);color:#f87171}
 .kpi-trend.flat{background:rgba(148,163,184,.12);color:#94a3b8}
 .kpi-flag{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
-.kpi-flag.usd{background:rgba(212,168,83,.15);color:var(--gold)}
+.kpi-flag.usd{background:rgba(52,211,153,.15);color:var(--green)}
 .kpi-flag.ars{background:rgba(96,165,250,.15);color:var(--blue)}
+.kpi-unificado{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.06) 50%,rgba(96,165,250,.06) 100%)!important}
+.kpi-unificado[data-color="green"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(52,211,153,.08) 100%)!important}
+.kpi-unificado[data-color="blue"]{background:linear-gradient(135deg,var(--surface) 0%,rgba(96,165,250,.08) 100%)!important}
 
 /* Ingresos Totales Table */
 .it-wrap{margin-bottom:32px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
@@ -892,27 +895,40 @@ function renderCuotasPanel(panelKey){
     var estado='';
     if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado)estado='VIGENTE';
-    // Cuota payment tracking from boolean row
-    var cuotaStart=-1;
-    for(var c=12;c<=40;c++){if(boolRow[c]===true){cuotaStart=c-12;break;}}
-    if(cuotaStart<0&&fecha){
-      var ds=String(fecha);var dm=ds.match(/Date\((\d+),(\d+),(\d+)\)/);
-      if(dm){var sy=parseInt(dm[1]);var sm=parseInt(dm[2]);cuotaStart=(sy-2025)*12+(sm-7);if(cuotaStart<0)cuotaStart=0;}
-    }
-    if(cuotaStart<0)cuotaStart=0;
-    var cuotaEnd=cuotaStart+numC-1;
+    // Cuota payment tracking — scan ACTUAL cells (mirror of spreadsheet)
+    // Don't rely on numCuotas (col I) — customers refinance and add extra months
     var payments=[];
+    var paymentAmts=[];
+    var actualCuotaCount=0;
     for(var c=12;c<=40;c++){
-      var idx=c-12;
-      if(idx>=cuotaStart&&idx<=cuotaEnd){
-        payments.push(boolRow[c]===true?'paid':'unpaid');
-      }else{payments.push('none');}
+      var dataVal=r[c];
+      var boolVal=boolRow[c];
+      var hasData=false;
+      var cellAmt=0;
+      // Check bool row: TRUE=paid, FALSE=unpaid scheduled payment
+      if(boolVal===true||boolVal===false){
+        hasData=true;
+        cellAmt=(typeof dataVal==='number'&&dataVal>0)?Math.round(dataVal):rawCuota;
+      }
+      // Check data row: numeric value > 0 means scheduled cuota
+      else if(typeof dataVal==='number'&&dataVal>0){
+        hasData=true;
+        cellAmt=Math.round(dataVal);
+      }
+      if(hasData){
+        payments.push(boolVal===true?'paid':'unpaid');
+        paymentAmts.push(cellAmt);
+        actualCuotaCount++;
+      }else{
+        payments.push('none');
+        paymentAmts.push(0);
+      }
     }
     rows.push({
       vendedor:vendedor,cliente:cliente,detalle:detalle,
-      fecha:fd(fecha),costo:fv(monto),cuotas:r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
+      fecha:fd(fecha),costo:fv(monto),cuotas:actualCuotaCount||r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
       venta:fv(r[11]),restaCobrar:fv(r[41]),ganancia:fv(r[42]),cobrado:fv(r[43]),estado:estado,
-      payments:payments,numCuotas:numC
+      payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount
     });
   }
   if(filterVendedor!=='all'){
@@ -931,7 +947,8 @@ function renderCuotasPanel(panelKey){
     monthHeaders.forEach(function(h,idx){
       if(!h)return;
       var st=r.payments[idx];
-      var amt=r.rawCuota?r.rawCuota.toLocaleString('es-AR'):'';
+      var cellAmt=r.paymentAmts?r.paymentAmts[idx]:0;
+      var amt=cellAmt?cellAmt.toLocaleString('es-AR'):(r.rawCuota?r.rawCuota.toLocaleString('es-AR'):'');
       if(st==='paid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-paid">'+amt+'</span></td>';}
       else if(st==='unpaid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-unpaid">'+amt+'</span></td>';}
       else{mthCells+='<td style="text-align:center;padding:4px 2px"></td>';}
@@ -2532,9 +2549,9 @@ function renderKPIs(){
       `<div class="kpi" data-color="green"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Mejor Mes $</div><div class="kpi-value">${fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0)))}</div></div>`;
 
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}</div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}</div>
       ${gastosCardUSD}
-      <div class="kpi" data-color="gold2"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
       <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Acumulado Dólares</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div>${tGanP}</div>
       ${gastosCardPesos}
@@ -2567,13 +2584,13 @@ function renderKPIs(){
     }
 
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
-      <div class="kpi" data-color="gold"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
+      <div class="kpi kpi-unificado" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi kpi-unificado" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
+      <div class="kpi" data-color="red"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
     `;
   }

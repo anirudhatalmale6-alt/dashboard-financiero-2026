@@ -895,28 +895,21 @@ function renderCuotasPanel(panelKey){
     var estado='';
     if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado)estado='VIGENTE';
-    // Cuota payment tracking — scan ACTUAL cells (mirror of spreadsheet)
-    // Don't rely on numCuotas (col I) — customers refinance and add extra months
+    // Cuota payment tracking — mirror of spreadsheet
+    // Scan actual cuota amounts in data row (not numCuotas from col I)
+    // Customers refinance: col I may say 8 but actual payment cells may have 12
     var payments=[];
     var paymentAmts=[];
     var actualCuotaCount=0;
     for(var c=12;c<=40;c++){
       var dataVal=r[c];
       var boolVal=boolRow[c];
-      var hasData=false;
-      var cellAmt=0;
-      // Check bool row: TRUE=paid, FALSE=unpaid scheduled payment
-      if(boolVal===true||boolVal===false){
-        hasData=true;
-        cellAmt=(typeof dataVal==='number'&&dataVal>0)?Math.round(dataVal):rawCuota;
-      }
-      // Check data row: numeric value > 0 means scheduled cuota
-      else if(typeof dataVal==='number'&&dataVal>0){
-        hasData=true;
-        cellAmt=Math.round(dataVal);
-      }
-      if(hasData){
-        payments.push(boolVal===true?'paid':'unpaid');
+      var hasAmount=(typeof dataVal==='number'&&dataVal>0);
+      var isPaid=(boolVal===true);
+      if(hasAmount||isPaid){
+        // This month has a cuota: amount from data row, or fallback to rawCuota
+        var cellAmt=hasAmount?Math.round(dataVal):rawCuota;
+        payments.push(isPaid?'paid':'unpaid');
         paymentAmts.push(cellAmt);
         actualCuotaCount++;
       }else{

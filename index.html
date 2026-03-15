@@ -1298,21 +1298,22 @@ function populateFilters(){
     sel2.innerHTML+=`<option value="${v}">${v}</option>`;
     if(mSel2)mSel2.innerHTML+=`<option value="${v}">${v}</option>`;
   });
-  // Lock filter if URL vendedor param is set
+  // Lock filter if URL vendedor param is set (case-insensitive match)
   if(urlVendedor){
-    sel2.value=urlVendedor;
+    var matchedVend=vends.find(v=>v.toLowerCase()===urlVendedor.toLowerCase())||urlVendedor;
+    sel2.value=matchedVend;
     sel2.disabled=true;sel2.style.opacity='0.6';
-    if(mSel2){mSel2.value=urlVendedor;mSel2.disabled=true;mSel2.style.opacity='0.6';}
-    filterVendedor=urlVendedor;
+    if(mSel2){mSel2.value=matchedVend;mSel2.disabled=true;mSel2.style.opacity='0.6';}
+    filterVendedor=matchedVend;
     // Update header title
     var headerTitle=document.querySelector('.logo h1');
-    if(headerTitle)headerTitle.textContent='Dashboard '+urlVendedor;
+    if(headerTitle)headerTitle.textContent='Dashboard '+matchedVend;
     var headerSub=document.querySelector('.logo span');
     if(headerSub)headerSub.textContent='PANEL VENDEDOR';
     var logoIcon=document.querySelector('.logo-icon');
-    if(logoIcon)logoIcon.textContent=urlVendedor.charAt(0);
+    if(logoIcon)logoIcon.textContent=matchedVend.charAt(0);
     var mobTitle=document.querySelector('.mob-title');
-    if(mobTitle)mobTitle.textContent='Dashboard '+urlVendedor;
+    if(mobTitle)mobTitle.textContent='Dashboard '+matchedVend;
   }
 }
 

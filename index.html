@@ -819,7 +819,7 @@ function buildCuotasPanels(){
   document.getElementById('panelSections').innerHTML=secHtml;
 }
 
-// Generic cuotas panel render function
+// Generic cuotas panel render function — auto-detects column layout and interleaved rows
 function renderCuotasPanel(panelKey){
   var cfg=null;
   for(var i=0;i<CUOTAS_PANELS.length;i++){if(CUOTAS_PANELS[i].key===panelKey){cfg=CUOTAS_PANELS[i];break;}}
@@ -829,7 +829,7 @@ function renderCuotasPanel(panelKey){
   var btn=document.getElementById('btn'+K);
   var table=document.getElementById(panelKey+'Table');
   var d=cuotasPanelData[panelKey];
-  if(!d||!d.raw||d.raw.length<4){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
+  if(!d||!d.raw||d.raw.length<2){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
   if(card)card.style.display='';if(btn)btn.style.display='';
   var MESES_ES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   var monthHeaders=[];
@@ -844,20 +844,49 @@ function renderCuotasPanel(panelKey){
   var cur=cfg.currency;
   function fv(v){if(typeof v==='number')return cur+' '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
   function fd(v){if(!v)return'—';var s=String(v);var m2=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m2)return parseInt(m2[3])+'/'+((parseInt(m2[2])+1))+'/'+m2[1];if(typeof v==='string')return v;return'—';}
+  // Helper: detect if row is a boolean tracking row (has True/False in cols 12-20)
+  function isBoolRow(r){if(!r)return false;for(var c=12;c<=20;c++){if(r[c]===true||r[c]===false)return true;}return false;}
+  // Helper: find date column in a row (returns col index or -1)
+  function findDateCol(r){for(var c=3;c<=5;c++){if(r[c]&&String(r[c]).indexOf('Date(')>=0)return c;}return-1;}
   var rows=[];
-  for(var i=2;i<d.raw.length;i++){
+  for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];
-    if(!r||!r[1])continue;
-    var estado=r[44]?String(r[44]).trim():'';
-    if(!estado)continue;
-    var boolRow=d.raw[i+1]||[];
+    if(!r)continue;
+    // Skip boolean tracking rows
+    if(isBoolRow(r))continue;
+    // Skip header/title rows — must have a date to be a data row
+    var dateCol=findDateCol(r);
+    if(dateCol<0)continue;
+    // This is a data row. Boolean tracking is at i+1
+    var boolRow=(i+1<d.raw.length)?d.raw[i+1]:[];
+    if(!boolRow)boolRow=[];
+    // Auto-detect column mapping based on date position
+    var vendedor,cliente,detalle,fecha,monto;
+    if(dateCol===4){
+      // Standard: c1=vendedor, c2=cliente, c3=detalle, c4=fecha, c5=monto
+      vendedor=r[1]||cfg.vendor;
+      cliente=r[2]||'';detalle=r[3]||'';fecha=r[4];monto=r[5];
+    }else if(dateCol===3){
+      // Shifted: c0=num, c1=cliente, c2=detalle, c3=fecha, c4=monto
+      vendedor=cfg.vendor;
+      cliente=r[1]||r[2]||'';detalle=r[2]||'';fecha=r[3];monto=r[4];
+    }else{
+      vendedor=cfg.vendor;cliente=r[2]||'';detalle=r[3]||'';fecha=r[dateCol];monto=r[dateCol+1];
+    }
+    // If vendedor looks like a header label, use config vendor
+    if(vendedor==='CLIENTES'||vendedor==='VENDEDOR'||vendedor==='DETALLE')vendedor=cfg.vendor;
+    // col[8]=numCuotas, col[9]=cuota amount (consistent across all sheets)
     var numC=parseInt(r[8])||0;
-    // Find first TRUE to anchor cuota start; if none, estimate from sale date
+    var rawCuota=typeof r[9]==='number'?Math.round(r[9]):0;
+    // Estado: col[44] if it's a string, otherwise assume VIGENTE
+    var estado='';
+    if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
+    if(!estado)estado='VIGENTE';
+    // Cuota payment tracking from boolean row
     var cuotaStart=-1;
     for(var c=12;c<=40;c++){if(boolRow[c]===true){cuotaStart=c-12;break;}}
-    if(cuotaStart<0&&r[4]){
-      // Estimate from sale date: col 12=Aug 2025
-      var ds=String(r[4]);var dm=ds.match(/Date\((\d+),(\d+),(\d+)\)/);
+    if(cuotaStart<0&&fecha){
+      var ds=String(fecha);var dm=ds.match(/Date\((\d+),(\d+),(\d+)\)/);
       if(dm){var sy=parseInt(dm[1]);var sm=parseInt(dm[2]);cuotaStart=(sy-2025)*12+(sm-7);if(cuotaStart<0)cuotaStart=0;}
     }
     if(cuotaStart<0)cuotaStart=0;
@@ -869,18 +898,19 @@ function renderCuotasPanel(panelKey){
         payments.push(boolRow[c]===true?'paid':'unpaid');
       }else{payments.push('none');}
     }
-    var rawCuota=typeof r[9]==='number'?Math.round(r[9]):0;
     rows.push({
-      vendedor:r[1]||'',cliente:r[2]||'',detalle:r[3]||'',
-      fecha:fd(r[4]),costo:fv(r[5]),cuotas:r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
+      vendedor:vendedor,cliente:cliente,detalle:detalle,
+      fecha:fd(fecha),costo:fv(monto),cuotas:r[8]||'',valorCuota:fv(r[9]),rawCuota:rawCuota,
       venta:fv(r[11]),restaCobrar:fv(r[41]),ganancia:fv(r[42]),cobrado:fv(r[43]),estado:estado,
-      payments:payments,numCuotas:parseInt(r[8])||0
+      payments:payments,numCuotas:numC
     });
   }
   if(filterVendedor!=='all'){
     var fv2=filterVendedor.toLowerCase();
     rows=rows.filter(function(r){return r.vendedor.toLowerCase().indexOf(fv2)>=0;});
   }
+  // Hide panel if no data rows found
+  if(rows.length===0){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
   var mthHdr='';
   monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:36px;padding:6px 2px;font-size:8px">'+h+'</th>';});
   var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';
@@ -964,37 +994,41 @@ async function fetchSheetRangeById(sheetId,name,range){
 // ============================================================
 var CUOTAS_PANELS=[
   {key:'ventaDolares',vendor:'TECNO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA EN DOLARES',color:'var(--gold)'},
-  {key:'ventaPesos',vendor:'TECNO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTA EN PESOS',color:'var(--gold)'},
-  {key:'creditosPesos',vendor:'CRÉDITOS',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'CREDITOS',color:'var(--purple)'},
-  {key:'inversionesDolares',vendor:'INVERSIONES',label:'Inversiones en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'INVERSIONES',color:'var(--green)'},
+  {key:'ventaPesos',vendor:'TECNO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTAS EN PESOS',color:'var(--gold)'},
+  {key:'creditosPesos',vendor:'CRÉDITOS',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTA CREDITOS EN PESOS',color:'var(--purple)'},
+  {key:'creditosDolares',vendor:'CRÉDITOS',label:'Créditos en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA CREDITOS EN DOLARES',color:'var(--purple)'},
+  {key:'inversionesDolares',vendor:'INVERSIONES',label:'Inversiones en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'INVERSIONES CRONOGRAMA',color:'var(--green)'},
   // LINEA 314
-  {key:'linea314Dolares',vendor:'LINEA 314',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTA EN DOLARES',color:'var(--blue)'},
-  {key:'linea314Pesos',vendor:'LINEA 314',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTA EN PESOS',color:'var(--blue)'},
+  {key:'linea314Dolares',vendor:'LINEA 314',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTAS EN DOLARES',color:'var(--blue)'},
+  {key:'linea314Pesos',vendor:'LINEA 314',label:'Créditos y Pesos',icon:'$',currency:'$',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'CREDITOS Y VENTA EN PESOS',color:'var(--blue)'},
   // OSITO
-  {key:'ositoDolares',vendor:'OSITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN DOLARES',color:'var(--orange)'},
-  {key:'ositoPesos',vendor:'OSITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN PESOS',color:'var(--orange)'},
-  {key:'ositoCreditos',vendor:'OSITO',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA DE CREDITOS EN PESOS',color:'var(--orange)'},
+  {key:'ositoDolares',vendor:'OSITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTAS EN DOLARES',color:'var(--orange)'},
+  {key:'ositoPesos',vendor:'OSITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTAS EN PESOS',color:'var(--orange)'},
+  {key:'ositoCreditos',vendor:'OSITO',label:'Créditos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA DE CREDITOS',color:'var(--orange)'},
   // MELY
   {key:'melyDolares',vendor:'MELY',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN DOLARES',color:'var(--pink)'},
   {key:'melyPesos',vendor:'MELY',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN PESOS',color:'var(--pink)'},
+  {key:'melyCreditos',vendor:'MELY',label:'Créditos',icon:'$',currency:'$',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'CREDITOS',color:'var(--pink)'},
   // GONZA
-  {key:'gonzaDolares',vendor:'GONZA',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN DOLARES',color:'var(--teal)'},
-  {key:'gonzaPesos',vendor:'GONZA',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN PESOS',color:'var(--teal)'},
+  {key:'gonzaDolares',vendor:'GONZA',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTAS EN DOLARES',color:'var(--teal)'},
+  {key:'gonzaPesos',vendor:'GONZA',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTAS EN PESOS',color:'var(--teal)'},
   // TOBIAS
-  {key:'tobiasDolares',vendor:'TOBIAS',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTA EN DOLARES',color:'var(--cyan)'},
-  {key:'tobiasPesos',vendor:'TOBIAS',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTA EN PESOS',color:'var(--cyan)'},
+  {key:'tobiasDolares',vendor:'TOBIAS',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS EN DOLARES',color:'var(--cyan)'},
+  {key:'tobiasPesos',vendor:'TOBIAS',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS EN PESOS',color:'var(--cyan)'},
   // TINO
-  {key:'tinoDolares',vendor:'TINO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTA EN DOLARES',color:'var(--red)'},
-  {key:'tinoPesos',vendor:'TINO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTA EN PESOS',color:'var(--red)'},
+  {key:'tinoDolares',vendor:'TINO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTAS EN DOLARES',color:'var(--red)'},
+  {key:'tinoPesos',vendor:'TINO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTAS EN PESOS',color:'var(--red)'},
   // PATO (PATITO)
-  {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN DOLARES',color:'#e879f9'},
-  {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN PESOS',color:'#e879f9'},
+  {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN DOLARES',color:'#e879f9'},
+  {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN PESOS',color:'#e879f9'},
   // MODULO 1
   {key:'modulo1Dolares',vendor:'MÓDULO 1',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN DOLARES',color:'#94a3b8'},
   {key:'modulo1Pesos',vendor:'MÓDULO 1',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN PESOS',color:'#94a3b8'},
+  {key:'modulo1Creditos',vendor:'MÓDULO 1',label:'Créditos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'CREDITOS',color:'#94a3b8'},
   // MODULO 2
   {key:'modulo2Dolares',vendor:'MÓDULO 2',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN DOLARES',color:'#cbd5e1'},
-  {key:'modulo2Pesos',vendor:'MÓDULO 2',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN PESOS',color:'#cbd5e1'}
+  {key:'modulo2Pesos',vendor:'MÓDULO 2',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN PESOS',color:'#cbd5e1'},
+  {key:'modulo2Creditos',vendor:'MÓDULO 2',label:'Créditos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'CREDITOS',color:'#cbd5e1'}
 ];
 var cuotasPanelData={};
 

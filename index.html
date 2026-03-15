@@ -618,7 +618,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="charts" id="secGraficos">
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
-      <div class="chart-subtitle">Ingresos vs Gastos Fijos (DASHBOARD) — 2026</div>
+      <div class="chart-subtitle">Ingresos vs Gastos (DASHBOARD) — 2026</div>
       <div class="chart-mode-toggle" id="chartModeToggle">
         <button class="cm-btn active" data-mode="solo" onclick="setChartMode('solo')">Solo</button>
         <button class="cm-btn" data-mode="uni_usd" onclick="setChartMode('uni_usd')">Unificado U$D</button>
@@ -1181,9 +1181,9 @@ function enrichVendedorFromRaw(raw){
       const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
       const entry=allData.vendedor.find(r=>r.Vendedor===vc.name&&r.Mes===mes);
       if(entry){
-        // Only override when LS returned 0 (handles string-formatted DASHBOARD cells)
-        if(!entry.Ganancia_USD&&usd)entry.Ganancia_USD=usd;
-        if(!entry.Ganancia_Pesos&&pesos)entry.Ganancia_Pesos=pesos;
+        // Always use DASHBOARD raw data as source of truth
+        if(usd!==0)entry.Ganancia_USD=usd;
+        if(pesos!==0)entry.Ganancia_Pesos=pesos;
       }else if(usd||pesos){
         allData.vendedor.push({Vendedor:vc.name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
       }
@@ -1392,28 +1392,29 @@ function populateFilters(){
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficos',
       'secRanking','rankings','secModulos','modules',
-      'secDetalle','moduleDetails','secCuotas','cuotasCards',
-      'secCuotasPesos','cuotasCardsPesos',
+      'secDetalle','moduleDetails',
       'secInversiones','invSection','secEstadoCuentas','ecSection',
       'secDashVendedores'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
-    // Also hide chart containers after cuotasCards
-    document.querySelectorAll('#cuotasCards+.charts,#cuotasCardsPesos+.charts').forEach(function(el){el.style.display='none';});
+    // Cuotas charts visible for vendor dashboards too
     // Reorder sections: move GANANCIAS (secVendedorDetail) to top, before Acumulado Anual
     var mainEl=document.querySelector('.main');
     var acumTitle=document.getElementById('secAcumuladoAnual');
     if(mainEl&&acumTitle){
       // Move vendedor detail (ganancias) section before acumulado
-      var moveIds=['secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
+      var moveIds=['vendedorKpis','secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
       moveIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,acumTitle);});
-      // Move Control de Cuotas after vendor dashboard content
-      var vendDash=document.getElementById('secVendedorDash');
-      if(vendDash){
-        var cuotasArea=document.getElementById('secVentaDolares');
-        var cuotasSections=document.getElementById('panelSections');
-        var vendContainer=document.getElementById('vendedorDashContainer');
-        var insertRef=vendContainer?vendContainer.nextSibling:null;
-        if(cuotasArea&&insertRef){mainEl.insertBefore(cuotasArea,insertRef);if(cuotasSections)mainEl.insertBefore(cuotasSections,insertRef);}
+      // Move Control de Cuotas and Cuota cards/charts after vendor dashboard content
+      var vendContainer=document.getElementById('vendedorDashContainer');
+      var insertRef=vendContainer?vendContainer.nextSibling:null;
+      if(insertRef){
+        var cuotaMoveIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secVentaDolares','panelSections'];
+        cuotaMoveIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,insertRef);});
+        // Also move chart containers after cuotasCards
+        var cc=document.getElementById('cuotasCards');
+        if(cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts'))mainEl.insertBefore(cc.nextElementSibling,document.getElementById('secCuotasPesos'));
+        var ccp=document.getElementById('cuotasCardsPesos');
+        if(ccp&&ccp.nextElementSibling&&ccp.nextElementSibling.classList.contains('charts'))mainEl.insertBefore(ccp.nextElementSibling,document.getElementById('secVentaDolares'));
       }
     }
     // Simplify sidebar nav for vendor dashboard (Ganancias first)
@@ -1422,6 +1423,7 @@ function populateFilters(){
       '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
       '<a onclick="document.getElementById(\'secAcumuladoAnual\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
+      '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}
   }
 }
@@ -2443,7 +2445,7 @@ function renderIngresosTotales(){
   function hdr(col,fb){return hr[col]?String(hr[col]).trim():fb;}
   const h4=hdr(4,'Ventas U$D'),h5=hdr(5,'Ventas $'),h6=hdr(6,'Dolar');
   const h7=hdr(7,'Unificado $'),h8=hdr(8,'Unificado U$D');
-  const h9=hdr(9,'Gastos Fijos'),h10=hdr(10,'Total Neto $'),h11=hdr(11,'Total Neto U$D');
+  const h9=hdr(9,'Gastos'),h10=hdr(10,'Total Neto $'),h11=hdr(11,'Total Neto U$D');
   table.innerHTML=`
     <thead><tr>
       <th>Mes</th>
@@ -2472,8 +2474,10 @@ function renderIngresosTotales(){
 
 function updateDynamicTitles(){
   if(!dashRaw)return;
+  function toTitleCase(s){return s.replace(/\w\S*/g,function(w){return w.charAt(0).toUpperCase()+w.substring(1).toLowerCase();});}
   function setT(id,row,col,fallback,dotColor){
-    const t=dashRaw[row]&&dashRaw[row][col]?String(dashRaw[row][col]).trim():fallback;
+    var t=dashRaw[row]&&dashRaw[row][col]?String(dashRaw[row][col]).trim():fallback;
+    t=toTitleCase(t);
     const el=document.getElementById(id);if(!el)return;
     const parts=t.split(' ');const last=parts.pop();
     const dot=dotColor?'<span class="dot" style="background:var('+dotColor+')"></span>':'';
@@ -2495,7 +2499,7 @@ function updateDynamicTitles(){
   })();
   (function(){
     var el=document.getElementById('secModulos');
-    if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>CONTROL FINANCIERO / MODULO DE <em>VENTAS</em>';
+    if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Control Financiero / Modulo de <em>Ventas</em>';
   })();
   setT('secCuotasPesos',114,2,'Cuotas a Cobrar vs Pagar en Pesos',null);
   setT('secCuotas',130,2,'Cuotas a Cobrar vs Pagar en Dólares',null);
@@ -2520,17 +2524,22 @@ function renderAll(){
   renderRankings();
   renderModules();
   renderModuleDetails();
-  // Cuotas & inversiones & evolucion: global-only data, hide when filtered
-  var globalOnlyIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
-  globalOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
+  // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
+  var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos'];
+  cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
+  var invOnlyIds=['secInversiones','invSection'];
+  invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
   var cuotasContainer=document.getElementById('cuotasCards');
   var cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
-  if(cuotasCharts)cuotasCharts.style.display=isFiltered?'none':'';
+  if(cuotasCharts)cuotasCharts.style.display='';
+  var cuotasPesosContainer=document.getElementById('cuotasCardsPesos');
+  var cuotasPesosCharts=cuotasPesosContainer?cuotasPesosContainer.nextElementSibling:null;
+  if(cuotasPesosCharts)cuotasPesosCharts.style.display='';
+  renderCuotasCards();
+  renderCuotasCardsPesos();
+  renderChartCuotasUSD();
+  renderChartCuotasPesos();
   if(!isFiltered){
-    renderCuotasCards();
-    renderCuotasCardsPesos();
-    renderChartCuotasUSD();
-    renderChartCuotasPesos();
     renderInversiones();
     renderEvolucion();
   }
@@ -2568,37 +2577,39 @@ function trendBadge(cur,prev){
 }
 
 function toggleCompactRankingLayout(){
-  var kpis=document.getElementById('kpis');
-  var cmKpi=document.getElementById('kpiCurrentMonth');
+  var secDetalleIng=document.getElementById('secDetalleIngresos');
+  var ingContainer=document.getElementById('ingresosMensualContainer');
   var secRank=document.getElementById('secRanking');
   var rankings=document.getElementById('rankings');
   var existing=document.getElementById('kpiRankingCompact');
   // Single month selected AND not vendor-filtered → compact layout
   if(filterMes!=='all'&&filterVendedor==='all'&&!urlVendedor){
-    if(!existing){
+    if(!existing&&ingContainer){
       existing=document.createElement('div');
       existing.id='kpiRankingCompact';
       existing.className='kpi-ranking-compact';
-      var kpisCol=document.createElement('div');
-      kpisCol.className='kpis-col';
+      var ingCol=document.createElement('div');
+      ingCol.className='kpis-col';
       var rankCol=document.createElement('div');
       rankCol.className='rankings-col';
-      kpis.parentNode.insertBefore(existing,kpis);
-      kpisCol.appendChild(kpis);
-      if(cmKpi)kpisCol.appendChild(cmKpi);
-      rankCol.innerHTML='<h3 class="section-title" style="margin-top:0;font-size:15px">Ranking de <em>Ganancias</em></h3>';
+      ingContainer.parentNode.insertBefore(existing,ingContainer);
+      ingCol.appendChild(ingContainer);
+      rankCol.innerHTML='<h3 class="section-title" style="margin-top:0">Ranking de <em>Ganancias</em></h3>';
       rankCol.appendChild(rankings.cloneNode(false));
       rankCol.lastChild.id='rankingsCompact';
-      existing.appendChild(kpisCol);
+      existing.appendChild(ingCol);
       existing.appendChild(rankCol);
     }
     if(secRank)secRank.style.display='none';
     if(rankings)rankings.style.display='none';
   } else {
     // Restore normal layout
-    if(existing){
-      var kpisCol=existing.querySelector('.kpis-col');
-      if(kpisCol&&kpis){existing.parentNode.insertBefore(kpis,existing);if(cmKpi)existing.parentNode.insertBefore(cmKpi,existing);}
+    if(existing&&ingContainer){
+      var ingCol=existing.querySelector('.kpis-col');
+      if(ingCol){
+        var mainEl=existing.parentNode;
+        mainEl.insertBefore(ingContainer,existing);
+      }
       existing.remove();
     }
     if(secRank)secRank.style.display='';
@@ -2662,10 +2673,10 @@ function renderKPIs(){
     // Gastos Fijos only for these vendedores
     const showGastos=['Inversiones','Creditos','Tecno'].includes(filterVendedor);
     const gastosCardUSD=showGastos?
-      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
+      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
       `<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Mejor Mes U$D</div><div class="kpi-value">${fmtUSD(Math.max(...allVd.map(r=>r.Ganancia_USD||0)))}</div></div>`;
     const gastosCardPesos=showGastos?
-      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos Fijos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
+      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
       `<div class="kpi" data-color="green"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Mejor Mes $</div><div class="kpi-value">${fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0)))}</div></div>`;
 
     kpiEl.innerHTML=`
@@ -2706,11 +2717,11 @@ function renderKPIs(){
     kpiEl.innerHTML=`
       <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
       <div class="kpi kpi-unificado" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#e8e6e3">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#f87171">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
       <div class="kpi kpi-unificado" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#e8e6e3">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#f87171">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
     `;
   }
@@ -2721,23 +2732,26 @@ function renderCurrentMonthKPIs(){
   if(!cmEl||urlVendedor||filterVendedor!=='all')return;
   var mesNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var curMes=mesNames[new Date().getMonth()];
-  var curIdx=-1;
-  var allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  curIdx=allMeses.indexOf(curMes);
+  var allMeses=mesNames;
+  var curIdx=allMeses.indexOf(curMes);
   if(curIdx<0)return;
   var rowIdx=2+curIdx;
   var uniUSD=dashNum(rowIdx,8);
   var uniPesos=dashNum(rowIdx,7);
+  var tUSD='',tPesos='';
+  if(curIdx>0){var prevRow=2+curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
   cmEl.innerHTML=`
     <div class="kpi-cm usd">
       <div class="cm-label">Total Unificado Dólares</div>
       <div class="cm-value">${fmtUSD(uniUSD)}</div>
       <div class="cm-month">${curMes} 2026</div>
+      ${tUSD}
     </div>
     <div class="kpi-cm ars">
       <div class="cm-label">Total Unificado Pesos</div>
       <div class="cm-value">${fmtPesos(uniPesos)}</div>
       <div class="cm-month">${curMes} 2026</div>
+      ${tPesos}
     </div>`;
 }
 
@@ -2824,7 +2838,7 @@ function renderChartIngresos(){
         return isUSD?(r.Total_Final_USD||0):(r.Total_Final_Pesos||0);
       });
       const ingLabel=mode==='uni_usd'?'Ingresos Unif. U$D':mode==='uni_pesos'?'Ingresos Unif. $':isUSD?'Ingresos U$D':'Ingresos $';
-      const gasLabel=showPesos?'Gastos Fijos $':'Gastos Fijos U$D';
+      const gasLabel=showPesos?'Gastos $':'Gastos U$D';
       const balLabel=showPesos?'Balance Final $':'Balance Final U$D';
       charts.ingresos=new Chart(document.getElementById('chartIngresos'),{
         type:'bar',
@@ -3142,10 +3156,11 @@ function renderModuleDetails(){
   });
 }
 
-function extractCuotasData(){
-  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[]};
+function extractCuotasData(vendorFilter){
+  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],vendors:[]};
   // Find rows by scanning for marker text in DASHBOARD raw data
-  let cobrarUSDTotalRow=-1,compromisoRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
+  let cobrarUSDHeaderRow=-1,cobrarUSDTotalRow=-1,compromisoRow=-1;
+  let cobrarPesosHeaderRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
   for(let i=0;i<dashRaw.length;i++){
     const row=dashRaw[i];
     if(!row)continue;
@@ -3153,7 +3168,7 @@ function extractCuotasData(){
       if(!row[j]||typeof row[j]!=='string')continue;
       const v=row[j].toLowerCase();
       if(v.includes('ingresos de cuotas en dolares')){
-        // Total row is the row before the next section header, scan down for 'Total'
+        cobrarUSDHeaderRow=i;
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
         }
@@ -3161,10 +3176,10 @@ function extractCuotasData(){
       if(v.includes('resta pagar')&&!v.includes('pesos')){compromisoRow=i;}
       if(v.includes('resta pagar')&&v.includes('pesos')){compromisoPesosRow=i;}
       if(v.includes('ingresos de cuotas en pesos')){
+        cobrarPesosHeaderRow=i;
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}
         }
-        // Also look for resta pagar in pesos near this section
         for(let k=i+1;k<Math.min(i+30,dashRaw.length);k++){
           if(dashRaw[k]){
             for(let jj=0;jj<dashRaw[k].length;jj++){
@@ -3192,20 +3207,46 @@ function extractCuotasData(){
     }
     return 0;
   }
+  // Extract vendor names from cuotas section (rows between header and Total)
+  var vendorsList=[];
+  if(cobrarUSDHeaderRow>=0&&cobrarUSDTotalRow>=0){
+    for(var k=cobrarUSDHeaderRow+1;k<cobrarUSDTotalRow;k++){
+      if(dashRaw[k]&&dashRaw[k][2]&&typeof dashRaw[k][2]==='string'&&dashRaw[k][2]!=='Total'){
+        vendorsList.push({name:dashRaw[k][2],usdRow:k,pesosRow:-1});
+      }
+    }
+  }
+  // Map pesos rows
+  if(cobrarPesosHeaderRow>=0&&cobrarPesosTotalRow>=0){
+    for(var k=cobrarPesosHeaderRow+1;k<cobrarPesosTotalRow;k++){
+      if(dashRaw[k]&&dashRaw[k][2]&&typeof dashRaw[k][2]==='string'&&dashRaw[k][2]!=='Total'){
+        var vn=vendorsList.find(function(v){return v.name===dashRaw[k][2];});
+        if(vn)vn.pesosRow=k;
+        else vendorsList.push({name:dashRaw[k][2],usdRow:-1,pesosRow:k});
+      }
+    }
+  }
+  // Determine which row to use: vendor-filtered or total
+  var useUSDRow=cobrarUSDTotalRow;
+  var usePesosRow=cobrarPesosTotalRow;
+  if(vendorFilter&&vendorFilter!=='all'){
+    var vf=vendorsList.find(function(v){return v.name.toLowerCase().indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(v.name.toLowerCase())>=0;});
+    if(vf){useUSDRow=vf.usdRow;usePesosRow=vf.pesosRow;}
+  }
   // Cols: 4=Enero, 5=Feb, ..., 15=Dec (indices for 12 months of 2026)
   const cobrarUSD=[],pagarUSD=[],cobrarPesos=[],pagarPesos=[];
   for(let m=0;m<12;m++){
     const col=4+m;
-    cobrarUSD.push(cobrarUSDTotalRow>=0?getNum(cobrarUSDTotalRow,col):0);
+    cobrarUSD.push(useUSDRow>=0?getNum(useUSDRow,col):0);
     pagarUSD.push(compromisoRow>=0?Math.abs(getNum(compromisoRow,col)):0);
-    cobrarPesos.push(cobrarPesosTotalRow>=0?getNum(cobrarPesosTotalRow,col):0);
+    cobrarPesos.push(usePesosRow>=0?getNum(usePesosRow,col):0);
     pagarPesos.push(compromisoPesosRow>=0?Math.abs(getNum(compromisoPesosRow,col)):0);
   }
-  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos};
+  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,vendors:vendorsList};
 }
 
 function renderChartCuotasUSD(){
-  const q=extractCuotasData();
+  const q=extractCuotasData(filterVendedor);
   if(charts.cuotasUSD)charts.cuotasUSD.destroy();
   charts.cuotasUSD=new Chart(document.getElementById('chartCuotasUSD'),{
     type:'bar',
@@ -3222,7 +3263,7 @@ function renderChartCuotasUSD(){
 }
 
 function renderChartCuotasPesos(){
-  const q=extractCuotasData();
+  const q=extractCuotasData(filterVendedor);
   if(charts.cuotasPesos)charts.cuotasPesos.destroy();
   charts.cuotasPesos=new Chart(document.getElementById('chartCuotasPesos'),{
     type:'bar',
@@ -3238,8 +3279,11 @@ function renderChartCuotasPesos(){
 }
 
 function renderCuotasCards(){
-  const q=extractCuotasData();
+  const q=extractCuotasData(filterVendedor);
   const container=document.getElementById('cuotasCards');
+  // Update title with vendor name if filtered
+  var secTitle=document.getElementById('secCuotas');
+  if(secTitle){var vLabel=filterVendedor!=='all'?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar vs Pagar en Dólares</em>'+vLabel;}
   container.innerHTML='';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
@@ -3263,7 +3307,7 @@ function renderCuotasCards(){
   const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
   container.innerHTML+=`
     <div class="cuota-card acum">
-      <div class="mes">ACUMULADO ANUAL</div>
+      <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtUSD(totalCobrar)}</div>
       <span class="lbl">Total A Pagar</span>
@@ -3274,9 +3318,11 @@ function renderCuotasCards(){
 }
 
 function renderCuotasCardsPesos(){
-  const q=extractCuotasData();
+  const q=extractCuotasData(filterVendedor);
   const container=document.getElementById('cuotasCardsPesos');
   container.innerHTML='';
+  var secTitle=document.getElementById('secCuotasPesos');
+  if(secTitle){var vLabel=filterVendedor!=='all'?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar vs Pagar en Pesos</em>'+vLabel;}
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
     const cobrar=q.cobrarPesos[i]||0;
@@ -3298,7 +3344,7 @@ function renderCuotasCardsPesos(){
   const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
   container.innerHTML+=`
     <div class="cuota-card acum">
-      <div class="mes">ACUMULADO ANUAL</div>
+      <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtPesos(totalCobrar)}</div>
       <span class="lbl">Total A Pagar</span>

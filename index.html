@@ -925,23 +925,32 @@ function renderCuotasPanel(panelKey){
     if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado)estado='VIGENTE';
     // Cuota payment tracking using boolRow TRUE/FALSE directly
-    // TRUE = paid cuota (green), FALSE = unpaid cuota (white), no data = empty
+    // TRUE = paid cuota (green), anything else after plan start = unpaid (white)
     var payments=[];
     var paymentAmts=[];
     var actualCuotaCount=0;
     // Check if boolRow has any TRUE/FALSE values in the cuota range
     var hasBoolData=false;
-    for(var c=10;c<=40;c++){if(boolRow[c]===true||boolRow[c]===false){hasBoolData=true;break;}}
-    if(hasBoolData){
-      // Use boolRow directly: TRUE=paid, FALSE=unpaid
+    var planStart=-1;
+    for(var c=10;c<=40;c++){
+      if(boolRow[c]===true||boolRow[c]===false){hasBoolData=true;if(planStart<0)planStart=c;break;}
+    }
+    if(hasBoolData&&planStart>=0){
+      // Use boolRow: TRUE=paid, everything else from planStart onward=unpaid
       // Columns 12-40 map to the month headers (M through AO)
+      // Adjust planStart to visible range (min col 12)
+      var visStart=Math.max(planStart,12);
       for(var c=12;c<=40;c++){
-        if(boolRow[c]===true){
-          payments.push('paid');paymentAmts.push(rawCuota);actualCuotaCount++;
-        }else if(boolRow[c]===false){
-          payments.push('unpaid');paymentAmts.push(rawCuota);actualCuotaCount++;
-        }else{
+        if(c<visStart){
           payments.push('none');paymentAmts.push(0);
+        }else{
+          // From plan start onward: TRUE=paid, everything else=unpaid
+          if(boolRow[c]===true){
+            payments.push('paid');paymentAmts.push(rawCuota);
+          }else{
+            payments.push('unpaid');paymentAmts.push(rawCuota);
+          }
+          actualCuotaCount++;
         }
       }
     }else if(numC>0){
@@ -1390,7 +1399,8 @@ function populateFilters(){
       'secDetalle','moduleDetails',
       'secInversiones','invSection','secEstadoCuentas','ecSection',
       'secDashVendedores',
-      'secAcumuladoAnual','acumCards'];
+      'secAcumuladoAnual','acumCards',
+      'secVendedorCharts'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Cuotas charts visible for vendor dashboards too
     // Reorder sections for vendor URL layout
@@ -1420,7 +1430,6 @@ function populateFilters(){
       el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDetailContainer');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('secAcumVendChart');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('secVendedorCharts');if(el)mainEl.insertBefore(el,refNode);
     }
     // Simplify sidebar nav for vendor dashboard
     var navEl=document.getElementById('sidebarNav');

@@ -655,7 +655,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
   <div class="modules" id="modules"></div>
 
-  <div class="charts" style="grid-template-columns:1fr;margin-bottom:28px">
+  <div class="charts" id="chartVendedoresWrap" style="grid-template-columns:1fr;margin-bottom:28px">
     <div class="chart-card full">
       <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ganancias por Vendedor</div>
       <div class="chart-subtitle">Comparación mensual por vendedor/módulo</div>
@@ -1404,7 +1404,7 @@ function populateFilters(){
     var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficos',
-      'secRanking','rankings','secModulos','modules',
+      'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
       'secDetalle','moduleDetails',
       'secInversiones','invSection',
       'secDashVendedores',
@@ -2666,8 +2666,10 @@ function toggleCompactRankingLayout(){
   }
   var secRank=document.getElementById('secRanking');
   var rankings=document.getElementById('rankings');
-  if(secRank)secRank.style.display='';
-  if(rankings)rankings.style.display='';
+  if(filterVendedor==='all'){
+    if(secRank)secRank.style.display='';
+    if(rankings)rankings.style.display='';
+  }
 }
 
 function renderKPIs(){

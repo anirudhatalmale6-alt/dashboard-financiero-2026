@@ -749,7 +749,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
-let allData={resumen:[],vendedor:[],modulos:[],panel:[]};
+let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;
 let trackRaw=null;
@@ -1301,12 +1301,13 @@ async function loadAllData(){
       fetchRawSheet('DASHBOARD'),
       fetchRawSheet('INVERSIONES CRONOGRAMA')
     ]);
-    allData={resumen:r,vendedor:v,modulos:m,panel:p};
+    allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
+    buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
@@ -1460,8 +1461,9 @@ function renderAcumuladoCards(){
   const months=[];
 
   if(filterVendedor!=='all'){
-    // Per-vendedor mode: use vendedor data
-    const vData=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
+    // Per-vendedor mode: use vendedorGains (vendor's OWN gains from GANANCIA DE LOS VENDEDORES section)
+    const vgSrc=allData.vendedorGains||[];
+    const vData=vgSrc.filter(r=>r.Vendedor===filterVendedor);
     for(let i=0;i<12;i++){
       const mesName=allMesesFull[i];
       const row=vData.find(r=>r.Mes===mesName);
@@ -1920,8 +1922,14 @@ function parseDashVendedores(){
   if(!dashRaw||dashRaw.length<195)return [];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
+  // Find the "GANANCIA DE LOS VENDEDORES" header to start from the correct section
+  var sectionStart=180;
+  for(var si=180;si<dashRaw.length;si++){
+    var sr=dashRaw[si];
+    if(sr&&typeof sr[2]==='string'&&sr[2].indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
+  }
   const blockStarts=[];
-  for(let i=180;i<dashRaw.length-16;i++){
+  for(let i=sectionStart;i<dashRaw.length-16;i++){
     const r=dashRaw[i];
     if(!r)continue;
     const v2=r[2];
@@ -1948,6 +1956,42 @@ function parseDashVendedores(){
   return result;
 }
 
+function buildVendedorGains(){
+  // Parse vendor's OWN gains from "GANANCIA DE LOS VENDEDORES / MODULO DE VENTAS" section
+  // This is DIFFERENT from allData.vendedor which has Martin's gains from each vendor
+  if(!dashRaw||dashRaw.length<195)return;
+  allData.vendedorGains=[];
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
+  // Find the "GANANCIA DE LOS VENDEDORES" header to start scanning from the right section
+  var sectionStart=180;
+  for(var si=180;si<dashRaw.length;si++){
+    var sr=dashRaw[si];
+    if(sr&&typeof sr[2]==='string'&&sr[2].indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
+  }
+  var blockStarts=[];
+  for(var i=sectionStart;i<dashRaw.length-16;i++){
+    var r=dashRaw[i];
+    if(!r)continue;
+    var v2=r[2];
+    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
+      var nextR=dashRaw[i+1];
+      if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
+    }
+  }
+  blockStarts.forEach(function(bs){
+    positions.forEach(function(pos){
+      var name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
+      if(!name||typeof name!=='string')return;
+      meses.forEach(function(mes,mi){
+        var row=dashRaw[bs+1+mi];
+        var usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
+        var pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
+        allData.vendedorGains.push({Vendedor:name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
+      });
+    });
+  });
+}
 function renderVendedorDash(){
   if(!dashRaw||dashRaw.length<195)return;
   const container=document.getElementById('vendedorDashContainer');
@@ -1955,68 +1999,53 @@ function renderVendedorDash(){
   const icons=['💰','📦','📈','💳','🤝','🏢','👩','🧑','💻','📡'];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // Parse vendedor blocks from DASHBOARD. Each block = 17 rows, 3 vendedores per block.
-  const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
-  const blockStarts=[];
-
-  for(let i=180;i<dashRaw.length-16;i++){
-    const r=dashRaw[i];
-    if(!r)continue;
-    const v2=r[2];
-    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
-      const nextR=dashRaw[i+1];
-      if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
-    }
-  }
+  // Use pre-built vendedorGains data (vendor's OWN gains from GANANCIA DE LOS VENDEDORES section)
+  var vgData=allData.vendedorGains||[];
+  var vendNames=[...new Set(vgData.map(function(r){return r.Vendedor;}))];
 
   container.className='module-details-grid';
   let idx=0;
-  blockStarts.forEach(bs=>{
-    positions.forEach(pos=>{
-      const name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
-      if(!name||typeof name!=='string')return;
+  vendNames.forEach(function(name){
+    // Vendedor filter: skip if a specific vendedor is selected and doesn't match
+    if(filterVendedor!=='all'&&name!==filterVendedor)return;
 
-      // Vendedor filter: skip if a specific vendedor is selected and doesn't match
-      if(filterVendedor!=='all'&&name!==filterVendedor)return;
-
-      let totalUSD=0,totalPesos=0;
-      let tbodyHTML='';
-      meses.forEach((mes,mi)=>{
-        // Month filter: skip months that don't match
-        if(filterMes!=='all'&&mes!==filterMes)return;
-        const row=dashRaw[bs+1+mi];
-        const usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
-        const pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
-        totalUSD+=usd;totalPesos+=pesos;
-        tbodyHTML+=`<tr>
-          <td>${mes}</td>
-          <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
-          <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
-        </tr>`;
-      });
-      tbodyHTML+=`<tr class="total-row">
-        <td>TOTAL</td>
-        <td>${fmtUSD(totalUSD)}</td>
-        <td>${fmtPesos(totalPesos)}</td>
+    let totalUSD=0,totalPesos=0;
+    let tbodyHTML='';
+    meses.forEach(function(mes,mi){
+      // Month filter: skip months that don't match
+      if(filterMes!=='all'&&mes!==filterMes)return;
+      var entry=vgData.find(function(r){return r.Vendedor===name&&r.Mes===mes;});
+      var usd=entry?entry.Ganancia_USD:0;
+      var pesos=entry?entry.Ganancia_Pesos:0;
+      totalUSD+=usd;totalPesos+=pesos;
+      tbodyHTML+=`<tr>
+        <td>${mes}</td>
+        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
       </tr>`;
-
-      container.innerHTML+=`
-        <div class="module-detail">
-          <div class="module-detail-title"><span class="icon">${icons[idx%icons.length]}</span>${name}</div>
-          <table class="module-table">
-            <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
-            <tbody>${tbodyHTML}</tbody>
-          </table>
-        </div>`;
-      idx++;
     });
+    tbodyHTML+=`<tr class="total-row">
+      <td>TOTAL</td>
+      <td>${fmtUSD(totalUSD)}</td>
+      <td>${fmtPesos(totalPesos)}</td>
+    </tr>`;
+
+    container.innerHTML+=`
+      <div class="module-detail">
+        <div class="module-detail-title"><span class="icon">${icons[idx%icons.length]}</span>${name}</div>
+        <table class="module-table">
+          <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+          <tbody>${tbodyHTML}</tbody>
+        </table>
+      </div>`;
+    idx++;
   });
 
-  // Vendor KPIs in dashboard vendedores
+  // Vendor KPIs in dashboard vendedores — use vendedorGains (vendor's OWN gains)
   var vKpiEl=document.getElementById('vendedorKpis');
   if(vKpiEl){
-    if(filterVendedor!=='all'&&allData.vendedor){
-      var vd=allData.vendedor.filter(function(r){return r.Vendedor===filterVendedor;});
+    if(filterVendedor!=='all'&&vgData.length>0){
+      var vd=vgData.filter(function(r){return r.Vendedor===filterVendedor;});
       if(filterMes!=='all')vd=vd.filter(function(r){return r.Mes===filterMes;});
       var gUSD=vd.reduce(function(s,r){return s+(r.Ganancia_USD||0);},0);
       var gPesos=vd.reduce(function(s,r){return s+(r.Ganancia_Pesos||0);},0);

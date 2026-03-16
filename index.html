@@ -1426,13 +1426,8 @@ function populateFilters(){
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
       // 3. Ganancias por Vendedor (chart)
       el=document.getElementById('secVendedorCharts');if(el)mainEl.insertBefore(el,refNode);
-      // 4. Acumulado Ganancias (collapsible)
-      el=document.getElementById('secVendedorDetail');if(el){
-        mainEl.insertBefore(el,refNode);
-        el.style.cursor='pointer';
-        el.title='Click para expandir/colapsar';
-        el.innerHTML+=' <span id="acumToggleIcon" style="font-size:14px;opacity:0.6">▼</span>';
-      }
+      // 4. Acumulado Ganancias (collapsible - toggle added in renderVendedorDetail)
+      el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
       var acumContainer=document.getElementById('vendedorDetailContainer');
       if(acumContainer){mainEl.insertBefore(acumContainer,refNode);}
       // 5. Acumulado Anual (chart)
@@ -1451,16 +1446,6 @@ function populateFilters(){
       // 10. Comisiones Vendedores en Dolares (Estado de Cuentas)
       el=document.getElementById('secEstadoCuentas');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('ecSection');if(el)mainEl.insertBefore(el,refNode);
-      // Make Acumulado Ganancias collapsible
-      var acumTitle=document.getElementById('secVendedorDetail');
-      if(acumTitle&&acumContainer){
-        acumTitle.addEventListener('click',function(){
-          var vis=acumContainer.style.display!=='none';
-          acumContainer.style.display=vis?'none':'';
-          var icon=document.getElementById('acumToggleIcon');
-          if(icon)icon.textContent=vis?'▶':'▼';
-        });
-      }
     }
     // Sidebar nav for vendor dashboard
     var navEl=document.getElementById('sidebarNav');
@@ -1986,7 +1971,7 @@ async function buildVendedorGains(){
   // This data is in rows 286-380 of DASHBOARD, which is beyond the default fetch range
   allData.vendedorGains=[];
   var vgRaw;
-  try{vgRaw=await fetchSheetRange('DASHBOARD','A280:Q380');}catch(e){return;}
+  try{vgRaw=await fetchSheetRange('DASHBOARD','A280:Q400');}catch(e){return;}
   if(!vgRaw||vgRaw.length<10)return;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
@@ -1998,7 +1983,7 @@ async function buildVendedorGains(){
     if(sr&&typeof sr[2]==='string'&&String(sr[2]).indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
   }
   var blockStarts=[];
-  for(var i=sectionStart;i<vgRaw.length-16;i++){
+  for(var i=sectionStart;i<vgRaw.length-1;i++){
     var r=vgRaw[i];
     if(!r)continue;
     var v2=r[2];
@@ -2147,6 +2132,22 @@ function renderVendedorDetail(){
         <div class="vd-cards">${cardsHTML}</div>
       </div>`;
   });
+  // Make Acumulado Ganancias collapsible (both dashboards)
+  var acumTitle=document.getElementById('secVendedorDetail');
+  if(acumTitle&&!acumTitle._collapsible){
+    acumTitle._collapsible=true;
+    acumTitle.style.cursor='pointer';
+    acumTitle.title='Click para expandir/colapsar';
+    if(!document.getElementById('acumToggleIcon')){
+      acumTitle.innerHTML+=' <span id="acumToggleIcon" style="font-size:14px;opacity:0.6">\u25BC</span>';
+    }
+    acumTitle.addEventListener('click',function(){
+      var vis=container.style.display!=='none';
+      container.style.display=vis?'none':'';
+      var icon=document.getElementById('acumToggleIcon');
+      if(icon)icon.textContent=vis?'\u25B6':'\u25BC';
+    });
+  }
 }
 
 function renderChartVendedores2(){

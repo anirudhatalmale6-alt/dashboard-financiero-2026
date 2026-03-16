@@ -1307,7 +1307,7 @@ async function loadAllData(){
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
-    buildVendedorGains();
+    await buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
     enrichResumenFromRaw(dRaw);
     // Try fetching tracking data (may not exist yet)
@@ -1919,78 +1919,64 @@ function renderEvolucion(){
 
 // Helper: parse vendedor blocks from DASHBOARD raw data (rows 180+)
 function parseDashVendedores(){
-  if(!dashRaw||dashRaw.length<195)return [];
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
-  // Find the "GANANCIA DE LOS VENDEDORES" header to start from the correct section
-  var sectionStart=180;
-  for(var si=180;si<dashRaw.length;si++){
-    var sr=dashRaw[si];
-    if(sr&&typeof sr[2]==='string'&&sr[2].indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
-  }
-  const blockStarts=[];
-  for(let i=sectionStart;i<dashRaw.length-16;i++){
-    const r=dashRaw[i];
-    if(!r)continue;
-    const v2=r[2];
-    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
-      const nextR=dashRaw[i+1];
-      if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
-    }
-  }
-  const result=[];
-  blockStarts.forEach(bs=>{
-    positions.forEach(pos=>{
-      const name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
-      if(!name||typeof name!=='string')return;
-      const months=[];
-      meses.forEach((mes,mi)=>{
-        const row=dashRaw[bs+1+mi];
-        const usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
-        const pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
-        months.push({mes,usd,pesos});
-      });
-      result.push({name,months});
+  // Use vendedorGains data (fetched from GANANCIA DE LOS VENDEDORES section)
+  var vg=allData.vendedorGains||[];
+  if(vg.length===0)return[];
+  var vendNames=[...new Set(vg.map(function(r){return r.Vendedor;}))];
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var result=[];
+  vendNames.forEach(function(name){
+    var months=[];
+    meses.forEach(function(mes){
+      var entry=vg.find(function(r){return r.Vendedor===name&&r.Mes===mes;});
+      months.push({mes:mes,usd:entry?entry.Ganancia_USD:0,pesos:entry?entry.Ganancia_Pesos:0});
     });
+    result.push({name:name,months:months});
   });
   return result;
 }
 
-function buildVendedorGains(){
-  // Parse vendor's OWN gains from "GANANCIA DE LOS VENDEDORES / MODULO DE VENTAS" section
-  // This is DIFFERENT from allData.vendedor which has Martin's gains from each vendor
-  if(!dashRaw||dashRaw.length<195)return;
+async function buildVendedorGains(){
+  // Fetch vendor's OWN gains from "GANANCIA DE LOS VENDEDORES / MODULO DE VENTAS" section
+  // This data is in rows 286-380 of DASHBOARD, which is beyond the default fetch range
   allData.vendedorGains=[];
+  var vgRaw;
+  try{vgRaw=await fetchSheetRange('DASHBOARD','A280:Q380');}catch(e){return;}
+  if(!vgRaw||vgRaw.length<10)return;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const positions=[{nameCol:2,usdCol:4,pesosCol:5},{nameCol:7,usdCol:9,pesosCol:10},{nameCol:12,usdCol:14,pesosCol:15}];
-  // Find the "GANANCIA DE LOS VENDEDORES" header to start scanning from the right section
-  var sectionStart=180;
-  for(var si=180;si<dashRaw.length;si++){
-    var sr=dashRaw[si];
-    if(sr&&typeof sr[2]==='string'&&sr[2].indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var c=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(c);return isNaN(n)?0:n*neg;}return 0;}
+  // Find the header row
+  var sectionStart=0;
+  for(var si=0;si<vgRaw.length;si++){
+    var sr=vgRaw[si];
+    if(sr&&typeof sr[2]==='string'&&String(sr[2]).indexOf('GANANCIA DE LOS VENDEDORES')>=0){sectionStart=si+1;break;}
   }
   var blockStarts=[];
-  for(var i=sectionStart;i<dashRaw.length-16;i++){
-    var r=dashRaw[i];
+  for(var i=sectionStart;i<vgRaw.length-16;i++){
+    var r=vgRaw[i];
     if(!r)continue;
     var v2=r[2];
-    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&!v2.startsWith('Inversión')&&!v2.startsWith('Resta')&&!v2.startsWith('Caja')){
-      var nextR=dashRaw[i+1];
+    if(v2&&typeof v2==='string'&&v2!=='Total'&&!meses.includes(v2)&&v2.indexOf('Inversión')<0&&v2.indexOf('Resta')<0&&v2.indexOf('Caja')<0&&v2.indexOf('GANANCIA')<0&&v2.indexOf('LIQUIDACION')<0){
+      var nextR=vgRaw[i+1];
       if(nextR&&nextR[2]==='Enero')blockStarts.push(i);
     }
   }
   blockStarts.forEach(function(bs){
     positions.forEach(function(pos){
-      var name=dashRaw[bs]&&dashRaw[bs][pos.nameCol];
+      var name=vgRaw[bs]&&vgRaw[bs][pos.nameCol];
       if(!name||typeof name!=='string')return;
       meses.forEach(function(mes,mi){
-        var row=dashRaw[bs+1+mi];
-        var usd=row?((typeof row[pos.usdCol]==='number')?row[pos.usdCol]:0):0;
-        var pesos=row?((typeof row[pos.pesosCol]==='number')?row[pos.pesosCol]:0):0;
+        var row=vgRaw[bs+1+mi];
+        var usd=row?pv(row[pos.usdCol]):0;
+        var pesos=row?pv(row[pos.pesosCol]):0;
         allData.vendedorGains.push({Vendedor:name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
       });
     });
   });
+  // Store raw for parseDashVendedores
+  window._vgRaw=vgRaw;
+  window._vgSectionStart=sectionStart;
 }
 function renderVendedorDash(){
   if(!dashRaw||dashRaw.length<195)return;

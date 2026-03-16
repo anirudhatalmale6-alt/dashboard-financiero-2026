@@ -1406,47 +1406,71 @@ function populateFilters(){
       'secGraficos',
       'secRanking','rankings','secModulos','modules',
       'secDetalle','moduleDetails',
-      'secInversiones','invSection','secEstadoCuentas','ecSection',
+      'secInversiones','invSection',
       'secDashVendedores',
-      'secAcumuladoAnual','acumCards',
-      'secVendedorCharts'];
+      'secAcumuladoAnual','acumCards'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
-    // Cuotas charts visible for vendor dashboards too
-    // Reorder sections for vendor URL layout
-    // Client wants: KPIs → monthly table → Cuotas a Cobrar → Control de Cuotas (desplegables) → Ganancias acumulado → charts
+    // Reorder sections for vendor URL layout per client specification
     var mainEl=document.querySelector('.main');
     var headerEl=document.querySelector('.header');
     if(mainEl&&headerEl){
-      // Capture chart containers BEFORE moving (they're siblings of cuotasCards in original HTML)
+      // Capture chart containers BEFORE moving
       var cc=document.getElementById('cuotasCards');
       var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
       var refNode=headerEl.nextSibling;
+      var el;
       // 1. KPIs
-      var el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
-      // 2. Monthly detail table (Ganancia de los Vendedores - the table from screenshot)
+      el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
+      // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
-      // 3. Cuotas a Cobrar
+      // 3. Ganancias por Vendedor (chart)
+      el=document.getElementById('secVendedorCharts');if(el)mainEl.insertBefore(el,refNode);
+      // 4. Acumulado Ganancias (collapsible)
+      el=document.getElementById('secVendedorDetail');if(el){
+        mainEl.insertBefore(el,refNode);
+        el.style.cursor='pointer';
+        el.title='Click para expandir/colapsar';
+        el.innerHTML+=' <span id="acumToggleIcon" style="font-size:14px;opacity:0.6">▼</span>';
+      }
+      var acumContainer=document.getElementById('vendedorDetailContainer');
+      if(acumContainer){mainEl.insertBefore(acumContainer,refNode);}
+      // 5. Acumulado Anual (chart)
+      el=document.getElementById('secAcumVendChart');if(el)mainEl.insertBefore(el,refNode);
+      // 6. Cuotas a Cobrar en Dólares
       el=document.getElementById('secCuotas');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('cuotasCards');if(el)mainEl.insertBefore(el,refNode);
+      // 7. Charts cuotas (dolares + pesos)
       if(cuotasChartsDiv)mainEl.insertBefore(cuotasChartsDiv,refNode);
+      // 8. Cuotas a Cobrar en Pesos
       el=document.getElementById('secCuotasPesos');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('cuotasCardsPesos');if(el)mainEl.insertBefore(el,refNode);
-      // 4. Control de Cuotas (desplegables)
+      // 9. Control de Cuotas a Cobrar
       el=document.getElementById('secVentaDolares');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('panelSections');if(el)mainEl.insertBefore(el,refNode);
-      // 5. Ganancias acumulado + charts (at the bottom)
-      el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('vendedorDetailContainer');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('secAcumVendChart');if(el)mainEl.insertBefore(el,refNode);
+      // 10. Comisiones Vendedores en Dolares (Estado de Cuentas)
+      el=document.getElementById('secEstadoCuentas');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('ecSection');if(el)mainEl.insertBefore(el,refNode);
+      // Make Acumulado Ganancias collapsible
+      var acumTitle=document.getElementById('secVendedorDetail');
+      if(acumTitle&&acumContainer){
+        acumTitle.addEventListener('click',function(){
+          var vis=acumContainer.style.display!=='none';
+          acumContainer.style.display=vis?'none':'';
+          var icon=document.getElementById('acumToggleIcon');
+          if(icon)icon.textContent=vis?'▶':'▼';
+        });
+      }
     }
-    // Simplify sidebar nav for vendor dashboard
+    // Sidebar nav for vendor dashboard
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Ganancias Mensuales</a>'+
+      '<a onclick="document.getElementById(\'secVendedorCharts\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ganancias Gráfico</a>'+
+      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Acumulado Ganancias</a>'+
       '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas a Cobrar</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>'+
-      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Acumulado Ganancias</a>';}
+      '<a onclick="document.getElementById(\'secEstadoCuentas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--cyan)"></span>Comisiones</a>';}
   }
 }
 

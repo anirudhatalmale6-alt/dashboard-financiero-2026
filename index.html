@@ -2122,32 +2122,30 @@ function renderVendedorDetail(){
         </div>`;
     });
 
+    var blockId='vdBlock_'+vi;
     container.innerHTML+=`
       <div class="vd-block">
-        <div class="vd-block-header">
+        <div class="vd-block-header" data-toggle="${blockId}" style="cursor:pointer" title="Click para expandir/colapsar">
           <div class="vd-block-dot" style="background:${color}"></div>
-          <div class="vd-block-name">${vName}</div>
+          <div class="vd-block-name">${vName} <span class="vd-toggle" id="tog_${blockId}" style="font-size:12px;opacity:0.5">\u25B6</span></div>
           <div class="vd-block-total">${fmtUSD(totalUSD)} <span>${fmtPesos(totalPesos)}</span></div>
         </div>
-        <div class="vd-cards">${cardsHTML}</div>
+        <div class="vd-cards" id="${blockId}" style="display:none">${cardsHTML}</div>
       </div>`;
   });
-  // Make Acumulado Ganancias collapsible (both dashboards)
-  var acumTitle=document.getElementById('secVendedorDetail');
-  if(acumTitle&&!acumTitle._collapsible){
-    acumTitle._collapsible=true;
-    acumTitle.style.cursor='pointer';
-    acumTitle.title='Click para expandir/colapsar';
-    if(!document.getElementById('acumToggleIcon')){
-      acumTitle.innerHTML+=' <span id="acumToggleIcon" style="font-size:14px;opacity:0.6">\u25BC</span>';
-    }
-    acumTitle.addEventListener('click',function(){
-      var vis=container.style.display!=='none';
-      container.style.display=vis?'none':'';
-      var icon=document.getElementById('acumToggleIcon');
-      if(icon)icon.textContent=vis?'\u25B6':'\u25BC';
+  // Make each vendor header toggle its own cards
+  container.querySelectorAll('.vd-block-header[data-toggle]').forEach(function(hdr){
+    hdr.addEventListener('click',function(){
+      var targetId=hdr.getAttribute('data-toggle');
+      var cards=document.getElementById(targetId);
+      var icon=document.getElementById('tog_'+targetId);
+      if(cards){
+        var vis=cards.style.display!=='none';
+        cards.style.display=vis?'none':'';
+        if(icon)icon.textContent=vis?'\u25B6':'\u25BC';
+      }
     });
-  }
+  });
 }
 
 function renderChartVendedores2(){

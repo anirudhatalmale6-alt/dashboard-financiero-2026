@@ -1395,36 +1395,34 @@ function populateFilters(){
       'secRanking','rankings','secModulos','modules',
       'secDetalle','moduleDetails',
       'secInversiones','invSection','secEstadoCuentas','ecSection',
-      'secDashVendedores'];
+      'secDashVendedores',
+      'secAcumuladoAnual','acumCards'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Cuotas charts visible for vendor dashboards too
-    // Reorder sections: move GANANCIAS (secVendedorDetail) to top, before Acumulado Anual
+    // Reorder sections for vendor URL layout
     var mainEl=document.querySelector('.main');
-    var acumTitle=document.getElementById('secAcumuladoAnual');
-    if(mainEl&&acumTitle){
-      // Move vendedor detail (ganancias) section before acumulado
-      var moveIds=['vendedorKpis','secVendedorDetail','vendedorDetailContainer','secAcumVendChart'];
-      moveIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,acumTitle);});
-      // Move Control de Cuotas and Cuota cards/charts after vendor dashboard content
-      var vendContainer=document.getElementById('vendedorDashContainer');
-      var insertRef=vendContainer?vendContainer.nextSibling:null;
-      if(insertRef){
-        var cuotaMoveIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secVentaDolares','panelSections'];
-        cuotaMoveIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,insertRef);});
-        // Also move chart containers after cuotasCards
-        var cc=document.getElementById('cuotasCards');
-        if(cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts'))mainEl.insertBefore(cc.nextElementSibling,document.getElementById('secCuotasPesos'));
-        var ccp=document.getElementById('cuotasCardsPesos');
-        if(ccp&&ccp.nextElementSibling&&ccp.nextElementSibling.classList.contains('charts'))mainEl.insertBefore(ccp.nextElementSibling,document.getElementById('secVentaDolares'));
-      }
+    var headerEl=document.querySelector('.header');
+    if(mainEl&&headerEl){
+      // Capture chart containers BEFORE moving (they're siblings of cuotasCards in original HTML)
+      var cc=document.getElementById('cuotasCards');
+      var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
+      // Order: header → vendedorKpis → secVendedorDetail → vendedorDetailContainer → secAcumVendChart → secVendedorDash → vendedorDashContainer → secVendedorCharts → secCuotas → cuotasCards → charts → secCuotasPesos → cuotasCardsPesos → secVentaDolares → panelSections
+      var refNode=headerEl.nextSibling;
+      var orderIds=['vendedorKpis','secVendedorDetail','vendedorDetailContainer','secAcumVendChart','secVendedorDash','vendedorDashContainer','secVendedorCharts'];
+      orderIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
+      // Move cuotas sections after vendor content
+      var cuotaOrderIds=['secCuotas','cuotasCards'];
+      cuotaOrderIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
+      if(cuotasChartsDiv)mainEl.insertBefore(cuotasChartsDiv,refNode);
+      var cuotaPesosIds=['secCuotasPesos','cuotasCardsPesos','secVentaDolares','panelSections'];
+      cuotaPesosIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
     }
     // Simplify sidebar nav for vendor dashboard (Ganancias first)
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
       '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
-      '<a onclick="document.getElementById(\'secAcumuladoAnual\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
-      '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>'+
+      '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas a Cobrar</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}
   }
 }
@@ -2544,6 +2542,9 @@ function renderAll(){
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
   var invOnlyIds=['secInversiones','invSection'];
   invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
+  // Hide Acumulado Anual (general) when filtering by vendor — vendors have their own acumulado section
+  var acumOnlyIds=['secAcumuladoAnual','acumCards'];
+  acumOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
   var cuotasContainer=document.getElementById('cuotasCards');
   var cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
   if(cuotasCharts)cuotasCharts.style.display='';
@@ -2566,6 +2567,19 @@ function renderAll(){
   buildCuotasPanels();
   renderAllCuotasPanels();
   renderSidebarStats();
+  // Reorder: move Ganancias section right below vendedorKpis when vendor filtered
+  if(isFiltered&&!urlVendedor){
+    var vKpis=document.getElementById('vendedorKpis');
+    var secVD=document.getElementById('secVendedorDetail');
+    var vdCont=document.getElementById('vendedorDetailContainer');
+    var secAVChart=document.getElementById('secAcumVendChart');
+    if(vKpis&&secVD){
+      var ref=vKpis.nextSibling;
+      vKpis.parentNode.insertBefore(secVD,ref);
+      if(vdCont)vKpis.parentNode.insertBefore(vdCont,secVD.nextSibling);
+      if(secAVChart&&vdCont)vKpis.parentNode.insertBefore(secAVChart,vdCont.nextSibling);
+    }
+  }
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -2709,11 +2723,11 @@ function renderKPIs(){
     kpiEl.innerHTML=`
       <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
       <div class="kpi kpi-unificado" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#e8e6e3">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
       <div class="kpi kpi-unificado" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value" style="color:#e8e6e3">${fmtUSD(gastos)}</div>${tGas}</div>
+      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
       <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
     `;
   }
@@ -3244,7 +3258,9 @@ function renderChartCuotasUSD(){
     type:'bar',
     data:{
       labels:q.labels,
-      datasets:[
+      datasets:filterVendedor!=='all'?[
+        {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5}
+      ]:[
         {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
         {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]
@@ -3273,9 +3289,10 @@ function renderChartCuotasPesos(){
 function renderCuotasCards(){
   const q=extractCuotasData(filterVendedor);
   const container=document.getElementById('cuotasCards');
+  const isVendor=filterVendedor!=='all';
   // Update title with vendor name if filtered
   var secTitle=document.getElementById('secCuotas');
-  if(secTitle){var vLabel=filterVendedor!=='all'?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar vs Pagar en Dólares</em>'+vLabel;}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Dólares</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Dólares</em>';}
   container.innerHTML='';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
@@ -3284,28 +3301,32 @@ function renderCuotasCards(){
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    const pagarHTML=isVendor?'':`
+        <span class="lbl">A Pagar</span>
+        <div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div>`;
     container.innerHTML+=`
       <div class="cuota-card">
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar</span>
         <div class="cobrar">${fmtUSD(cobrar)}</div>
-        <span class="lbl">A Pagar</span>
-        <div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div>
-        <div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div>
-        <div class="cuota-pct">Cobro: ${pct}%</div>
+        ${pagarHTML}
+        <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
+        ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
       </div>`;
   });
   // Accumulated card (double width)
   const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  const totalPagarHTML=isVendor?'':`
+      <span class="lbl">Total A Pagar</span>
+      <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>`;
   container.innerHTML+=`
     <div class="cuota-card acum">
       <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtUSD(totalCobrar)}</div>
-      <span class="lbl">Total A Pagar</span>
-      <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>
-      <div class="cuota-bar"><div class="cuota-fill" style="width:${totalPct}%"></div></div>
-      <div class="cuota-pct">Cobro: ${totalPct}%</div>
+      ${totalPagarHTML}
+      <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
+      ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
     </div>`;
 }
 
@@ -3313,8 +3334,9 @@ function renderCuotasCardsPesos(){
   const q=extractCuotasData(filterVendedor);
   const container=document.getElementById('cuotasCardsPesos');
   container.innerHTML='';
+  const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasPesos');
-  if(secTitle){var vLabel=filterVendedor!=='all'?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar vs Pagar en Pesos</em>'+vLabel;}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Pesos</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Pesos</em>';}
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
     const cobrar=q.cobrarPesos[i]||0;
@@ -3322,27 +3344,31 @@ function renderCuotasCardsPesos(){
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    const pagarHTML=isVendor?'':`
+        <span class="lbl">A Pagar</span>
+        <div class="pagar">${pagar>0?'-':''}${fmtPesos(pagar)}</div>`;
     container.innerHTML+=`
       <div class="cuota-card">
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar</span>
         <div class="cobrar">${fmtPesos(cobrar)}</div>
-        <span class="lbl">A Pagar</span>
-        <div class="pagar">${pagar>0?'-':''}${fmtPesos(pagar)}</div>
-        <div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div>
-        <div class="cuota-pct">Cobro: ${pct}%</div>
+        ${pagarHTML}
+        <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
+        ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
       </div>`;
   });
   const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  const totalPagarHTML=isVendor?'':`
+      <span class="lbl">Total A Pagar</span>
+      <div class="pagar">${totalPagar>0?'-':''}${fmtPesos(totalPagar)}</div>`;
   container.innerHTML+=`
     <div class="cuota-card acum">
       <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtPesos(totalCobrar)}</div>
-      <span class="lbl">Total A Pagar</span>
-      <div class="pagar">${totalPagar>0?'-':''}${fmtPesos(totalPagar)}</div>
-      <div class="cuota-bar"><div class="cuota-fill" style="width:${totalPct}%"></div></div>
-      <div class="cuota-pct">Cobro: ${totalPct}%</div>
+      ${totalPagarHTML}
+      <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
+      ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
     </div>`;
 }
 

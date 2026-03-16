@@ -924,34 +924,28 @@ function renderCuotasPanel(panelKey){
     var estado='';
     if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado)estado='VIGENTE';
-    // Cuota payment tracking using numCuotas + gviz bool row
-    // Bool row TRUE = cuota cell (paid or has amount, gviz coerces both to TRUE)
-    // Strategy: find first TRUE = plan start, take numCuotas cells from there
-    // Paid count estimated from cobrado/rawCuota
+    // Cuota payment tracking using boolRow TRUE/FALSE directly
+    // TRUE = paid cuota (green), FALSE = unpaid cuota (white), no data = empty
     var payments=[];
     var paymentAmts=[];
     var actualCuotaCount=0;
-    var planStart=-1;
-    for(var c=12;c<=40;c++){if(boolRow[c]===true){planStart=c;break;}}
-    if(planStart>=0&&numC>0){
-      // Calculate paid count from cobrado/rawCuota
-      var cobradoVal=typeof r[43]==='number'?r[43]:0;
-      var calcPaid=rawCuota>0?Math.round(cobradoVal/rawCuota):0;
-      if(calcPaid>numC)calcPaid=numC;
-      var cellsAssigned=0;
+    // Check if boolRow has any TRUE/FALSE values in the cuota range
+    var hasBoolData=false;
+    for(var c=10;c<=40;c++){if(boolRow[c]===true||boolRow[c]===false){hasBoolData=true;break;}}
+    if(hasBoolData){
+      // Use boolRow directly: TRUE=paid, FALSE=unpaid
+      // Columns 12-40 map to the month headers (M through AO)
       for(var c=12;c<=40;c++){
-        if(c<planStart||cellsAssigned>=numC){
-          payments.push('none');paymentAmts.push(0);
+        if(boolRow[c]===true){
+          payments.push('paid');paymentAmts.push(rawCuota);actualCuotaCount++;
+        }else if(boolRow[c]===false){
+          payments.push('unpaid');paymentAmts.push(rawCuota);actualCuotaCount++;
         }else{
-          var isPaid3=(cellsAssigned<calcPaid);
-          payments.push(isPaid3?'paid':'unpaid');
-          paymentAmts.push(rawCuota);
-          cellsAssigned++;
-          actualCuotaCount++;
+          payments.push('none');paymentAmts.push(0);
         }
       }
     }else if(numC>0){
-      // No TRUE found but has numCuotas — show all as unpaid starting from col 12
+      // No bool row data — show all as unpaid starting from col 12
       for(var c=12;c<=40;c++){
         if(actualCuotaCount>=numC){payments.push('none');paymentAmts.push(0);}
         else{payments.push('unpaid');paymentAmts.push(rawCuota);actualCuotaCount++;}

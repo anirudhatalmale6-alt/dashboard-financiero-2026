@@ -1400,30 +1400,41 @@ function populateFilters(){
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Cuotas charts visible for vendor dashboards too
     // Reorder sections for vendor URL layout
+    // Client wants: KPIs → monthly table → Cuotas a Cobrar → Control de Cuotas (desplegables) → Ganancias acumulado → charts
     var mainEl=document.querySelector('.main');
     var headerEl=document.querySelector('.header');
     if(mainEl&&headerEl){
       // Capture chart containers BEFORE moving (they're siblings of cuotasCards in original HTML)
       var cc=document.getElementById('cuotasCards');
       var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
-      // Order: header → vendedorKpis → secVendedorDetail → vendedorDetailContainer → secAcumVendChart → secVendedorDash → vendedorDashContainer → secVendedorCharts → secCuotas → cuotasCards → charts → secCuotasPesos → cuotasCardsPesos → secVentaDolares → panelSections
       var refNode=headerEl.nextSibling;
-      var orderIds=['vendedorKpis','secVendedorDetail','vendedorDetailContainer','secAcumVendChart','secVendedorDash','vendedorDashContainer','secVendedorCharts'];
-      orderIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
-      // Move cuotas sections after vendor content
-      var cuotaOrderIds=['secCuotas','cuotasCards'];
-      cuotaOrderIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
+      // 1. KPIs
+      var el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
+      // 2. Monthly detail table (Ganancia de los Vendedores - the table from screenshot)
+      el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
+      // 3. Cuotas a Cobrar
+      el=document.getElementById('secCuotas');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('cuotasCards');if(el)mainEl.insertBefore(el,refNode);
       if(cuotasChartsDiv)mainEl.insertBefore(cuotasChartsDiv,refNode);
-      var cuotaPesosIds=['secCuotasPesos','cuotasCardsPesos','secVentaDolares','panelSections'];
-      cuotaPesosIds.forEach(function(mid){var el=document.getElementById(mid);if(el)mainEl.insertBefore(el,refNode);});
+      el=document.getElementById('secCuotasPesos');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('cuotasCardsPesos');if(el)mainEl.insertBefore(el,refNode);
+      // 4. Control de Cuotas (desplegables)
+      el=document.getElementById('secVentaDolares');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('panelSections');if(el)mainEl.insertBefore(el,refNode);
+      // 5. Ganancias acumulado + charts (at the bottom)
+      el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('vendedorDetailContainer');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('secAcumVendChart');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('secVendedorCharts');if(el)mainEl.insertBefore(el,refNode);
     }
-    // Simplify sidebar nav for vendor dashboard (Ganancias first)
+    // Simplify sidebar nav for vendor dashboard
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
-      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Mensuales</a>'+
-      '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Mensual</a>'+
+      '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Ganancias Mensuales</a>'+
       '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas a Cobrar</a>'+
-      '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>';}
+      '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>'+
+      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Acumulado Ganancias</a>';}
   }
 }
 
@@ -2567,17 +2578,17 @@ function renderAll(){
   buildCuotasPanels();
   renderAllCuotasPanels();
   renderSidebarStats();
-  // Reorder: move Ganancias section right below vendedorKpis when vendor filtered
+  // Reorder: move monthly table right below vendedorKpis when vendor filtered (dropdown)
   if(isFiltered&&!urlVendedor){
     var vKpis=document.getElementById('vendedorKpis');
-    var secVD=document.getElementById('secVendedorDetail');
-    var vdCont=document.getElementById('vendedorDetailContainer');
-    var secAVChart=document.getElementById('secAcumVendChart');
-    if(vKpis&&secVD){
+    if(vKpis){
+      var parent=vKpis.parentNode;
       var ref=vKpis.nextSibling;
-      vKpis.parentNode.insertBefore(secVD,ref);
-      if(vdCont)vKpis.parentNode.insertBefore(vdCont,secVD.nextSibling);
-      if(secAVChart&&vdCont)vKpis.parentNode.insertBefore(secAVChart,vdCont.nextSibling);
+      // Monthly table right after KPIs
+      var secVDash=document.getElementById('secVendedorDash');
+      var vdCont=document.getElementById('vendedorDashContainer');
+      if(secVDash)parent.insertBefore(secVDash,ref);
+      if(vdCont)parent.insertBefore(vdCont,ref);
     }
   }
   document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});

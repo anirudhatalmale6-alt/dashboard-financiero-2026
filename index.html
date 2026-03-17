@@ -972,16 +972,31 @@ function renderCuotasPanel(panelKey){
     // monthHeaders[idx] corresponds to sheet col 12+idx
     var boolOffset=0;
     if(hasBoolData&&boolStart>=0&&boolStart<12){boolOffset=12-boolStart;}
-    // Mirror the Excel: show ALL True/False cells as-is, no limits
+    // Mirror the Excel: determine cuota range from first TRUE + extend beyond numCContract if refinanced
+    // Find first and last TRUE in boolean row to detect actual cuota range
+    var firstTrue=-1,lastTrue=-1;
+    if(hasBoolData){
+      for(var c=12;c<=40;c++){
+        var bc=c-boolOffset;
+        if(boolRow[bc]===true){if(firstTrue<0)firstTrue=c;lastTrue=c;}
+      }
+    }
+    // Cuota range: starts at first TRUE, extends to max(numCContract, lastTrueRange)
+    var cuotaStart=firstTrue>=0?firstTrue:12;
+    var rangeFromTrues=lastTrue>=cuotaStart?(lastTrue-cuotaStart+1):0;
+    var cuotaCount=numCContract>0?Math.max(numCContract,rangeFromTrues):(rangeFromTrues>0?rangeFromTrues:0);
+    actualCuotaCount=cuotaCount;
     if(hasBoolData){
       for(var c=12;c<=40;c++){
         var cellAmt=rawCuota;
         if(typeof r[c]==='number'&&r[c]>0)cellAmt=Math.round(r[c]);
         var bc=c-boolOffset;
-        if(boolRow[bc]===true){
-          payments.push('paid');paymentAmts.push(cellAmt);
-        }else if(boolRow[bc]===false){
-          payments.push('unpaid');paymentAmts.push(cellAmt);
+        if(c>=cuotaStart&&c<cuotaStart+cuotaCount){
+          if(boolRow[bc]===true){
+            payments.push('paid');paymentAmts.push(cellAmt);
+          }else{
+            payments.push('unpaid');paymentAmts.push(cellAmt);
+          }
         }else{
           payments.push('none');paymentAmts.push(0);
         }

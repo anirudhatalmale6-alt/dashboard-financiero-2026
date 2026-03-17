@@ -894,6 +894,17 @@ function renderCuotasPanel(panelKey){
   function findDateCol(r){for(var c=3;c<=5;c++){if(r[c]&&String(r[c]).indexOf('Date(')>=0)return c;}return-1;}
   // Helper: find where boolean data starts in a row
   function findBoolStart(r){if(!r)return-1;for(var c=8;c<=45;c++){if(r[c]===true||r[c]===false)return c;}return-1;}
+  // Detect CUOTAS column from header row (first non-data row with "CUOTA" text)
+  var cuotasColIdx=-1;
+  for(var hi=0;hi<Math.min(5,d.raw.length);hi++){
+    var hr=d.raw[hi];if(!hr)continue;
+    if(isBoolRow(hr))continue;
+    if(findDateCol(hr)>=0)break;
+    for(var hc=6;hc<=11;hc++){
+      if(hr[hc]&&typeof hr[hc]==='string'&&/CUOTA/i.test(hr[hc])){cuotasColIdx=hc;break;}
+    }
+    if(cuotasColIdx>=0)break;
+  }
   var rows=[];
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];
@@ -944,13 +955,15 @@ function renderCuotasPanel(panelKey){
     }else if(candidates.length===1){
       rawCuota=candidates[0].val;rawVenta=rawCuota;
     }
-    // Use first small integer (1-120) as cuota count — this comes from the CUOTAS column
-    if(cuotaCandidates.length>0){
+    // Use header-detected CUOTAS column for cuota count (avoids picking wrong column)
+    if(cuotasColIdx>=0){
+      var cv=r[cuotasColIdx];
+      if(cv!==null&&cv!==undefined){
+        var cn=typeof cv==='number'?Math.round(cv):(typeof cv==='string'?parseInt(cv):0);
+        if(cn>0&&cn<=120)numCContract=cn;
+      }
+    }else if(cuotaCandidates.length>0){
       numCContract=cuotaCandidates[0].val;
-    }
-    // Fallback only when no cuota candidate found at all
-    if(!numCContract&&rawCuota>0&&rawVenta>rawCuota){
-      numCContract=Math.round(rawVenta/rawCuota);
     }
     // Estado detection
     var estado='';
@@ -981,8 +994,10 @@ function renderCuotasPanel(panelKey){
         if(boolRow[bc]===true){if(firstTrue<0)firstTrue=c;lastTrue=c;}
       }
     }
-    // Cuota range: starts at first TRUE, extends to max(numCContract, lastTrueRange)
-    var cuotaStart=firstTrue>=0?firstTrue:12;
+    // Cuota range: starts at first TRUE, or at sale date month if no TRUEs yet
+    var dateStartCol=12;
+    if(fecha){var dm=String(fecha).match(/Date\((\d+),(\d+),/);if(dm){dateStartCol=12+(parseInt(dm[1])-2025)*12+(parseInt(dm[2])-7);if(dateStartCol<12)dateStartCol=12;if(dateStartCol>40)dateStartCol=40;}}
+    var cuotaStart=firstTrue>=0?firstTrue:dateStartCol;
     var rangeFromTrues=lastTrue>=cuotaStart?(lastTrue-cuotaStart+1):0;
     var cuotaCount=numCContract>0?Math.max(numCContract,rangeFromTrues):(rangeFromTrues>0?rangeFromTrues:0);
     actualCuotaCount=cuotaCount;

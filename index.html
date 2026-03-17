@@ -1403,14 +1403,14 @@ function populateFilters(){
     if(mainSub)mainSub.textContent='Panel exclusivo de vendedor — solo tu información';
     document.title='Dashboard '+matchedVend+' 2026';
     // Hide financial-only sections for vendor dashboard
-    var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
+    var hideIds=['secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
       'secDetalle','moduleDetails',
       'secInversiones','invSection',
       'secDashVendedores',
-      'secAcumuladoAnual','acumCards'];
+      'secAcumuladoAnual','acumCards','vendedorKpis'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Reorder sections for vendor URL layout per client specification
     var mainEl=document.querySelector('.main');
@@ -1421,8 +1421,8 @@ function populateFilters(){
       var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
       var refNode=headerEl.nextSibling;
       var el;
-      // 1. KPIs
-      el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
+      // 1. KPIs (use main kpis section which has proper vendor-specific rendering)
+      el=document.getElementById('kpis');if(el)mainEl.insertBefore(el,refNode);
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);

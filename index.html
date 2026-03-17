@@ -1426,14 +1426,14 @@ function populateFilters(){
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
-      // 3. Ganancias por Vendedor (chart)
-      el=document.getElementById('secVendedorCharts');if(el)mainEl.insertBefore(el,refNode);
+      // 3. Ganancias por Vendedor (chart) — rename title for vendor links
+      el=document.getElementById('secVendedorCharts');if(el){mainEl.insertBefore(el,refNode);var ct=el.querySelector('.chart-title');if(ct)ct.innerHTML='<span class="dot" style="background:var(--purple)"></span>GRAFICO DE GANANCIAS MENSUALES';}
       // 4. Acumulado Ganancias (collapsible - toggle added in renderVendedorDetail)
       el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
       var acumContainer=document.getElementById('vendedorDetailContainer');
       if(acumContainer){mainEl.insertBefore(acumContainer,refNode);}
-      // 5. Acumulado Anual (chart)
-      el=document.getElementById('secAcumVendChart');if(el)mainEl.insertBefore(el,refNode);
+      // 5. Acumulado Anual (chart) — smaller height for vendor links
+      el=document.getElementById('secAcumVendChart');if(el){mainEl.insertBefore(el,refNode);var acCont=el.querySelector('.chart-container.tall');if(acCont){acCont.classList.remove('tall');acCont.style.height='220px';}}
       // 6. Cuotas a Cobrar en Dólares
       el=document.getElementById('secCuotas');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('cuotasCards');if(el)mainEl.insertBefore(el,refNode);
@@ -2128,9 +2128,9 @@ function renderVendedorDetail(){
     var isSingle=filterVendedor!=='all';
     container.innerHTML+=`
       <div class="vd-block${isSingle?' vd-expanded':''}">
-        <div class="vd-block-header"${isSingle?'':' data-toggle="'+blockId+'" style="cursor:pointer" title="Click para expandir/colapsar"'}>
+        <div class="vd-block-header" data-toggle="${blockId}" style="cursor:pointer" title="Click para expandir/colapsar">
           <div class="vd-block-dot" style="background:${color}"></div>
-          <div class="vd-block-name">${vName}${isSingle?'':' <span class="vd-toggle" id="tog_'+blockId+'" style="font-size:12px;opacity:0.5">\u25B6</span>'}</div>
+          <div class="vd-block-name">${vName} <span class="vd-toggle" id="tog_${blockId}" style="font-size:12px;opacity:0.5">${isSingle?'\u25BC':'\u25B6'}</span></div>
           <div class="vd-block-total">${fmtUSD(totalUSD)} <span>${fmtPesos(totalPesos)}</span></div>
         </div>
         <div class="vd-cards" id="${blockId}" style="${isSingle?'margin-top:10px':'display:none'}">${cardsHTML}</div>
@@ -2739,15 +2739,16 @@ function renderKPIs(){
       `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
       `<div class="kpi" data-color="green"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Mejor Mes $</div><div class="kpi-value">${fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0)))}</div></div>`;
 
+    const curMesName=curIdx>=2?allMeses[curIdx-2]:'—';
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}</div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA ACUMULADA EN DOLARES</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}<div class="kpi-sub">${mesesCount} meses con datos</div></div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA ${curMesName.toUpperCase()} DOLARES</div><div class="kpi-value">${fmtUSD(curGanUSD)}</div></div>
+      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">PROMEDIO MENSUAL DOLARES</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
       ${gastosCardUSD}
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
-      <div class="kpi" data-color="teal"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Acumulado Dólares</div><div class="kpi-value">${fmtUSD(ganUSD)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia ${filterVendedor}</div><div class="kpi-value">${fmtPesos(ganPesos)}</div>${tGanP}</div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA ACUMULADA EN PESOS</div><div class="kpi-value">${fmtPesos(ganPesos)}</div>${tGanP}<div class="kpi-sub">${mesesCount} meses con datos</div></div>
+      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA ${curMesName.toUpperCase()} PESOS</div><div class="kpi-value">${fmtPesos(curGanPesos)}</div></div>
+      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">PROMEDIO MENSUAL PESOS</div><div class="kpi-value">${fmtPesos(promPesos)}</div></div>
       ${gastosCardPesos}
-      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">${fmtPesos(promPesos)}</div></div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Acumulado Pesos</div><div class="kpi-value">${fmtPesos(ganPesos)}</div><div class="kpi-sub">${mesesCount} meses con datos</div></div>
     `;
   } else {
     kpiEl.className='kpis';

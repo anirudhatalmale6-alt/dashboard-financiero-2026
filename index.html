@@ -888,10 +888,12 @@ function renderCuotasPanel(panelKey){
   var cur=cfg.currency;
   function fv(v){if(typeof v==='number')return cur+' '+Math.round(v).toLocaleString('es-AR');if(typeof v==='string')return v;return'—';}
   function fd(v){if(!v)return'—';var s=String(v);var m2=s.match(/Date\((\d+),(\d+),(\d+)\)/);if(m2)return parseInt(m2[3])+'/'+((parseInt(m2[2])+1))+'/'+m2[1];if(typeof v==='string')return v;return'—';}
-  // Helper: detect if row is a boolean tracking row (has True/False in cols 12-20)
-  function isBoolRow(r){if(!r)return false;for(var c=12;c<=20;c++){if(r[c]===true||r[c]===false)return true;}return false;}
+  // Helper: detect if row is a boolean tracking row (has True/False in cols 8-25)
+  function isBoolRow(r){if(!r)return false;for(var c=8;c<=25;c++){if(r[c]===true||r[c]===false)return true;}return false;}
   // Helper: find date column in a row (returns col index or -1)
   function findDateCol(r){for(var c=3;c<=5;c++){if(r[c]&&String(r[c]).indexOf('Date(')>=0)return c;}return-1;}
+  // Helper: find where boolean data starts in a row
+  function findBoolStart(r){if(!r)return-1;for(var c=8;c<=45;c++){if(r[c]===true||r[c]===false)return c;}return-1;}
   var rows=[];
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];
@@ -907,32 +909,53 @@ function renderCuotasPanel(panelKey){
     // Auto-detect column mapping based on date position
     var vendedor,cliente,detalle,fecha,monto;
     if(dateCol===4){
-      // Standard: c1=vendedor, c2=cliente, c3=detalle, c4=fecha, c5=monto
       vendedor=r[1]||cfg.vendor;
       cliente=r[2]||'';detalle=r[3]||'';fecha=r[4];monto=r[5];
     }else if(dateCol===3){
-      // Shifted: c0=num, c1=cliente, c2=detalle, c3=fecha, c4=monto
       vendedor=cfg.vendor;
       cliente=r[1]||r[2]||'';detalle=r[2]||'';fecha=r[3];monto=r[4];
     }else{
       vendedor=cfg.vendor;cliente=r[2]||'';detalle=r[3]||'';fecha=r[dateCol];monto=r[dateCol+1];
     }
-    // If vendedor looks like a header label, use config vendor
     if(vendedor==='CLIENTES'||vendedor==='VENDEDOR'||vendedor==='DETALLE')vendedor=cfg.vendor;
-    // Auto-detect per-cuota amount: CREDITOS sheets use c7 (per-cuota) and c9 (total)
-    // VENTA sheets use c9 (per-cuota) and c11 (total)
-    var rawTotal=typeof r[9]==='number'?Math.round(r[9]):0;
-    var rawCuota=rawTotal;
-    // Check if c7 is per-cuota and c9 is total (CREDITOS pattern)
+    // Flexible detection of cuota count and per-cuota amount
+    // Scan columns dateCol+1 to 11 for: cuota count (integer 1-120) and amounts
     var numCContract=0;
-    if(typeof r[8]==='number'&&r[8]>=1&&r[8]<=120)numCContract=Math.round(r[8]);
-    else if(typeof r[8]==='string')numCContract=parseInt(r[8])||0;
-    if(!numCContract&&typeof r[6]==='number'&&r[6]>=1&&r[6]<=120)numCContract=Math.round(r[6]);
-    if(typeof r[7]==='number'&&r[7]>0&&numCContract>0){
-      var checkTotal=Math.round(r[7]*numCContract);
-      if(rawTotal>0&&Math.abs(checkTotal-rawTotal)<rawTotal*0.02){
-        rawCuota=Math.round(r[7]);
+    var rawCuota=0;
+    var rawVenta=0;
+    var candidates=[];
+    for(var sc=dateCol+1;sc<=11;sc++){
+      var sv=r[sc];
+      if(sv===null||sv===undefined)continue;
+      var sn=typeof sv==='number'?sv:(typeof sv==='string'?parseFloat(sv.replace(/[^\d.-]/g,'')):0);
+      if(isNaN(sn)||sn===0)continue;
+      if(sn>=1&&sn<=120&&Math.round(sn)===sn){
+        if(!numCContract)numCContract=Math.round(sn);
+      }else if(sn>0){
+        candidates.push({col:sc,val:Math.round(sn)});
       }
+    }
+    // Determine per-cuota from candidates: if cuotaCount found, per-cuota = smallest candidate that * count ≈ a larger candidate
+    if(numCContract>0&&candidates.length>=1){
+      candidates.sort(function(a,b){return a.val-b.val;});
+      rawCuota=candidates[0].val;
+      for(var ci=0;ci<candidates.length;ci++){
+        var check=candidates[ci].val*numCContract;
+        for(var cj=0;cj<candidates.length;cj++){
+          if(ci!==cj&&Math.abs(check-candidates[cj].val)<candidates[cj].val*0.05){
+            rawCuota=candidates[ci].val;rawVenta=candidates[cj].val;break;
+          }
+        }
+        if(rawVenta>0)break;
+      }
+      if(!rawVenta&&candidates.length>=2)rawVenta=candidates[candidates.length-1].val;
+      if(!rawVenta)rawVenta=rawCuota*numCContract;
+    }else if(candidates.length>=2){
+      candidates.sort(function(a,b){return a.val-b.val;});
+      rawCuota=candidates[0].val;rawVenta=candidates[candidates.length-1].val;
+      if(rawCuota>0&&rawVenta>rawCuota){numCContract=Math.round(rawVenta/rawCuota);}
+    }else if(candidates.length===1){
+      rawCuota=candidates[0].val;rawVenta=rawCuota;
     }
     // Estado detection
     var estado='';
@@ -944,17 +967,25 @@ function renderCuotasPanel(panelKey){
     var paymentAmts=[];
     var actualCuotaCount=0;
     var hasBoolData=false;
+    var boolStart=findBoolStart(boolRow);
     for(var c=0;c<=45;c++){
       if(boolRow[c]===true||boolRow[c]===false){hasBoolData=true;actualCuotaCount++;}
     }
+    // Determine the column offset for month alignment
+    // monthHeaders are fetched from M2:AO2 (cols 12-40 in the sheet)
+    // Boolean data may start at col 10,11,12 etc — we need to align with month headers
+    // monthHeaders[idx] corresponds to sheet col 12+idx
+    var boolOffset=0;
+    if(hasBoolData&&boolStart>=0&&boolStart<12){boolOffset=12-boolStart;}
     if(hasBoolData){
       for(var c=12;c<=40;c++){
-        // Check if data row has a per-cell amount (client may enter custom amounts)
         var cellAmt=rawCuota;
         if(typeof r[c]==='number'&&r[c]>0)cellAmt=Math.round(r[c]);
-        if(boolRow[c]===true){
+        // Check boolean at aligned column
+        var bc=c-boolOffset;
+        if(boolRow[bc]===true){
           payments.push('paid');paymentAmts.push(cellAmt);
-        }else if(boolRow[c]===false){
+        }else if(boolRow[bc]===false){
           payments.push('unpaid');paymentAmts.push(cellAmt);
         }else{
           payments.push('none');paymentAmts.push(0);
@@ -973,10 +1004,11 @@ function renderCuotasPanel(panelKey){
     if(r[39]&&typeof r[39]==='string'&&/VIGENTE|CANCELADO|COBRADO/i.test(r[39])){
       rcIdx=36;gnIdx=37;cbIdx=38;vtIdx=9;
     }
+    var displayVenta=rawVenta||r[vtIdx]||0;
     rows.push({
       vendedor:vendedor,cliente:cliente,detalle:detalle,
       fecha:fd(fecha),costo:fv(monto),cuotas:actualCuotaCount||numCContract||'',valorCuota:fv(rawCuota),rawCuota:rawCuota,
-      venta:fv(r[vtIdx]),restaCobrar:fv(r[rcIdx]),ganancia:fv(r[gnIdx]),cobrado:fv(r[cbIdx]),estado:estado,
+      venta:fv(typeof displayVenta==='number'?displayVenta:0),restaCobrar:fv(r[rcIdx]),ganancia:fv(r[gnIdx]),cobrado:fv(r[cbIdx]),estado:estado,
       payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount
     });
   }

@@ -905,6 +905,7 @@ function renderCuotasPanel(panelKey){
     }
     if(cuotasColIdx>=0)break;
   }
+  if(cuotasColIdx<0)cuotasColIdx=8; // Default: column I is typically CUOTAS across all vendor sheets
   var rows=[];
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];

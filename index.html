@@ -2125,14 +2125,15 @@ function renderVendedorDetail(){
     });
 
     var blockId='vdBlock_'+vi;
+    var isSingle=filterVendedor!=='all';
     container.innerHTML+=`
-      <div class="vd-block">
-        <div class="vd-block-header" data-toggle="${blockId}" style="cursor:pointer" title="Click para expandir/colapsar">
+      <div class="vd-block${isSingle?' vd-expanded':''}">
+        <div class="vd-block-header"${isSingle?'':' data-toggle="'+blockId+'" style="cursor:pointer" title="Click para expandir/colapsar"'}>
           <div class="vd-block-dot" style="background:${color}"></div>
-          <div class="vd-block-name">${vName} <span class="vd-toggle" id="tog_${blockId}" style="font-size:12px;opacity:0.5">\u25B6</span></div>
+          <div class="vd-block-name">${vName}${isSingle?'':' <span class="vd-toggle" id="tog_'+blockId+'" style="font-size:12px;opacity:0.5">\u25B6</span>'}</div>
           <div class="vd-block-total">${fmtUSD(totalUSD)} <span>${fmtPesos(totalPesos)}</span></div>
         </div>
-        <div class="vd-cards" id="${blockId}" style="display:none">${cardsHTML}</div>
+        <div class="vd-cards" id="${blockId}" style="${isSingle?'margin-top:10px':'display:none'}">${cardsHTML}</div>
       </div>`;
   });
   // Make each vendor header toggle its own cards

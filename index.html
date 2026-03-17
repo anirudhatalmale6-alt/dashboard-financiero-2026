@@ -930,41 +930,37 @@ function renderCuotasPanel(panelKey){
       vendedor=cfg.vendor;cliente=r[2]||'';detalle=r[3]||'';fecha=r[dateCol];monto=r[dateCol+1];
     }
     if(vendedor==='CLIENTES'||vendedor==='VENDEDOR'||vendedor==='DETALLE')vendedor=cfg.vendor;
-    // Flexible detection of cuota count and per-cuota amount
-    // Skip Costo column (dateCol+1) — scan from dateCol+2 to avoid misidentifying cost as cuota count
+    // Read cuota count, per-cuota amount, and venta from known column positions
     var numCContract=0;
     var rawCuota=0;
     var rawVenta=0;
-    var candidates=[];
-    var cuotaCandidates=[];
-    for(var sc=dateCol+2;sc<=11;sc++){
-      var sv=r[sc];
-      if(sv===null||sv===undefined)continue;
-      var sn=typeof sv==='number'?sv:(typeof sv==='string'?parseFloat(sv.replace(/[^\d.-]/g,'')):0);
-      if(isNaN(sn)||sn===0)continue;
-      if(sn>=1&&sn<=120&&Math.round(sn)===sn){
-        cuotaCandidates.push({col:sc,val:Math.round(sn)});
-      }else if(sn>0){
-        candidates.push({col:sc,val:Math.round(sn)});
-      }
-    }
-    // Find the largest candidate as rawVenta, then derive cuota count mathematically
-    if(candidates.length>=2){
-      candidates.sort(function(a,b){return a.val-b.val;});
-      rawVenta=candidates[candidates.length-1].val;
-      rawCuota=candidates[0].val;
-    }else if(candidates.length===1){
-      rawCuota=candidates[0].val;rawVenta=rawCuota;
-    }
-    // Use header-detected CUOTAS column for cuota count (avoids picking wrong column)
+    // Cuota count from detected CUOTAS column (col 8 typically)
     if(cuotasColIdx>=0){
       var cv=r[cuotasColIdx];
       if(cv!==null&&cv!==undefined){
         var cn=typeof cv==='number'?Math.round(cv):(typeof cv==='string'?parseInt(cv):0);
         if(cn>0&&cn<=120)numCContract=cn;
       }
-    }else if(cuotaCandidates.length>0){
-      numCContract=cuotaCandidates[0].val;
+      // Per-cuota amount from column right after CUOTAS (col 9 typically)
+      var cav=r[cuotasColIdx+1];
+      if(cav!==null&&cav!==undefined){
+        var can=typeof cav==='number'?Math.round(cav):(typeof cav==='string'?parseFloat(cav):0);
+        if(can>0)rawCuota=can;
+      }
+    }
+    // Total venta from col 11 (L)
+    if(r[11]!==null&&r[11]!==undefined&&typeof r[11]==='number'&&r[11]>0){rawVenta=Math.round(r[11]);}
+    // Fallback: scan for amounts if direct column reading failed
+    if(!rawCuota||!rawVenta){
+      for(var sc=dateCol+2;sc<=11;sc++){
+        if(sc===cuotasColIdx)continue;
+        var sv=r[sc];if(sv===null||sv===undefined)continue;
+        var sn=typeof sv==='number'?sv:(typeof sv==='string'?parseFloat(sv.replace(/[^\d.-]/g,'')):0);
+        if(isNaN(sn)||sn<=0)continue;
+        if(!rawCuota&&sn<rawVenta)rawCuota=Math.round(sn);
+        if(sn>rawVenta)rawVenta=Math.round(sn);
+      }
+      if(!rawCuota&&rawVenta>0)rawCuota=rawVenta;
     }
     // Estado detection
     var estado='';

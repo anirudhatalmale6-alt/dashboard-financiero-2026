@@ -944,24 +944,19 @@ function renderCuotasPanel(panelKey){
     }else if(candidates.length===1){
       rawCuota=candidates[0].val;rawVenta=rawCuota;
     }
-    // Try each cuota candidate: pick one where candidate * cuota ≈ venta
-    if(cuotaCandidates.length>0&&rawCuota>0&&rawVenta>0){
-      for(var qi=0;qi<cuotaCandidates.length;qi++){
-        var qv=cuotaCandidates[qi].val;
-        // Check if qv * any amount candidate ≈ rawVenta
-        for(var ci=0;ci<candidates.length-1;ci++){
-          if(Math.abs(qv*candidates[ci].val-rawVenta)<rawVenta*0.05){
-            numCContract=qv;rawCuota=candidates[ci].val;break;
-          }
-        }
-        if(numCContract>0)break;
-      }
-      if(!numCContract)numCContract=cuotaCandidates[0].val;
-    }else if(cuotaCandidates.length>0){
+    // Use first small integer (1-120) as cuota count — this comes from the CUOTAS column
+    if(cuotaCandidates.length>0){
       numCContract=cuotaCandidates[0].val;
+      // If second cuotaCandidate exists and is a per-cuota amount (> numCContract), use it
+      if(cuotaCandidates.length>=2&&cuotaCandidates[1].val>numCContract){
+        // Check if this * numCContract ≈ rawVenta (could be the actual per-cuota)
+        if(rawVenta>0&&Math.abs(cuotaCandidates[1].val*numCContract-rawVenta)<rawVenta*0.05){
+          rawCuota=cuotaCandidates[1].val;
+        }
+      }
     }
-    // Final fallback: derive cuota count from venta/cuota math
-    if(rawCuota>0&&rawVenta>rawCuota&&(!numCContract||Math.abs(numCContract*rawCuota-rawVenta)>rawVenta*0.1)){
+    // Fallback only when no cuota candidate found at all
+    if(!numCContract&&rawCuota>0&&rawVenta>rawCuota){
       numCContract=Math.round(rawVenta/rawCuota);
     }
     // Estado detection

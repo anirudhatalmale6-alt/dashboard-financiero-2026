@@ -947,13 +947,6 @@ function renderCuotasPanel(panelKey){
     // Use first small integer (1-120) as cuota count — this comes from the CUOTAS column
     if(cuotaCandidates.length>0){
       numCContract=cuotaCandidates[0].val;
-      // If second cuotaCandidate exists and is a per-cuota amount (> numCContract), use it
-      if(cuotaCandidates.length>=2&&cuotaCandidates[1].val>numCContract){
-        // Check if this * numCContract ≈ rawVenta (could be the actual per-cuota)
-        if(rawVenta>0&&Math.abs(cuotaCandidates[1].val*numCContract-rawVenta)<rawVenta*0.05){
-          rawCuota=cuotaCandidates[1].val;
-        }
-      }
     }
     // Fallback only when no cuota candidate found at all
     if(!numCContract&&rawCuota>0&&rawVenta>rawCuota){

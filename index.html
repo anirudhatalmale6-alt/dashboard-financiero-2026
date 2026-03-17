@@ -1403,14 +1403,14 @@ function populateFilters(){
     if(mainSub)mainSub.textContent='Panel exclusivo de vendedor — solo tu información';
     document.title='Dashboard '+matchedVend+' 2026';
     // Hide financial-only sections for vendor dashboard
-    var hideIds=['secIngresosTotales','ingresosTotalesWrap',
+    var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
       'secDetalle','moduleDetails',
       'secInversiones','invSection',
       'secDashVendedores',
-      'secAcumuladoAnual','acumCards','vendedorKpis'];
+      'secAcumuladoAnual','acumCards'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     // Reorder sections for vendor URL layout per client specification
     var mainEl=document.querySelector('.main');
@@ -1421,8 +1421,8 @@ function populateFilters(){
       var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
       var refNode=headerEl.nextSibling;
       var el;
-      // 1. KPIs (use main kpis section which has proper vendor-specific rendering)
-      el=document.getElementById('kpis');if(el)mainEl.insertBefore(el,refNode);
+      // 1. KPIs
+      el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
@@ -2065,17 +2065,24 @@ function renderVendedorDash(){
     if(filterVendedor!=='all'&&vgData.length>0){
       var vd=vgData.filter(function(r){return r.Vendedor===filterVendedor;});
       if(filterMes!=='all')vd=vd.filter(function(r){return r.Mes===filterMes;});
+      var vdAll=vgData.filter(function(r){return r.Vendedor===filterVendedor;});
       var gUSD=vd.reduce(function(s,r){return s+(r.Ganancia_USD||0);},0);
       var gPesos=vd.reduce(function(s,r){return s+(r.Ganancia_Pesos||0);},0);
       var mCount=[...new Set(vd.filter(function(r){return(r.Ganancia_USD||0)!==0||(r.Ganancia_Pesos||0)!==0;}).map(function(r){return r.Mes;}))].length;
       var pUSD=mCount>0?gUSD/mCount:0;
       var pPesos=mCount>0?gPesos/mCount:0;
+      // Find current month (last month with data for this vendor)
+      var allMesesVK=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      var curMesVK='—';var curUSD=0;var curPesos=0;
+      for(var mi=11;mi>=0;mi--){var mr=vdAll.find(function(r){return r.Mes===allMesesVK[mi];});if(mr&&((mr.Ganancia_USD||0)!==0||(mr.Ganancia_Pesos||0)!==0)){curMesVK=allMesesVK[mi];curUSD=mr.Ganancia_USD||0;curPesos=mr.Ganancia_Pesos||0;break;}}
       vKpiEl.style.display='';
       vKpiEl.innerHTML=
-        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ganancia '+filterVendedor+'</div><div class="kpi-value">'+fmtUSD(gUSD)+'</div></div>'+
-        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">'+fmtUSD(pUSD)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+
-        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ganancia '+filterVendedor+'</div><div class="kpi-value">'+fmtPesos(gPesos)+'</div></div>'+
-        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Promedio Mensual</div><div class="kpi-value">'+fmtPesos(pPesos)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>';
+        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA ACUMULADA EN DOLARES</div><div class="kpi-value">'+fmtUSD(gUSD)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+
+        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA '+curMesVK.toUpperCase()+' DOLARES</div><div class="kpi-value">'+fmtUSD(curUSD)+'</div></div>'+
+        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">PROMEDIO MENSUAL DOLARES</div><div class="kpi-value">'+fmtUSD(pUSD)+'</div></div>'+
+        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA ACUMULADA EN PESOS</div><div class="kpi-value">'+fmtPesos(gPesos)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+
+        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA '+curMesVK.toUpperCase()+' PESOS</div><div class="kpi-value">'+fmtPesos(curPesos)+'</div></div>'+
+        '<div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">PROMEDIO MENSUAL PESOS</div><div class="kpi-value">'+fmtPesos(pPesos)+'</div></div>';
     } else {
       vKpiEl.style.display='none';
       vKpiEl.innerHTML='';

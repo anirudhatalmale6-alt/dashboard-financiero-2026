@@ -977,16 +977,20 @@ function renderCuotasPanel(panelKey){
     // monthHeaders[idx] corresponds to sheet col 12+idx
     var boolOffset=0;
     if(hasBoolData&&boolStart>=0&&boolStart<12){boolOffset=12-boolStart;}
+    // Limit cuotas to contract count when known
+    var maxCuotas=numCContract>0?numCContract:999;
     if(hasBoolData){
+      var shown=0;
       for(var c=12;c<=40;c++){
         var cellAmt=rawCuota;
         if(typeof r[c]==='number'&&r[c]>0)cellAmt=Math.round(r[c]);
-        // Check boolean at aligned column
         var bc=c-boolOffset;
-        if(boolRow[bc]===true){
-          payments.push('paid');paymentAmts.push(cellAmt);
+        if(shown>=maxCuotas){
+          payments.push('none');paymentAmts.push(0);
+        }else if(boolRow[bc]===true){
+          payments.push('paid');paymentAmts.push(cellAmt);shown++;
         }else if(boolRow[bc]===false){
-          payments.push('unpaid');paymentAmts.push(cellAmt);
+          payments.push('unpaid');paymentAmts.push(cellAmt);shown++;
         }else{
           payments.push('none');paymentAmts.push(0);
         }
@@ -1007,7 +1011,7 @@ function renderCuotasPanel(panelKey){
     var displayVenta=rawVenta||r[vtIdx]||0;
     rows.push({
       vendedor:vendedor,cliente:cliente,detalle:detalle,
-      fecha:fd(fecha),costo:fv(monto),cuotas:actualCuotaCount||numCContract||'',valorCuota:fv(rawCuota),rawCuota:rawCuota,
+      fecha:fd(fecha),costo:fv(monto),cuotas:numCContract||actualCuotaCount||'',valorCuota:fv(rawCuota),rawCuota:rawCuota,
       venta:fv(typeof displayVenta==='number'?displayVenta:0),restaCobrar:fv(r[rcIdx]),ganancia:fv(r[gnIdx]),cobrado:fv(r[cbIdx]),estado:estado,
       payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount
     });

@@ -919,43 +919,50 @@ function renderCuotasPanel(panelKey){
     }
     if(vendedor==='CLIENTES'||vendedor==='VENDEDOR'||vendedor==='DETALLE')vendedor=cfg.vendor;
     // Flexible detection of cuota count and per-cuota amount
-    // Scan columns dateCol+1 to 11 for: cuota count (integer 1-120) and amounts
+    // Skip Costo column (dateCol+1) — scan from dateCol+2 to avoid misidentifying cost as cuota count
     var numCContract=0;
     var rawCuota=0;
     var rawVenta=0;
     var candidates=[];
-    for(var sc=dateCol+1;sc<=11;sc++){
+    var cuotaCandidates=[];
+    for(var sc=dateCol+2;sc<=11;sc++){
       var sv=r[sc];
       if(sv===null||sv===undefined)continue;
       var sn=typeof sv==='number'?sv:(typeof sv==='string'?parseFloat(sv.replace(/[^\d.-]/g,'')):0);
       if(isNaN(sn)||sn===0)continue;
       if(sn>=1&&sn<=120&&Math.round(sn)===sn){
-        if(!numCContract)numCContract=Math.round(sn);
+        cuotaCandidates.push({col:sc,val:Math.round(sn)});
       }else if(sn>0){
         candidates.push({col:sc,val:Math.round(sn)});
       }
     }
-    // Determine per-cuota from candidates: if cuotaCount found, per-cuota = smallest candidate that * count ≈ a larger candidate
-    if(numCContract>0&&candidates.length>=1){
+    // Find the largest candidate as rawVenta, then derive cuota count mathematically
+    if(candidates.length>=2){
       candidates.sort(function(a,b){return a.val-b.val;});
+      rawVenta=candidates[candidates.length-1].val;
       rawCuota=candidates[0].val;
-      for(var ci=0;ci<candidates.length;ci++){
-        var check=candidates[ci].val*numCContract;
-        for(var cj=0;cj<candidates.length;cj++){
-          if(ci!==cj&&Math.abs(check-candidates[cj].val)<candidates[cj].val*0.05){
-            rawCuota=candidates[ci].val;rawVenta=candidates[cj].val;break;
-          }
-        }
-        if(rawVenta>0)break;
-      }
-      if(!rawVenta&&candidates.length>=2)rawVenta=candidates[candidates.length-1].val;
-      if(!rawVenta)rawVenta=rawCuota*numCContract;
-    }else if(candidates.length>=2){
-      candidates.sort(function(a,b){return a.val-b.val;});
-      rawCuota=candidates[0].val;rawVenta=candidates[candidates.length-1].val;
-      if(rawCuota>0&&rawVenta>rawCuota){numCContract=Math.round(rawVenta/rawCuota);}
     }else if(candidates.length===1){
       rawCuota=candidates[0].val;rawVenta=rawCuota;
+    }
+    // Try each cuota candidate: pick one where candidate * cuota ≈ venta
+    if(cuotaCandidates.length>0&&rawCuota>0&&rawVenta>0){
+      for(var qi=0;qi<cuotaCandidates.length;qi++){
+        var qv=cuotaCandidates[qi].val;
+        // Check if qv * any amount candidate ≈ rawVenta
+        for(var ci=0;ci<candidates.length-1;ci++){
+          if(Math.abs(qv*candidates[ci].val-rawVenta)<rawVenta*0.05){
+            numCContract=qv;rawCuota=candidates[ci].val;break;
+          }
+        }
+        if(numCContract>0)break;
+      }
+      if(!numCContract)numCContract=cuotaCandidates[0].val;
+    }else if(cuotaCandidates.length>0){
+      numCContract=cuotaCandidates[0].val;
+    }
+    // Final fallback: derive cuota count from venta/cuota math
+    if(rawCuota>0&&rawVenta>rawCuota&&(!numCContract||Math.abs(numCContract*rawCuota-rawVenta)>rawVenta*0.1)){
+      numCContract=Math.round(rawVenta/rawCuota);
     }
     // Estado detection
     var estado='';
@@ -1033,7 +1040,8 @@ function renderCuotasPanel(panelKey){
       if(!h)return;
       var st=r.payments[idx];
       var cellAmt=r.paymentAmts?r.paymentAmts[idx]:0;
-      var amt=cellAmt?cellAmt.toLocaleString('es-AR'):(r.rawCuota?r.rawCuota.toLocaleString('es-AR'):'');
+      var amtNum=cellAmt?cellAmt:(r.rawCuota?r.rawCuota:0);
+      var amt=amtNum?cfg.currency+' '+amtNum.toLocaleString('es-AR'):'';
       if(st==='paid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-paid">'+amt+'</span></td>';}
       else if(st==='unpaid'){mthCells+='<td style="text-align:center;padding:4px 2px"><span class="cuota-cell cuota-unpaid">'+amt+'</span></td>';}
       else{mthCells+='<td style="text-align:center;padding:4px 2px"></td>';}

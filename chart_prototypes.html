@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Chart Style Options</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1b2e;color:#e8e6e3;font-family:'DM Sans',system-ui,sans-serif;padding:20px}
+.option{margin-bottom:40px;background:#22233a;border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,.06)}
+.option-title{font-size:18px;font-weight:600;margin-bottom:4px;color:#d4a853}
+.option-desc{font-size:13px;color:#9a98a0;margin-bottom:16px}
+.chart-box{height:380px;position:relative}
+canvas{border-radius:8px}
+h1{text-align:center;font-size:24px;margin-bottom:24px;color:#e8e6e3;font-weight:500}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+</head>
+<body>
+<h1>Balance General — Opciones de Estilo</h1>
+
+<div class="option" id="opt1">
+  <div class="option-title">Opcion A — Columnas con Degradado + Bordes Redondeados</div>
+  <div class="option-desc">6 columnas agrupadas: 4 originales + 2 unificadas (dorado/bordo). Efecto degradado vertical, esquinas redondeadas.</div>
+  <div class="chart-box"><canvas id="chartA"></canvas></div>
+</div>
+
+<div class="option" id="opt2">
+  <div class="option-title">Opcion B — Columnas Originales + Lineas Unificadas</div>
+  <div class="option-desc">Las 4 columnas originales como barras, las 2 unificadas como lineas gruesas con area sombreada (dorado ingresos, bordo gastos).</div>
+  <div class="chart-box"><canvas id="chartB"></canvas></div>
+</div>
+
+<div class="option" id="opt3">
+  <div class="option-title">Opcion C — Solo Unificadas + Linea Neta</div>
+  <div class="option-desc">2 columnas grandes (dorado ingresos, bordo gastos) + linea de balance neto. Mas limpio, menos cargado.</div>
+  <div class="chart-box"><canvas id="chartC"></canvas></div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+// Sample data based on actual dashboard values
+const labels=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const cobrarUSD=[5200,8400,12100,18500,22000,19800,17600,16200,14800,13500,12000,11200];
+const cobrarPesos=[800000,1200000,1800000,2600000,3200000,2900000,2500000,2200000,2000000,1800000,1600000,1400000];
+const pagarUSD=[3100,4800,6200,8900,10500,9200,8100,7500,6800,6200,5500,5000];
+const gastosPesos=[450000,480000,520000,550000,580000,560000,540000,520000,510000,500000,490000,480000];
+// Cotizacion ~1450
+const cot=1450;
+const unifiedIncome=cobrarUSD.map((v,i)=>Math.round(v+cobrarPesos[i]/cot));
+const unifiedExpenses=pagarUSD.map((v,i)=>Math.round(v+gastosPesos[i]/cot));
+const netBalance=unifiedIncome.map((v,i)=>v-unifiedExpenses[i]);
+
+function fmt(v){
+  if(Math.abs(v)>=1000)return 'U$D '+Math.round(v/1000)+'K';
+  return 'U$D '+v;
+}
+
+// ===== OPTION A: Gradient bars =====
+(function(){
+  const ctx=document.getElementById('chartA').getContext('2d');
+  // Create gradients
+  function makeGrad(c1,c2){var g=ctx.createLinearGradient(0,0,0,380);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Entrada Cuotas U$D',data:cobrarUSD,backgroundColor:makeGrad('rgba(52,211,153,.9)','rgba(52,211,153,.3)'),borderColor:'#34d399',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Entrada Cuotas $',data:cobrarPesos.map(v=>v/cot),backgroundColor:makeGrad('rgba(96,165,250,.9)','rgba(96,165,250,.3)'),borderColor:'#60a5fa',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Gastos a Pagar U$D',data:pagarUSD,backgroundColor:makeGrad('rgba(248,113,113,.9)','rgba(248,113,113,.3)'),borderColor:'#f87171',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Gastos Personales $',data:gastosPesos.map(v=>v/cot),backgroundColor:makeGrad('rgba(244,114,182,.9)','rgba(244,114,182,.3)'),borderColor:'#f472b6',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'INGRESOS UNIFICADOS U$D',data:unifiedIncome,backgroundColor:makeGrad('rgba(212,168,83,.95)','rgba(212,168,83,.4)'),borderColor:'#d4a853',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85},
+        {label:'GASTOS UNIFICADOS U$D',data:unifiedExpenses,backgroundColor:makeGrad('rgba(153,27,27,.9)','rgba(153,27,27,.4)'),borderColor:'#991b1b',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85}
+      ]
+    },
+    plugins:[ChartDataLabels],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:3,useBorderRadius:true,padding:12}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.2)'}},
+        y:{ticks:{color:'#9a98a0',font:{family:'DM Sans',size:9},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.2)'}}
+      }
+    }
+  });
+})();
+
+// ===== OPTION B: Bars + Lines =====
+(function(){
+  const ctx=document.getElementById('chartB').getContext('2d');
+  function makeGrad(c1,c2){var g=ctx.createLinearGradient(0,0,0,380);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
+
+  // Gold area gradient for unified income line
+  var goldArea=ctx.createLinearGradient(0,0,0,380);
+  goldArea.addColorStop(0,'rgba(212,168,83,.25)');goldArea.addColorStop(1,'rgba(212,168,83,.02)');
+  // Burgundy area gradient for unified expenses line
+  var bordoArea=ctx.createLinearGradient(0,0,0,380);
+  bordoArea.addColorStop(0,'rgba(153,27,27,.25)');bordoArea.addColorStop(1,'rgba(153,27,27,.02)');
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Entrada Cuotas U$D',data:cobrarUSD,backgroundColor:makeGrad('rgba(52,211,153,.8)','rgba(52,211,153,.2)'),borderWidth:0,borderRadius:6,barPercentage:.7,categoryPercentage:.75,order:2},
+        {label:'Entrada Cuotas $',data:cobrarPesos.map(v=>v/cot),backgroundColor:makeGrad('rgba(96,165,250,.8)','rgba(96,165,250,.2)'),borderWidth:0,borderRadius:6,barPercentage:.7,categoryPercentage:.75,order:2},
+        {label:'Gastos a Pagar U$D',data:pagarUSD,backgroundColor:makeGrad('rgba(248,113,113,.8)','rgba(248,113,113,.2)'),borderWidth:0,borderRadius:6,barPercentage:.7,categoryPercentage:.75,order:2},
+        {label:'Gastos Personales $',data:gastosPesos.map(v=>v/cot),backgroundColor:makeGrad('rgba(244,114,182,.8)','rgba(244,114,182,.2)'),borderWidth:0,borderRadius:6,barPercentage:.7,categoryPercentage:.75,order:2},
+        {type:'line',label:'INGRESOS UNIFICADOS U$D',data:unifiedIncome,borderColor:'#d4a853',borderWidth:3,pointBackgroundColor:'#d4a853',pointRadius:5,pointHoverRadius:7,fill:true,backgroundColor:goldArea,tension:.4,order:1},
+        {type:'line',label:'GASTOS UNIFICADOS U$D',data:unifiedExpenses,borderColor:'#991b1b',borderWidth:3,pointBackgroundColor:'#991b1b',pointRadius:5,pointHoverRadius:7,fill:true,backgroundColor:bordoArea,tension:.4,order:1}
+      ]
+    },
+    plugins:[ChartDataLabels],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:3,useBorderRadius:true,padding:12}},
+        datalabels:{display:function(ctx){return ctx.dataset.type==='line';},color:function(ctx){return ctx.dataset.borderColor;},font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:4,formatter:function(v){return fmt(v);}}
+      },
+      scales:{
+        x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.2)'}},
+        y:{ticks:{color:'#9a98a0',font:{family:'DM Sans',size:9},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.2)'}}
+      }
+    }
+  });
+})();
+
+// ===== OPTION C: Just Unified + Net Line =====
+(function(){
+  const ctx=document.getElementById('chartC').getContext('2d');
+
+  var goldGrad=ctx.createLinearGradient(0,0,0,380);
+  goldGrad.addColorStop(0,'rgba(212,168,83,.95)');goldGrad.addColorStop(1,'rgba(212,168,83,.3)');
+  var bordoGrad=ctx.createLinearGradient(0,0,0,380);
+  bordoGrad.addColorStop(0,'rgba(153,27,27,.95)');bordoGrad.addColorStop(1,'rgba(153,27,27,.3)');
+  var netArea=ctx.createLinearGradient(0,0,0,380);
+  netArea.addColorStop(0,'rgba(52,211,153,.2)');netArea.addColorStop(1,'rgba(52,211,153,.02)');
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'INGRESOS UNIFICADOS U$D',data:unifiedIncome,backgroundColor:goldGrad,borderColor:'#d4a853',borderWidth:1,borderRadius:12,barPercentage:.6,categoryPercentage:.7,order:2},
+        {label:'GASTOS UNIFICADOS U$D',data:unifiedExpenses,backgroundColor:bordoGrad,borderColor:'#991b1b',borderWidth:1,borderRadius:12,barPercentage:.6,categoryPercentage:.7,order:2},
+        {type:'line',label:'Balance Neto U$D',data:netBalance,borderColor:'#34d399',borderWidth:2.5,borderDash:[6,3],pointBackgroundColor:'#34d399',pointRadius:4,pointHoverRadius:6,fill:true,backgroundColor:netArea,tension:.4,order:1}
+      ]
+    },
+    plugins:[ChartDataLabels],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true,padding:14}},
+        datalabels:{display:function(ctx){return ctx.datasetIndex<=1;},color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return fmt(v);}}
+      },
+      scales:{
+        x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.15)'}},
+        y:{ticks:{color:'#9a98a0',font:{family:'DM Sans',size:9},callback:v=>fmt(v)},grid:{color:'rgba(42,43,58,.2)'}}
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

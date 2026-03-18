@@ -701,7 +701,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="inv-summary" id="invSummary"></div>
     <div class="chart-card full" style="margin-top:16px" id="balanceGeneralCard">
       <div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Balance General — Entradas vs Salidas</div>
-      <div class="chart-subtitle">Ingresos por cuotas (USD + Pesos) vs Compromisos a pagar + Gastos personales — por mes</div>
+      <div class="chart-subtitle">Entrada cuotas vs Gastos — separado por moneda, por mes</div>
       <div class="chart-container tall"><canvas id="chartBalanceGeneral"></canvas></div>
     </div>
     <div class="chart-card full" style="margin-top:16px">
@@ -3433,17 +3433,16 @@ function renderChartBalanceGeneral(){
   if(charts.balanceGeneral)charts.balanceGeneral.destroy();
   var canvas=document.getElementById('chartBalanceGeneral');
   if(!canvas)return;
-  // Build datasets: Entradas (cobrar) and Salidas (pagar+gastos) for both currencies
-  var salidasPesos=q.pagarPesos.map(function(v,i){return v+(q.gastosPesos[i]||0);});
+  // Build datasets: 4 separate columns per client request
   charts.balanceGeneral=new Chart(canvas,{
     type:'bar',
     data:{
       labels:q.labels,
       datasets:[
-        {label:'Cuotas Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.8)',borderColor:'#34d399',borderWidth:1,borderRadius:4,barPercentage:.7,categoryPercentage:.8,yAxisID:'yUSD',stack:'entradas'},
-        {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:4,barPercentage:.7,categoryPercentage:.8,yAxisID:'yUSD',stack:'salidas'},
-        {label:'Cuotas Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4,barPercentage:.7,categoryPercentage:.8,yAxisID:'yPesos',stack:'entradas'},
-        {label:'A Pagar $ + Gastos',data:salidasPesos,backgroundColor:'rgba(251,146,60,.7)',borderColor:'#fb923c',borderWidth:1,borderRadius:4,barPercentage:.7,categoryPercentage:.8,yAxisID:'yPesos',stack:'salidas'}
+        {label:'Entrada Cuotas Dólares',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.8)',borderColor:'#34d399',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yUSD'},
+        {label:'Entrada Cuotas Pesos',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yPesos'},
+        {label:'Gastos a Pagar Dólares',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yUSD'},
+        {label:'Gastos Personales/Sueldo Pesos',data:q.gastosPesos,backgroundColor:'rgba(244,114,182,.7)',borderColor:'#f472b6',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yPesos'}
       ]
     },
     plugins:[ChartDataLabels],

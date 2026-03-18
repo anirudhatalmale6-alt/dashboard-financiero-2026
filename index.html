@@ -840,8 +840,8 @@ function buildCuotasPanels(){
   var panelsToShow=CUOTAS_PANELS;
   // When vendor is selected (from URL or dropdown), only show panels for that vendor
   if(filterVendedor!=='all'){
-    var vl=filterVendedor.toLowerCase();
-    panelsToShow=CUOTAS_PANELS.filter(function(p){return p.vendor.toLowerCase().indexOf(vl)>=0||vl.indexOf(p.vendor.toLowerCase())>=0;});
+    var vl=filterVendedor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    panelsToShow=CUOTAS_PANELS.filter(function(p){var pv=p.vendor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return pv.indexOf(vl)>=0||vl.indexOf(pv)>=0;});
     if(panelsToShow.length===0){
       panelsToShow=CUOTAS_PANELS.filter(function(p){return p.vendor==='TECNO';});
     }
@@ -1034,10 +1034,7 @@ function renderCuotasPanel(panelKey){
       payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount
     });
   }
-  if(filterVendedor!=='all'){
-    var fv2=filterVendedor.toLowerCase();
-    rows=rows.filter(function(r){return r.vendedor.toLowerCase().indexOf(fv2)>=0;});
-  }
+  // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
   // Hide panel if no data rows found
   if(rows.length===0){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
   var mthHdr='';
@@ -2128,8 +2125,8 @@ function renderVendedorDash(){
       var pPesos=mCount>0?gPesos/mCount:0;
       // Find current month (last month with data for this vendor)
       var allMesesVK=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-      var curMesVK='—';var curUSD=0;var curPesos=0;
-      for(var mi=11;mi>=0;mi--){var mr=vdAll.find(function(r){return r.Mes===allMesesVK[mi];});if(mr&&((mr.Ganancia_USD||0)!==0||(mr.Ganancia_Pesos||0)!==0)){curMesVK=allMesesVK[mi];curUSD=mr.Ganancia_USD||0;curPesos=mr.Ganancia_Pesos||0;break;}}
+      var curMesVK=allMesesVK[new Date().getMonth()];var curUSD=0;var curPesos=0;
+      var curMr=vdAll.find(function(r){return r.Mes===curMesVK;});if(curMr){curUSD=curMr.Ganancia_USD||0;curPesos=curMr.Ganancia_Pesos||0;}
       vKpiEl.style.display='';
       vKpiEl.innerHTML=
         '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA EN PESOS</div><div class="kpi-value">'+fmtPesos(gPesos)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+

@@ -878,7 +878,7 @@ function renderCuotasPanel(panelKey){
   var btn=document.getElementById('btn'+K);
   var table=document.getElementById(panelKey+'Table');
   var d=cuotasPanelData[panelKey];
-  if(!d||!d.raw||d.raw.length<2){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
+  if(!d||!d.raw||d.raw.length<2){if(card)card.style.display='';if(btn)btn.style.display='';if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
   if(card)card.style.display='';if(btn)btn.style.display='';
   var MESES_ES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   var monthHeaders=[];
@@ -1035,8 +1035,8 @@ function renderCuotasPanel(panelKey){
     });
   }
   // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
-  // Hide panel if no data rows found
-  if(rows.length===0){if(card)card.style.display='none';if(btn)btn.style.display='none';return;}
+  // Show empty panel if no data rows
+  if(rows.length===0){if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
   var mthHdr='';
   monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:56px;padding:6px 3px;font-size:9px">'+h+'</th>';});
   var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';
@@ -1434,7 +1434,7 @@ function populateFilters(){
   });
   // Lock filter if URL vendedor param is set (case-insensitive match)
   if(urlVendedor){
-    var matchedVend=vends.find(v=>v.toLowerCase()===urlVendedor.toLowerCase())||urlVendedor;
+    var matchedVend=vends.find(v=>v.toLowerCase()===urlVendedor.toLowerCase())||vends.find(v=>v.toLowerCase().startsWith(urlVendedor.toLowerCase()))||vends.find(v=>v.toLowerCase().includes(urlVendedor.toLowerCase()))||urlVendedor;
     sel2.value=matchedVend;
     sel2.disabled=true;sel2.style.opacity='0.6';
     if(mSel2){mSel2.value=matchedVend;mSel2.disabled=true;mSel2.style.opacity='0.6';}

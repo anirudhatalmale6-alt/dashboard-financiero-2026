@@ -910,7 +910,21 @@ function renderCuotasPanel(panelKey){
     }
     if(cuotasColIdx>=0)break;
   }
-  if(cuotasColIdx<0)cuotasColIdx=8; // Default: column I is typically CUOTAS across all vendor sheets
+  // If header scan failed, detect cuotas column from first data row (look for small integer 1-24)
+  if(cuotasColIdx<0){
+    for(var di=0;di<d.raw.length;di++){
+      var dr=d.raw[di];if(!dr)continue;
+      if(isBoolRow(dr))continue;
+      var dc=findDateCol(dr);if(dc<0)continue;
+      for(var sc=dc+2;sc<=10;sc++){
+        var sv=dr[sc];if(sv===null||sv===undefined)continue;
+        var sn=typeof sv==='number'?sv:(typeof sv==='string'?parseInt(sv):NaN);
+        if(!isNaN(sn)&&sn>=1&&sn<=24&&Math.floor(sn)===sn){cuotasColIdx=sc;break;}
+      }
+      break;
+    }
+  }
+  if(cuotasColIdx<0)cuotasColIdx=8; // Final fallback
   var rows=[];
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];

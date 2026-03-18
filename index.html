@@ -701,7 +701,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="inv-summary" id="invSummary"></div>
     <div class="chart-card full" style="margin-top:16px" id="balanceGeneralCard">
       <div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Balance General — Entradas vs Salidas</div>
-      <div class="chart-subtitle">Entrada cuotas vs Gastos — separado por moneda, por mes</div>
+      <div class="chart-subtitle">6 columnas: entradas y gastos por moneda + totales unificados en dólares (conversión al blue)</div>
       <div class="chart-container tall"><canvas id="chartBalanceGeneral"></canvas></div>
     </div>
     <div class="chart-card full" style="margin-top:16px">
@@ -3390,7 +3390,20 @@ function extractCuotasData(vendorFilter){
       gastosPesos.push(gr?Math.abs(typeof gr[4]==='number'?Math.round(gr[4]):0):0);
     }
   }else{for(let m=0;m<12;m++){gastosPesos.push(0);gastosUSD.push(0);}}
-  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,gastosPesos,gastosUSD,vendors:vendorsList};
+  // Get monthly cotizacion (dollar blue) from allData.resumen
+  const mesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const cotizacion=[];
+  const unifiedIncome=[],unifiedExpenses=[];
+  for(let m=0;m<12;m++){
+    var resEntry=allData.resumen.find(function(r){return r.Mes===mesesFull[m];});
+    var cot=(resEntry&&resEntry.Cotizacion_Dolar)?resEntry.Cotizacion_Dolar:1450;
+    cotizacion.push(cot);
+    // Unified income: cuotas USD + cuotas pesos converted to USD
+    unifiedIncome.push(Math.round(cobrarUSD[m]+(cobrarPesos[m]/cot)));
+    // Unified expenses: gastos a pagar USD + gastos personales pesos converted to USD
+    unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)));
+  }
+  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,gastosPesos,gastosUSD,cotizacion,unifiedIncome,unifiedExpenses,vendors:vendorsList};
 }
 
 function renderChartCuotasUSD(){
@@ -3433,29 +3446,36 @@ function renderChartBalanceGeneral(){
   if(charts.balanceGeneral)charts.balanceGeneral.destroy();
   var canvas=document.getElementById('chartBalanceGeneral');
   if(!canvas)return;
-  // Build datasets: 4 separate columns per client request
+  var ctx=canvas.getContext('2d');
+  // Gradient helper
+  function grd(c1,c2){var g=ctx.createLinearGradient(0,0,0,canvas.parentElement.clientHeight||380);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
+  // Convert pesos columns to USD equivalent for single-axis display
+  var cobrarPesosUSD=q.cobrarPesos.map(function(v,i){return Math.round(v/(q.cotizacion[i]||1450));});
+  var gastosPesosUSD=q.gastosPesos.map(function(v,i){return Math.round(v/(q.cotizacion[i]||1450));});
+  // Option A: 6 gradient columns — all in USD
   charts.balanceGeneral=new Chart(canvas,{
     type:'bar',
     data:{
       labels:q.labels,
       datasets:[
-        {label:'Entrada Cuotas Dólares',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.8)',borderColor:'#34d399',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yUSD'},
-        {label:'Entrada Cuotas Pesos',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yPesos'},
-        {label:'Gastos a Pagar Dólares',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yUSD'},
-        {label:'Gastos Personales/Sueldo Pesos',data:q.gastosPesos,backgroundColor:'rgba(244,114,182,.7)',borderColor:'#f472b6',borderWidth:1,borderRadius:4,barPercentage:.85,categoryPercentage:.8,yAxisID:'yPesos'}
+        {label:'Entrada Cuotas U$D',data:q.cobrarUSD,backgroundColor:grd('rgba(52,211,153,.9)','rgba(52,211,153,.3)'),borderColor:'#34d399',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Entrada Cuotas $ (en U$D)',data:cobrarPesosUSD,backgroundColor:grd('rgba(96,165,250,.9)','rgba(96,165,250,.3)'),borderColor:'#60a5fa',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Gastos a Pagar U$D',data:q.pagarUSD,backgroundColor:grd('rgba(248,113,113,.9)','rgba(248,113,113,.3)'),borderColor:'#f87171',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Gastos Personales $ (en U$D)',data:gastosPesosUSD,backgroundColor:grd('rgba(244,114,182,.9)','rgba(244,114,182,.3)'),borderColor:'#f472b6',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'INGRESOS UNIFICADOS U$D',data:q.unifiedIncome,backgroundColor:grd('rgba(212,168,83,.95)','rgba(212,168,83,.4)'),borderColor:'#d4a853',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85},
+        {label:'GASTOS UNIFICADOS U$D',data:q.unifiedExpenses,backgroundColor:grd('rgba(153,27,27,.9)','rgba(153,27,27,.4)'),borderColor:'#991b1b',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85}
       ]
     },
     plugins:[ChartDataLabels],
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
-        legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},
+        legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:10},boxWidth:10,boxHeight:10,borderRadius:3,useBorderRadius:true,padding:12}},
         datalabels:{display:false}
       },
       scales:{
-        x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},
-        yUSD:{position:'left',title:{display:true,text:'U$D',color:'var(--gold)',font:{family:'DM Sans',size:11,weight:'600'}},ticks:{color:'var(--gold)',font:{family:'DM Sans',size:9},callback:function(v){return fmt(v,'U$D ');}},grid:{color:'rgba(42,43,58,.2)'}},
-        yPesos:{position:'right',title:{display:true,text:'Pesos $',color:'var(--blue)',font:{family:'DM Sans',size:11,weight:'600'}},ticks:{color:'var(--blue)',font:{family:'DM Sans',size:9},callback:function(v){return fmt(v,'$ ');}},grid:{drawOnChartArea:false}}
+        x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.2)'}},
+        y:{position:'left',title:{display:true,text:'U$D (todo convertido a dólares)',color:'var(--gold)',font:{family:'DM Sans',size:11,weight:'600'}},ticks:{color:'#9a98a0',font:{family:'DM Sans',size:9},callback:function(v){return fmt(v,'U$D ');}},grid:{color:'rgba(42,43,58,.2)'}}
       }
     }
   });

@@ -483,8 +483,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .collapsible-body.open{max-height:none;overflow:hidden}
 .cuota-cell{display:inline-block;min-width:52px;height:26px;border-radius:5px;margin:1px;text-align:center;font-size:11px;line-height:26px;font-weight:700;padding:0 4px}
 .cuota-paid{background:var(--green);color:#000}
-.cuota-unpaid{background:rgba(180,180,180,.25);color:#fff}
-[data-theme="light"] .cuota-unpaid{color:#000}
+.cuota-unpaid{background:rgba(180,180,180,.25);color:#ffffff!important}
+[data-theme="light"] .cuota-unpaid{color:#000000!important;background:rgba(180,180,180,.35)}
 .panel-area{margin:32px 0 16px}
 .panel-area-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:-.5px}
 .panel-area-title em{color:var(--gold);font-style:normal}
@@ -837,6 +837,11 @@ function togglePanel(name){
 // Build panel groups and sections dynamically from CUOTAS_PANELS config
 var VENDOR_ICONS={'TECNO':'💰','CRÉDITOS':'💳','INVERSIONES':'📈','LINEA 314':'📡','OSITO':'🏢','MELY':'👩','GONZA':'🤝','TOBIAS':'🧑','TINO':'💻','PATITO':'📦','MÓDULO 1':'🔧','MÓDULO 2':'⚙️'};
 function buildCuotasPanels(){
+  // Preserve open panel state across rebuilds
+  var openPanels={};
+  document.querySelectorAll('.panel-btn.active').forEach(function(btn){
+    var id=btn.id.replace('btn','');openPanels[id]=true;
+  });
   var groups={};
   var panelsToShow=CUOTAS_PANELS;
   // When vendor is selected (from URL or dropdown), only show panels for that vendor
@@ -867,6 +872,13 @@ function buildCuotasPanels(){
   });
   document.getElementById('panelGroups').innerHTML=grpHtml;
   document.getElementById('panelSections').innerHTML=secHtml;
+  // Restore open panel state
+  Object.keys(openPanels).forEach(function(id){
+    var btn=document.getElementById('btn'+id);
+    var panel=document.getElementById('panel'+id);
+    if(btn)btn.classList.add('active');
+    if(panel)panel.classList.add('open');
+  });
 }
 
 // Generic cuotas panel render function — auto-detects column layout and interleaved rows
@@ -1042,11 +1054,16 @@ function renderCuotasPanel(panelKey){
       rcIdx=36;gnIdx=37;cbIdx=38;vtIdx=9;
     }
     var displayVenta=rawVenta||r[vtIdx]||0;
+    var rawResta=typeof r[rcIdx]==='number'?r[rcIdx]:0;
+    var rawGanancia=typeof r[gnIdx]==='number'?r[gnIdx]:0;
+    var rawCobrado=typeof r[cbIdx]==='number'?r[cbIdx]:0;
+    var rawVentaNum=typeof displayVenta==='number'?displayVenta:0;
     rows.push({
       vendedor:vendedor,cliente:cliente,detalle:detalle,
       fecha:fd(fecha),costo:fv(monto),cuotas:actualCuotaCount||'',valorCuota:fv(rawCuota),rawCuota:rawCuota,
-      venta:fv(typeof displayVenta==='number'?displayVenta:0),restaCobrar:fv(r[rcIdx]),ganancia:fv(r[gnIdx]),cobrado:fv(r[cbIdx]),estado:estado,
-      payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount
+      venta:fv(rawVentaNum),restaCobrar:fv(r[rcIdx]),ganancia:fv(r[gnIdx]),cobrado:fv(r[cbIdx]),estado:estado,
+      payments:payments,paymentAmts:paymentAmts,numCuotas:actualCuotaCount,
+      rawCosto:typeof monto==='number'?monto:0,rawVenta:rawVentaNum,rawResta:rawResta,rawGanancia:rawGanancia,rawCobrado:rawCobrado
     });
   }
   // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
@@ -1071,9 +1088,35 @@ function renderCuotasPanel(panelKey){
     });
     tbody+='<tr><td>'+r.vendedor+'</td><td>'+r.cliente+'</td><td>'+r.detalle+'</td><td>'+r.fecha+'</td><td class="col-usd">'+r.costo+'</td><td>'+r.cuotas+'</td><td class="col-usd">'+r.valorCuota+'</td><td class="col-usd">'+r.venta+'</td>'+mthCells+'<td class="col-usd">'+r.restaCobrar+'</td><td class="col-usd">'+r.ganancia+'</td><td class="col-usd">'+r.cobrado+'</td><td style="'+estadoClass+';font-weight:600">'+r.estado+'</td></tr>';
   });
+  // Build totals row
+  var totCosto=0,totVenta=0,totResta=0,totGanancia=0,totCobrado=0;
+  var totMonths=[];
+  monthHeaders.forEach(function(){totMonths.push({paid:0,unpaid:0});});
+  rows.forEach(function(r){
+    totCosto+=r.rawCosto||0;
+    totVenta+=r.rawVenta||0;
+    totResta+=r.rawResta||0;
+    totGanancia+=r.rawGanancia||0;
+    totCobrado+=r.rawCobrado||0;
+    monthHeaders.forEach(function(h,idx){
+      if(!h)return;
+      var amt=r.paymentAmts?r.paymentAmts[idx]:0;
+      if(!amt)amt=r.rawCuota||0;
+      if(r.payments[idx]==='paid')totMonths[idx].paid+=amt;
+      else if(r.payments[idx]==='unpaid')totMonths[idx].unpaid+=amt;
+    });
+  });
+  var fv=function(n){return n?cfg.currency+' '+Math.round(n).toLocaleString('es-AR'):'';};
+  var totMthCells='';
+  monthHeaders.forEach(function(h,idx){
+    if(!h)return;
+    var total=totMonths[idx].paid+totMonths[idx].unpaid;
+    totMthCells+='<td style="text-align:center;padding:4px 2px;font-weight:700;font-size:10px">'+(total?fv(total):'')+'</td>';
+  });
+  var totalsRow='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--gold)"><td colspan="4" style="text-align:right;padding:8px;color:var(--gold)">TOTALES</td><td class="col-usd">'+fv(totCosto)+'</td><td></td><td></td><td class="col-usd">'+fv(totVenta)+'</td>'+totMthCells+'<td class="col-usd">'+fv(totResta)+'</td><td class="col-usd">'+fv(totGanancia)+'</td><td class="col-usd">'+fv(totCobrado)+'</td><td></td></tr>';
   var vigentes=rows.filter(function(r){return r.estado==='VIGENTE';}).length;
   var totalCols=12+monthHeaders.filter(function(h){return!!h;}).length;
-  table.innerHTML=thead+'<tbody>'+tbody+'</tbody><tfoot><tr><td colspan="'+totalCols+'" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
+  table.innerHTML=thead+'<tbody>'+tbody+totalsRow+'</tbody><tfoot><tr><td colspan="'+totalCols+'" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
 }
 function toggleTheme(){
   var isLight=document.documentElement.getAttribute('data-theme')==='light';
@@ -1493,25 +1536,25 @@ function populateFilters(){
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
-      // 3. Ganancias por Vendedor (chart) — rename title for vendor links
+      // 3. Cuotas a Cobrar en Dólares
+      el=document.getElementById('secCuotas');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('cuotasCards');if(el)mainEl.insertBefore(el,refNode);
+      // 4. Charts cuotas (dolares + pesos)
+      if(cuotasChartsDiv)mainEl.insertBefore(cuotasChartsDiv,refNode);
+      // 5. Cuotas a Cobrar en Pesos
+      el=document.getElementById('secCuotasPesos');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('cuotasCardsPesos');if(el)mainEl.insertBefore(el,refNode);
+      // 6. Control de Cuotas a Cobrar
+      el=document.getElementById('secVentaDolares');if(el)mainEl.insertBefore(el,refNode);
+      el=document.getElementById('panelSections');if(el)mainEl.insertBefore(el,refNode);
+      // 7. GRAFICO DE GANANCIAS MENSUALES
       el=document.getElementById('secVendedorCharts');if(el){mainEl.insertBefore(el,refNode);var ct=el.querySelector('.chart-title');if(ct)ct.innerHTML='<span class="dot" style="background:var(--purple)"></span>GRAFICO DE GANANCIAS MENSUALES';}
-      // 4. Acumulado Ganancias (collapsible - toggle added in renderVendedorDetail)
+      // 8. Acumulado Ganancias Vendedores / Modulos de Ventas
       el=document.getElementById('secVendedorDetail');if(el)mainEl.insertBefore(el,refNode);
       var acumContainer=document.getElementById('vendedorDetailContainer');
       if(acumContainer){mainEl.insertBefore(acumContainer,refNode);}
-      // 5. Acumulado Anual (chart) — smaller height for vendor links
+      // 9. Acumulado Anual (chart) — smaller height for vendor links
       el=document.getElementById('secAcumVendChart');if(el){mainEl.insertBefore(el,refNode);var acCont=el.querySelector('.chart-container.tall');if(acCont){acCont.classList.remove('tall');acCont.style.height='220px';}}
-      // 6. Cuotas a Cobrar en Dólares
-      el=document.getElementById('secCuotas');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('cuotasCards');if(el)mainEl.insertBefore(el,refNode);
-      // 7. Charts cuotas (dolares + pesos)
-      if(cuotasChartsDiv)mainEl.insertBefore(cuotasChartsDiv,refNode);
-      // 8. Cuotas a Cobrar en Pesos
-      el=document.getElementById('secCuotasPesos');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('cuotasCardsPesos');if(el)mainEl.insertBefore(el,refNode);
-      // 9. Control de Cuotas a Cobrar
-      el=document.getElementById('secVentaDolares');if(el)mainEl.insertBefore(el,refNode);
-      el=document.getElementById('panelSections');if(el)mainEl.insertBefore(el,refNode);
       // 10. Comisiones Vendedores en Dolares (Estado de Cuentas)
       el=document.getElementById('secEstadoCuentas');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('ecSection');if(el)mainEl.insertBefore(el,refNode);
@@ -1520,10 +1563,10 @@ function populateFilters(){
     var navEl=document.getElementById('sidebarNav');
     if(navEl){navEl.innerHTML='<div class="sidebar-nav-title">Navegación</div>'+
       '<a onclick="document.getElementById(\'secVendedorDash\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--teal)"></span>Ganancias Mensuales</a>'+
-      '<a onclick="document.getElementById(\'secVendedorCharts\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ganancias Gráfico</a>'+
-      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Acumulado Ganancias</a>'+
       '<a onclick="document.getElementById(\'secCuotas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas a Cobrar</a>'+
       '<a onclick="document.getElementById(\'secVentaDolares\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>'+
+      '<a onclick="document.getElementById(\'secVendedorCharts\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ganancias Gráfico</a>'+
+      '<a onclick="document.getElementById(\'secVendedorDetail\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--purple)"></span>Acumulado Ganancias</a>'+
       '<a onclick="document.getElementById(\'secEstadoCuentas\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><span class="nav-dot" style="background:var(--cyan)"></span>Comisiones</a>';}
   }
 }
@@ -2476,7 +2519,8 @@ function renderEstadoCuentas(){
       if(d.pesos.restaCuotas!==undefined)pesosItems.push({lbl:'Resta Cobrar Cuotas',val:d.pesos.restaCuotas});
       if(d.pesos.ganancia!==undefined)pesosItems.push({lbl:'Ganancia',val:d.pesos.ganancia});
       if(d.pesos.restaCobrar!==undefined)pesosItems.push({lbl:'Resta Cobrar',val:d.pesos.restaCobrar});
-      if(pesosItems.length)sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',pesosItems);
+      if(pesosItems.length){sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',pesosItems);}
+      else{sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',[{lbl:'Sin datos en pesos',val:0}]);}
       // Comisiones USD
       if(d.com_usd&&Object.keys(d.com_usd).length){
         const ci=[];
@@ -2492,12 +2536,10 @@ function renderEstadoCuentas(){
           {lbl:'Ganancia',val:fb.ganUSD},{lbl:'Inversión',val:fb.invUSD},
           {lbl:'Resta Cobrar',val:fb.restaUSD},{lbl:'Caja Actual',val:fb.cajaUSD}
         ]);
-        if(fb.ganPesos||fb.invPesos||fb.restaPesos){
-          sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',[
-            {lbl:'Ganancia',val:fb.ganPesos},{lbl:'Inversión',val:fb.invPesos},
-            {lbl:'Resta Cobrar',val:fb.restaPesos}
-          ]);
-        }
+        sectionsHTML+=buildECSection('💰','Pesos','pesos','blue','$ ',[
+          {lbl:'Ganancia',val:fb.ganPesos||0},{lbl:'Inversión',val:fb.invPesos||0},
+          {lbl:'Resta Cobrar',val:fb.restaPesos||0}
+        ]);
       }
     }
 

@@ -890,6 +890,7 @@ function renderCuotasPanel(panelKey){
   var card=document.getElementById(panelKey+'Card');
   var btn=document.getElementById('btn'+K);
   var table=document.getElementById(panelKey+'Table');
+  if(!table)return; // Panel not in current DOM (vendor-filtered view)
   var d=cuotasPanelData[panelKey];
   if(!d||!d.raw||d.raw.length<2){if(card)card.style.display='';if(btn)btn.style.display='';if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
   if(card)card.style.display='';if(btn)btn.style.display='';

@@ -339,10 +339,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:16px}
 .ec-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;transition:.3s}
 .ec-card:hover{border-color:var(--orange);box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.ec-card-header{display:flex;align-items:center;gap:10px;padding:16px 20px;background:linear-gradient(135deg,var(--surface2),var(--surface3));border-bottom:1px solid var(--border)}
+.ec-card-header{display:flex;align-items:center;gap:10px;padding:16px 20px;background:linear-gradient(135deg,var(--surface2),var(--surface3));border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background .2s}
+.ec-card-header:hover{background:linear-gradient(135deg,var(--surface3),var(--surface2))}
 .ec-card-header .ec-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--bg)}
-.ec-card-header h4{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text)}
-.ec-card-body{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.ec-card-header h4{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);flex:1}
+.ec-card-header .ec-chevron{font-size:10px;color:var(--text3);transition:transform .3s;margin-left:auto}
+.ec-card.open .ec-card-header .ec-chevron{transform:rotate(180deg)}
+.ec-card-body{max-height:0;overflow:hidden;padding:0 20px;display:flex;flex-direction:column;gap:12px;transition:max-height .3s,padding .3s}
+.ec-card.open .ec-card-body{max-height:2000px;padding:16px 20px}
 .ec-section{border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .ec-section-header{padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .ec-section-header.usd{background:linear-gradient(135deg,rgba(212,168,83,.15),rgba(212,168,83,.05));color:var(--gold);border-bottom:1px solid rgba(212,168,83,.2)}
@@ -2546,10 +2550,12 @@ function renderEstadoCuentas(){
 
     if(!sectionsHTML)sectionsHTML='<div class="ec-empty" style="padding:12px;font-size:12px;color:var(--text3)">Sin datos disponibles</div>';
 
-    container.innerHTML+=`<div class="ec-card">
-      <div class="ec-card-header">
+    var ecId='ec_'+vName.replace(/[^a-zA-Z0-9]/g,'');
+    container.innerHTML+=`<div class="ec-card" id="${ecId}">
+      <div class="ec-card-header" onclick="this.parentElement.classList.toggle('open')">
         <div class="ec-icon" style="background:${color}">${vName.charAt(0)}</div>
         <h4>${vName}</h4>
+        <span class="ec-chevron">&#9660;</span>
       </div>
       <div class="ec-card-body">${sectionsHTML}</div>
     </div>`;

@@ -3696,11 +3696,16 @@ function renderSidebarStats(){
 
 // OSITO Balance Panel
 var ositoBalanceData=null;
+var ositoCajaRow=null;
 async function fetchOsitoBalance(){
   var sid='1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c';
   try{
-    var raw=await fetchRawSheetById(sid,'PANEL DE CONTROL');
-    ositoBalanceData=raw;
+    var results=await Promise.all([
+      fetchRawSheetById(sid,'PANEL DE CONTROL'),
+      fetchSheetRangeById(sid,'CAJA DOLARES GENERAL','A4:H4')
+    ]);
+    ositoBalanceData=results[0];
+    ositoCajaRow=results[1]&&results[1][0]?results[1][0]:[];
     renderOsitoBalance();
   }catch(e){console.log('OSITO balance fetch error:',e);}
 }
@@ -3709,6 +3714,21 @@ function obVal(row,col){
   var v=ositoBalanceData[row][col];
   if(typeof v==='number')return v;
   if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var clean=v.replace(/[^0-9]/g,'');var n=parseInt(clean);return isNaN(n)?0:n*neg;}
+  return 0;
+}
+function ocVal(col){
+  // Read from ositoCajaRow (single row = sheet row 4, A4:H4)
+  if(!ositoCajaRow||col>=ositoCajaRow.length)return 0;
+  var v=ositoCajaRow[col];
+  if(typeof v==='number')return v;
+  if(typeof v==='string'){
+    var neg=v.indexOf('-')>=0?-1:1;
+    var clean=v.replace(/[^0-9.,-]/g,'');
+    if(clean.indexOf(',')>=0&&clean.indexOf('.')>=0){clean=clean.replace(/,/g,'');}
+    else if(clean.indexOf(',')>=0){var parts=clean.split(',');if(parts[parts.length-1].length===3)clean=clean.replace(/,/g,'');else clean=clean.replace(',','.');}
+    var n=parseFloat(clean);
+    return isNaN(n)?0:Math.round(n)*neg;
+  }
   return 0;
 }
 function obFmtU(n){return'U$D '+Math.round(n).toLocaleString('es-AR');}
@@ -3746,15 +3766,17 @@ function renderOsitoBalance(){
   // [35] GANANCIA pesos → C=2, F=5
   // [36] RESTA COBRAR pesos → C=2, F=5
 
-  // Caja Actual
-  var cajaOsito=obVal(21,2);
-  var cajaMartin=obVal(21,5);
+  // Caja Actual from CAJA DOLARES GENERAL row 4 (G4=col6)
+  var cajaActual=ocVal(6);
 
-  // Inversion
-  var invOsito=obVal(22,2);
-  var invMartin=obVal(22,5);
-  var invInversor=obVal(14,6); // G in TOTAL row
-  var invTotal=invOsito+invMartin+invInversor;
+  // Inversion from CAJA DOLARES GENERAL row 4
+  // B4=Inversor(col1), D4=Anibal/Osito(col3), E4=Martin(col4)
+  var invInversor=ocVal(1);
+  var invOsito=ocVal(3);
+  var invMartin=ocVal(4);
+  // If caja is negative, the deficit was covered by the inversor — add it
+  if(cajaActual<0){invInversor+=Math.abs(cajaActual);}
+  var invTotal=invInversor+invOsito+invMartin;
 
   // A Cobrar
   var usdACobrar=obVal(15,2);
@@ -3781,15 +3803,6 @@ function renderOsitoBalance(){
   // Ganancia Empresa 2025 totals
   var ganEmpPesos2025=obVal(14,10);
   var ganEmpUSD2025=obVal(14,11);
-
-  // Ganancia Individual 2026 (row 17)
-  var ganIndPesos2026=obVal(17,3);
-  var ganIndCreditos2026=obVal(17,4);
-  var ganIndUSD2026=obVal(17,5);
-  // Ganancia Individual 2025+2026 (row 18)
-  var ganIndPesos2526=obVal(18,3);
-  var ganIndCreditos2526=obVal(18,4);
-  var ganIndUSD2526=obVal(18,5);
 
   // Partner breakdown
   // OSITO USD (col C=2)
@@ -3832,7 +3845,7 @@ function renderOsitoBalance(){
 
   // KPI Cards
   html+='<div class="ob-kpis">';
-  html+='<div class="ob-kpi gold"><div class="ob-kpi-label">Caja Actual</div><div class="ob-kpi-value">'+obFmtU(cajaOsito)+'</div><div class="ob-kpi-sub">Efectivo disponible</div></div>';
+  html+='<div class="ob-kpi gold"><div class="ob-kpi-label">Caja Actual</div><div class="ob-kpi-value">'+obFmtU(cajaActual)+'</div><div class="ob-kpi-sub">Efectivo disponible</div></div>';
   html+='<div class="ob-kpi green"><div class="ob-kpi-label">USD a Cobrar</div><div class="ob-kpi-value">'+obFmtU(usdACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
   html+='<div class="ob-kpi blue"><div class="ob-kpi-label">$ a Cobrar</div><div class="ob-kpi-value">'+obFmtP(pesosACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
   html+='<div class="ob-kpi purple"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
@@ -3852,18 +3865,6 @@ function renderOsitoBalance(){
   html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganEmpUSD2025+ganEmpUSD2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2025+ganEmpPesos2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
-  html+='</div>';
-  // Individual 2026
-  html+='<div class="ob-gan-card" style="border-left:3px solid var(--purple)"><div class="ob-gan-label">Ganancia Individual 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganIndUSD2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganIndPesos2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganIndCreditos2026)+'</span></div>';
-  html+='</div>';
-  // Individual 2025+2026
-  html+='<div class="ob-gan-card" style="border-left:3px solid var(--pink)"><div class="ob-gan-label">Ganancia Individual 2025 + 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganIndUSD2526)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganIndPesos2526)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganIndCreditos2526)+'</span></div>';
   html+='</div>';
   html+='</div>';
 

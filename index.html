@@ -368,6 +368,58 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ec-empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
 @media(max-width:1200px){.ec-grid{grid-template-columns:1fr}}
 
+/* OSITO Balance Panel */
+.ob-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.ob-kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.ob-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ob-kpi.gold::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.ob-kpi.green::before{background:linear-gradient(90deg,var(--green),var(--teal))}
+.ob-kpi.blue::before{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.ob-kpi.purple::before{background:linear-gradient(90deg,var(--purple),var(--pink))}
+.ob-kpi.red::before{background:linear-gradient(90deg,var(--red),var(--orange))}
+.ob-kpi.orange::before{background:linear-gradient(90deg,var(--orange),var(--gold2))}
+.ob-kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
+.ob-kpi-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--text)}
+.ob-kpi-sub{font-size:11px;color:var(--text2);margin-top:6px}
+.ob-section{margin:20px 0}
+.ob-section-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ob-section-title .ob-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ob-partners{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin:16px 0}
+.ob-partner-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.ob-partner-header{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.ob-partner-header .ob-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--bg)}
+.ob-partner-header h4{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text)}
+.ob-partner-body{padding:16px 20px}
+.ob-partner-section{margin-bottom:14px}
+.ob-partner-section:last-child{margin-bottom:0}
+.ob-ps-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:6px 0;margin-bottom:6px;border-bottom:1px solid var(--border)}
+.ob-ps-title.usd{color:var(--gold)}
+.ob-ps-title.pesos{color:var(--blue)}
+.ob-ps-title.com{color:var(--purple)}
+.ob-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px}
+.ob-row .ob-lbl{color:var(--text2)}
+.ob-row .ob-val{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.ob-row .ob-val.gold{color:var(--gold)}
+.ob-row .ob-val.blue{color:var(--blue)}
+.ob-row .ob-val.green{color:var(--green)}
+.ob-row .ob-val.purple{color:var(--purple)}
+.ob-row.highlight{background:rgba(212,168,83,.08);margin:0 -12px;padding:6px 12px;border-radius:8px}
+.ob-income-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin:12px 0}
+.ob-income-table th{background:var(--surface2);color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;font-weight:600;text-align:right;border-bottom:2px solid var(--border)}
+.ob-income-table th:first-child{text-align:left;border-radius:8px 0 0 0}
+.ob-income-table th:last-child{border-radius:0 8px 0 0}
+.ob-income-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.03);text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.ob-income-table td:first-child{text-align:left;font-family:'DM Sans',sans-serif;color:var(--text2);font-weight:400}
+.ob-income-table tr.active td{color:var(--text);font-weight:600}
+.ob-income-table tr.active td:first-child{color:var(--gold)}
+.ob-income-table tfoot td{border-top:2px solid var(--gold);font-weight:700;color:var(--gold);padding:12px;background:rgba(212,168,83,.06)}
+.ob-ganancia-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:16px 0}
+.ob-gan-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.ob-gan-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:600}
+.ob-gan-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.ob-gan-row .ob-val{font-family:'IBM Plex Mono',monospace;font-weight:600}
+@media(max-width:900px){.ob-kpis{grid-template-columns:repeat(2,1fr)}.ob-partners{grid-template-columns:1fr}.ob-ganancia-grid{grid-template-columns:1fr}}
+
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:14px}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
@@ -747,6 +799,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
       <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
     </div>
+  </div>
+
+  <!-- OSITO Balance Panel (vendor-specific) -->
+  <div id="ositoBalanceSection" style="display:none">
+    <div class="section-divider" id="secOsitoBalance">
+      <h2>Balance General <em>OSITO S.r.l.</em></h2>
+      <div class="divider-sub">Mapa financiero completo — inversiones, caja, ingresos y ganancias</div>
+    </div>
+    <div id="ositoBalanceContainer"></div>
   </div>
 
   <div class="section-divider" id="secEstadoCuentas">
@@ -1462,6 +1523,8 @@ async function loadAllData(){
     Promise.all(EC_VENDOR_SHEETS.map(v=>
       fetchSheetRange(v.sheet,v.range).then(rows=>{ecSheetData[v.name]=rows;}).catch(()=>{})
     )).then(()=>{renderEstadoCuentas();});
+    // Fetch OSITO Balance panel if on Osito vendor link
+    if(urlVendedor&&urlVendedor.toLowerCase().indexOf('osito')>=0){fetchOsitoBalance();}
     populateFilters();
     renderAll();
   }catch(e){
@@ -1538,6 +1601,8 @@ function populateFilters(){
       var el;
       // 1. KPIs
       el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
+      // 1b. OSITO Balance Panel (only for Osito)
+      el=document.getElementById('ositoBalanceSection');if(el)mainEl.insertBefore(el,refNode);
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);
@@ -3627,6 +3692,246 @@ function renderSidebarStats(){
     <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
     <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">${fmtUSD(promMensual)}</span></div>
   `;
+}
+
+// OSITO Balance Panel
+var ositoBalanceData=null;
+async function fetchOsitoBalance(){
+  var sid='1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c';
+  try{
+    var raw=await fetchRawSheetById(sid,'PANEL DE CONTROL');
+    ositoBalanceData=raw;
+    renderOsitoBalance();
+  }catch(e){console.log('OSITO balance fetch error:',e);}
+}
+function obVal(row,col){
+  if(!ositoBalanceData||!ositoBalanceData[row])return 0;
+  var v=ositoBalanceData[row][col];
+  if(typeof v==='number')return v;
+  if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var clean=v.replace(/[^0-9]/g,'');var n=parseInt(clean);return isNaN(n)?0:n*neg;}
+  return 0;
+}
+function obFmtU(n){return'U$D '+Math.round(n).toLocaleString('es-AR');}
+function obFmtP(n){return'$ '+Math.round(n).toLocaleString('es-AR');}
+function renderOsitoBalance(){
+  var sec=document.getElementById('ositoBalanceSection');
+  var container=document.getElementById('ositoBalanceContainer');
+  if(!sec||!container||!ositoBalanceData)return;
+  sec.style.display='';
+  var raw=ositoBalanceData;
+  // gviz returns compact rows (no empty rows). Actual 0-indexed layout:
+  // [0] Header "INGRESOS 2026"/"INGRESOS 2025"
+  // [1] Sub-header "CREDITOS"
+  // [2-13] Monthly: ENERO-DICIEMBRE. Cols: D=3(Pesos), E=4(Creditos$str), F=5(Dolares), G=6(Inversor)
+  // [14] TOTAL row. Same columns. 2025: K=10(Pesos), L=11(Dolares)
+  // [15] "USD A COBRAR" → C=2: 15458
+  // [16] "$ A COBRAR" → C=2: 11789400
+  // [17] "GANANCIA INDIVIDUAL AÑO 2026" → D=3, E=4, F=5
+  // [18] "GANANCIA INDIVIDUAL AÑO 2025 + AÑO 2026" → D=3, E=4, F=5
+  // [19-20] OSITO/MARTIN headers
+  // [21] CAJA EFECTIVO → C=2(Osito), F=5(Martin)
+  // [22] INVERSIÓN INICIAL → C=2, F=5
+  // [23] RESTA COBRAR DE CUOTAS → C=2, F=5
+  // [24] GANANCIA → C=2, F=5
+  // [25] RESTA COBRAR OSITO/MARTIN → C=2, F=5
+  // [26] PESOS
+  // [27] RESTA COBRAR DE CUOTAS pesos → C=2, F=5
+  // [28] GANANCIA pesos → C=2, F=5
+  // [29] RESTA COBRAR pesos → C=2, F=5
+  // [30] COMISIONES DOLARES header
+  // [31] INVERSIÓN INICIAL → C=2, F=5
+  // [32] GANANCIA → C=2, F=5
+  // [33] RESTA COBRAR → C=2, F=5
+  // [34] COMISIONES PESOS header
+  // [35] GANANCIA pesos → C=2, F=5
+  // [36] RESTA COBRAR pesos → C=2, F=5
+
+  // Caja Actual
+  var cajaOsito=obVal(21,2);
+  var cajaMartin=obVal(21,5);
+
+  // Inversion
+  var invOsito=obVal(22,2);
+  var invMartin=obVal(22,5);
+  var invInversor=obVal(14,6); // G in TOTAL row
+  var invTotal=invOsito+invMartin+invInversor;
+
+  // A Cobrar
+  var usdACobrar=obVal(15,2);
+  var pesosACobrar=obVal(16,2);
+
+  // Monthly income (rows 2-13, consecutive)
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var monthlyData=[];
+  var totPesos=0,totCreditos=0,totDolares=0,totInversor=0;
+  for(var m=0;m<12;m++){
+    var ri=2+m;
+    var pesos=obVal(ri,3);
+    var creditos=obVal(ri,4); // may be string like "$4,953,000"
+    var dolares=obVal(ri,5);
+    var inversor=obVal(ri,6);
+    totPesos+=pesos;totCreditos+=creditos;totDolares+=dolares;totInversor+=inversor;
+    monthlyData.push({mes:meses[m],pesos:pesos,creditos:creditos,dolares:dolares,inversor:inversor,hasData:pesos||creditos||dolares||inversor});
+  }
+
+  // Ganancia Empresa 2026 (row 14 TOTAL)
+  var ganEmpPesos2026=obVal(14,3);
+  var ganEmpCreditos2026=obVal(14,4);
+  var ganEmpUSD2026=obVal(14,5);
+  // Ganancia Empresa 2025 totals
+  var ganEmpPesos2025=obVal(14,10);
+  var ganEmpUSD2025=obVal(14,11);
+
+  // Ganancia Individual 2026 (row 17)
+  var ganIndPesos2026=obVal(17,3);
+  var ganIndCreditos2026=obVal(17,4);
+  var ganIndUSD2026=obVal(17,5);
+  // Ganancia Individual 2025+2026 (row 18)
+  var ganIndPesos2526=obVal(18,3);
+  var ganIndCreditos2526=obVal(18,4);
+  var ganIndUSD2526=obVal(18,5);
+
+  // Partner breakdown
+  // OSITO USD (col C=2)
+  var ositoCaja=obVal(21,2);
+  var ositoInv=obVal(22,2);
+  var ositoRestaCuotas=obVal(23,2);
+  var ositoGanancia=obVal(24,2);
+  var ositoRestaCobrar=obVal(25,2);
+  // OSITO Pesos
+  var ositoRestaCuotasP=obVal(27,2);
+  var ositoGananciaP=obVal(28,2);
+  var ositoRestaCobrarP=obVal(29,2);
+  // OSITO Comisiones USD
+  var ositoComInv=obVal(31,2);
+  var ositoComGan=obVal(32,2);
+  var ositoComResta=obVal(33,2);
+  // OSITO Comisiones Pesos
+  var ositoComGanP=obVal(35,2);
+  var ositoComRestaP=obVal(36,2);
+
+  // MARTIN USD (col F=5)
+  var martinCaja=obVal(21,5);
+  var martinInv=obVal(22,5);
+  var martinRestaCuotas=obVal(23,5);
+  var martinGanancia=obVal(24,5);
+  var martinRestaCobrar=obVal(25,5);
+  // MARTIN Pesos
+  var martinRestaCuotasP=obVal(27,5);
+  var martinGananciaP=obVal(28,5);
+  var martinRestaCobrarP=obVal(29,5);
+  // MARTIN Comisiones USD
+  var martinComInv=obVal(31,5);
+  var martinComGan=obVal(32,5);
+  var martinComResta=obVal(33,5);
+  // MARTIN Comisiones Pesos
+  var martinComGanP=obVal(35,5);
+  var martinComRestaP=obVal(36,5);
+
+  var html='';
+
+  // KPI Cards
+  html+='<div class="ob-kpis">';
+  html+='<div class="ob-kpi gold"><div class="ob-kpi-label">Caja Actual</div><div class="ob-kpi-value">'+obFmtU(cajaOsito)+'</div><div class="ob-kpi-sub">Efectivo disponible</div></div>';
+  html+='<div class="ob-kpi green"><div class="ob-kpi-label">USD a Cobrar</div><div class="ob-kpi-value">'+obFmtU(usdACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
+  html+='<div class="ob-kpi blue"><div class="ob-kpi-label">$ a Cobrar</div><div class="ob-kpi-value">'+obFmtP(pesosACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
+  html+='<div class="ob-kpi purple"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
+  html+='</div>';
+
+  // Ganancia Cards
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--green)"></span>Ganancias</div></div>';
+  html+='<div class="ob-ganancia-grid">';
+  // Empresa 2026
+  html+='<div class="ob-gan-card" style="border-left:3px solid var(--green)"><div class="ob-gan-label">Ganancia Empresa 2026</div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganEmpUSD2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
+  html+='</div>';
+  // Empresa 2025+2026
+  html+='<div class="ob-gan-card" style="border-left:3px solid var(--teal)"><div class="ob-gan-label">Ganancia Empresa 2025 + 2026</div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganEmpUSD2025+ganEmpUSD2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2025+ganEmpPesos2026)+'</span></div>';
+  html+='</div>';
+  // Individual 2026
+  html+='<div class="ob-gan-card" style="border-left:3px solid var(--purple)"><div class="ob-gan-label">Ganancia Individual 2026</div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganIndUSD2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganIndPesos2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganIndCreditos2026)+'</span></div>';
+  html+='</div>';
+  // Individual 2025+2026
+  html+='<div class="ob-gan-card" style="border-left:3px solid var(--pink)"><div class="ob-gan-label">Ganancia Individual 2025 + 2026</div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganIndUSD2526)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganIndPesos2526)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganIndCreditos2526)+'</span></div>';
+  html+='</div>';
+  html+='</div>';
+
+  // Monthly Income Table
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--gold)"></span>Ingresos Mensuales Detallados 2026</div></div>';
+  html+='<div style="overflow-x:auto"><table class="ob-income-table"><thead><tr><th>Mes</th><th>Ventas Pesos</th><th>Créditos Pesos</th><th>Ventas Dólares</th><th>Costo Inversor</th></tr></thead><tbody>';
+  monthlyData.forEach(function(d){
+    var cls=d.hasData?'class="active"':'';
+    html+='<tr '+cls+'><td>'+d.mes+'</td><td>'+obFmtP(d.pesos)+'</td><td>'+obFmtP(d.creditos)+'</td><td>'+obFmtU(d.dolares)+'</td><td>'+obFmtU(d.inversor)+'</td></tr>';
+  });
+  html+='</tbody><tfoot><tr><td>TOTAL</td><td>'+obFmtP(totPesos)+'</td><td>'+obFmtP(totCreditos)+'</td><td>'+obFmtU(totDolares)+'</td><td>'+obFmtU(totInversor)+'</td></tr></tfoot></table></div>';
+
+  // Partner Breakdown — OSITO vs MARTIN
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--orange)"></span>Detalle por Socio</div></div>';
+  html+='<div class="ob-partners">';
+
+  // OSITO card
+  html+='<div class="ob-partner-card"><div class="ob-partner-header"><div class="ob-avatar" style="background:var(--orange)">O</div><h4>OSITO</h4></div><div class="ob-partner-body">';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title usd">Dólares</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val gold">'+obFmtU(ositoCaja)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val gold">'+obFmtU(ositoInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val gold">'+obFmtU(ositoRestaCuotas)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(ositoGanancia)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val gold">'+obFmtU(ositoRestaCobrar)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(ositoRestaCuotasP)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtP(ositoGananciaP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val blue">'+obFmtP(ositoRestaCobrarP)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Dólares</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val purple">'+obFmtU(ositoComInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtU(ositoComGan)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtU(ositoComResta)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Pesos</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtP(ositoComGanP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtP(ositoComRestaP)+'</span></div>';
+  html+='</div>';
+  html+='</div></div>';
+
+  // MARTIN card
+  html+='<div class="ob-partner-card"><div class="ob-partner-header"><div class="ob-avatar" style="background:var(--gold)">M</div><h4>MARTIN</h4></div><div class="ob-partner-body">';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title usd">Dólares</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val gold">'+obFmtU(martinCaja)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val gold">'+obFmtU(martinInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val gold">'+obFmtU(martinRestaCuotas)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(martinGanancia)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val gold">'+obFmtU(martinRestaCobrar)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(martinRestaCuotasP)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtP(martinGananciaP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val blue">'+obFmtP(martinRestaCobrarP)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Dólares</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val purple">'+obFmtU(martinComInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtU(martinComGan)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtU(martinComResta)+'</span></div>';
+  html+='</div>';
+  html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Pesos</div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtP(martinComGanP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtP(martinComRestaP)+'</span></div>';
+  html+='</div>';
+  html+='</div></div>';
+
+  html+='</div>'; // close ob-partners
+
+  container.innerHTML=html;
 }
 
 // Venta en Dólares

@@ -4133,6 +4133,106 @@ function renderOsitoSociedadCard(){
   h+='</div>'; // close flex layout
   h+='</div>'; // close margin wrapper
   container.innerHTML=h;
+
+  // Now render other vendor cards below OSITO
+  renderVendorSociedadCards(container);
+}
+
+function renderVendorSociedadCards(container){
+  if(!container||!allData.vendedorGains||!allData.vendedorGains.length)return;
+  var vgData=allData.vendedorGains;
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Color map for known vendors (case-insensitive key)
+  var colorMap={
+    'mely':'var(--pink)','gonza':'var(--teal)','patito':'#e879f9','patito s.a.':'#e879f9',
+    'tobias':'var(--cyan)','tino':'var(--red)','linea 314':'var(--blue)',
+    'tecno':'var(--gold)','inversiones':'var(--green)',
+    'modulo 1':'#94a3b8','módulo 1':'#94a3b8','modulo 2':'#cbd5e1','módulo 2':'#cbd5e1',
+    'creditos':'var(--purple)','créditos':'var(--purple)'
+  };
+
+  // Get unique vendor names, excluding OSITO (already rendered above)
+  var allNames=[...new Set(vgData.map(function(r){return r.Vendedor;}))];
+  var vendors=[];
+  allNames.forEach(function(name){
+    var lc=name.toLowerCase();
+    if(lc.indexOf('osito')>=0)return; // skip OSITO
+    var color=colorMap[lc]||'var(--gold2)';
+    vendors.push({name:name,label:name.toUpperCase(),color:color});
+  });
+  var blueLabel=dolarBlue?('Dólar Blue: $'+dolarBlue.toLocaleString('es-AR')):'';
+
+  function sRow(label,val,color,isBold){
+    var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:20px';
+    if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
+    var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
+    var vs='font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:600;color:'+color;
+    if(isBold)vs='font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:800;color:'+color;
+    return '<div style="'+s+'"><span style="'+ls+'">'+label+'</span><span style="'+vs+'">'+val+'</span></div>';
+  }
+  function fU(v){return 'U$D '+Math.round(v).toLocaleString('es-AR');}
+  function fP(v){return '$ '+Math.round(v).toLocaleString('es-AR');}
+
+  vendors.forEach(function(v){
+    // Get monthly data for this vendor
+    var entries=vgData.filter(function(r){return r.Vendedor===v.name;});
+    if(!entries.length)return;
+
+    var totalUSD=0,totalPesos=0;
+    var monthly=[];
+    meses.forEach(function(mes){
+      var e=entries.find(function(r){return r.Mes===mes;});
+      var usd=e?e.Ganancia_USD:0;
+      var pesos=e?e.Ganancia_Pesos:0;
+      totalUSD+=usd;totalPesos+=pesos;
+      monthly.push({mes:mes,usd:usd,pesos:pesos,hasData:usd!==0||pesos!==0});
+    });
+
+    var totalPesosEnUSD=dolarBlue?Math.round(totalPesos/dolarBlue):0;
+    var totalUnif=totalUSD+totalPesosEnUSD;
+
+    var h='<div style="margin:30px 0">';
+    h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:'+v.color+'"></span>Sociedad / Empresa <em>'+v.label+'</em></h3>';
+
+    // Flex layout: Ingresos Acumulados card left + monthly cards right
+    h+='<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">';
+
+    // Left column
+    h+='<div style="min-width:340px;flex:0 0 340px;display:flex;flex-direction:column;gap:20px">';
+
+    // Ingresos Acumulados card
+    h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+    h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados</div>';
+    h+=sRow('Ganancia en $',fP(totalPesos),'var(--blue)',false);
+    h+=sRow('Ganancia en U$D',fU(totalUSD),'var(--green)',false);
+    h+=sRow('Total Unif U$D',fU(totalUnif),'var(--gold)',true);
+    h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
+    h+='</div>';
+
+    h+='</div>'; // close left column
+
+    // Monthly cards (right side)
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px">Detalles de Ingresos <em style="font-style:normal;color:var(--gold)">Mensuales</em></div>';
+    h+='<div class="ingresos-monthly-grid" style="grid-template-columns:repeat(3,1fr)">';
+    monthly.forEach(function(d){
+      h+='<div class="ing-month-card'+(d.hasData?'':' no-data')+'">';
+      h+='<div class="ing-month-title"><span class="icon">📅</span>'+d.mes+'</div>';
+      h+='<table><thead><tr><th>Fuente</th><th>Monto</th></tr></thead><tbody>';
+      h+='<tr><td>Ganancia U$D</td><td style="color:var(--green)">'+fU(d.usd)+'</td></tr>';
+      h+='<tr><td>Ganancia $</td><td style="color:var(--blue)">'+fP(d.pesos)+'</td></tr>';
+      var mTotalUnif=d.usd+(dolarBlue?Math.round(d.pesos/dolarBlue):0);
+      h+='<tr class="total-row"><td>TOTAL U$D</td><td>'+fU(mTotalUnif)+'</td></tr>';
+      h+='</tbody></table></div>';
+    });
+    h+='</div></div>';
+
+    h+='</div>'; // close flex
+    h+='</div>'; // close margin wrapper
+
+    container.innerHTML+=h;
+  });
 }
 
 // Venta en Dólares

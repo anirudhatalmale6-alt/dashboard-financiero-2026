@@ -3899,20 +3899,38 @@ function renderOsitoBalance(){
   html+='<div class="ob-kpi-sub">Caja '+obFmtU(cajaActual)+' + USD Cobrar '+obFmtU(usdACobrar)+' + $ Cobrar '+obFmtU(pesosEnUSD)+' − Pagar '+obFmtU(Math.abs(usdAPagarInversores))+' · '+blueLabel+'</div>';
   html+='</div></div>';
 
-  // Ganancia Cards
+  // Ganancia Cards — Balance General card style
   html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--green)"></span><em>Ganancias</em></div></div>';
-  html+='<div class="ob-ganancia-grid">';
-  // Empresa 2026
-  html+='<div class="ob-gan-card" style="border-left:3px solid var(--green)"><div class="ob-gan-label">Ganancia Empresa 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val green">'+obFmtU(ganEmpUSD2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
+  var ganPesosTotal2026=ganEmpPesos2026+ganEmpCreditos2026;
+  var ganPesosUSD2026=dolarBlue?Math.round(ganPesosTotal2026/dolarBlue):0;
+  var ganTotal2026=ganEmpUSD2026+ganPesosUSD2026;
+  var ganPesosTotal25_26=(ganEmpPesos2025+ganEmpPesos2026)+ganEmpCreditos2026;
+  var ganPesosUSD25_26=dolarBlue?Math.round(ganPesosTotal25_26/dolarBlue):0;
+  var ganTotal25_26=(ganEmpUSD2025+ganEmpUSD2026)+ganPesosUSD25_26;
+  function ganRow(label,val,color,isBold){
+    var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:20px';
+    if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
+    var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
+    var vs='font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:600;color:'+color;
+    if(isBold)vs='font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:800;color:'+color;
+    return '<div style="'+s+'"><span style="'+ls+'">'+label+'</span><span style="'+vs+'">'+val+'</span></div>';
+  }
+  html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px">';
+  // Empresa 2026 card
+  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+  html+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ganancia Empresa 2026</div>';
+  html+=ganRow('Ganancia en $',obFmtP(ganPesosTotal2026),'var(--blue)',false);
+  html+=ganRow('Ganancia en U$D',obFmtU(ganEmpUSD2026),'var(--green)',false);
+  html+=ganRow('Total Unificado U$D',obFmtU(ganTotal2026),'var(--gold)',true);
+  html+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
   html+='</div>';
-  // Empresa 2025+2026
-  html+='<div class="ob-gan-card" style="border-left:3px solid var(--teal)"><div class="ob-gan-label">Ganancia Empresa 2025 + 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val green">'+obFmtU(ganEmpUSD2025+ganEmpUSD2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2025+ganEmpPesos2026)+'</span></div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
+  // Empresa 2025+2026 card
+  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+  html+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ganancia Empresa 2025 + 2026</div>';
+  html+=ganRow('Ganancia en $',obFmtP(ganPesosTotal25_26),'var(--blue)',false);
+  html+=ganRow('Ganancia en U$D',obFmtU(ganEmpUSD2025+ganEmpUSD2026),'var(--green)',false);
+  html+=ganRow('Total Unificado U$D',obFmtU(ganTotal25_26),'var(--gold)',true);
+  html+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
   html+='</div>';
   html+='</div>';
 
@@ -4026,12 +4044,19 @@ function renderOsitoSociedadCard(){
   h+='<div style="margin:30px 0">';
   h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--orange)"></span>Sociedad / Empresa <em>OSITO S.r.l.</em></h3>';
 
-  // Layout: Balance card left + monthly cards right
+  // Ganancia data for Ingresos Acumulados card
+  var ganEmpPesos2026=obVal(14,3);
+  var ganEmpCreditos2026=obVal(14,4);
+  var ganEmpUSD2026=obVal(14,5);
+  var ganPesosTotal=ganEmpPesos2026+ganEmpCreditos2026;
+  var ganPesosEnUSD=dolarBlue?Math.round(ganPesosTotal/dolarBlue):0;
+  var ganTotalUSD=ganEmpUSD2026+ganPesosEnUSD;
+
+  // Layout: left column (Balance + Ingresos Acumulados) + monthly cards right
   h+='<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">';
 
-  // Balance General card
-  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px;min-width:340px;flex:0 0 340px">';
-  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Balance General</div>';
+  // Left column: two cards stacked
+  h+='<div style="min-width:340px;flex:0 0 340px;display:flex;flex-direction:column;gap:20px">';
 
   function row(label,val,color,isBold){
     var style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:20px';
@@ -4043,6 +4068,9 @@ function renderOsitoSociedadCard(){
     return '<div style="'+style+'"><span style="'+lblStyle+'">'+label+'</span><span style="'+valStyle+'">'+val+'</span></div>';
   }
 
+  // Balance General card
+  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Balance General</div>';
   h+=row('Inversión Total',obFmtU(invTotal),'var(--green)',false);
   h+=row('Caja Actual',obFmtU(cajaActual),'var(--green)',false);
   h+=row('USD a Cobrar',obFmtU(usdACobrar),'var(--green)',false);
@@ -4052,7 +4080,18 @@ function renderOsitoSociedadCard(){
   h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
   h+='</div>';
 
-  // Monthly income cards (right side)
+  // Ingresos Acumulados card
+  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados</div>';
+  h+=row('Ganancia en $',obFmtP(ganPesosTotal),'var(--blue)',false);
+  h+=row('Ganancia en U$D',obFmtU(ganEmpUSD2026),'var(--green)',false);
+  h+=row('Total Unificado U$D',obFmtU(ganTotalUSD),'var(--gold)',true);
+  h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
+  h+='</div>';
+
+  h+='</div>'; // close left column
+
+  // Monthly income cards (right side, aligned to top)
   h+='<div style="flex:1;min-width:0">';
   h+='<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px">Detalles de Ingresos <em style="font-style:normal;color:var(--gold)">Mensuales</em></div>';
   h+='<div class="ingresos-monthly-grid" style="grid-template-columns:repeat(3,1fr)">';

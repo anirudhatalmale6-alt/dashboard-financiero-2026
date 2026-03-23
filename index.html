@@ -369,7 +369,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @media(max-width:1200px){.ec-grid{grid-template-columns:1fr}}
 
 /* OSITO Balance Panel */
-.ob-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.ob-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:16px 0}
 .ob-kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
 .ob-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .ob-kpi.gold::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
@@ -3789,9 +3789,11 @@ function renderOsitoBalance(){
   if(cajaActual<0){invInversor+=Math.abs(cajaActual);}
   var invTotal=invInversor+invOsito+invMartin;
 
-  // A Cobrar
-  var usdACobrar=obVal(15,2);
-  var pesosACobrar=obVal(16,2);
+  // A Cobrar (row 16=USD A COBRAR, row 17=$ A COBRAR)
+  var usdACobrar=obVal(16,2);
+  var pesosACobrar=obVal(17,2);
+  // A Pagar Inversores (row 18=USD A PAGAR INVERSORES)
+  var usdAPagarInversores=obVal(18,2);
 
   // Monthly income (rows 2-13, consecutive)
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -3815,42 +3817,44 @@ function renderOsitoBalance(){
   var ganEmpPesos2025=obVal(14,10);
   var ganEmpUSD2025=obVal(14,11);
 
-  // Partner breakdown
+  // Partner breakdown — row indices updated after new rows 18 & 28
   // OSITO USD (col C=2)
-  var ositoCaja=obVal(21,2);
-  var ositoInv=obVal(22,2);
-  var ositoRestaCuotas=obVal(23,2);
-  var ositoGanancia=obVal(24,2);
-  var ositoRestaCobrar=obVal(25,2);
+  var ositoCaja=obVal(23,2);
+  var ositoInv=obVal(24,2);
+  var ositoRestaCuotas=obVal(25,2);
+  var ositoGanancia=obVal(26,2);
+  var ositoRestaCobrar=obVal(27,2);
+  var ositoPagarInv=obVal(28,2); // PAGAR A INVERSORES
   // OSITO Pesos
-  var ositoRestaCuotasP=obVal(27,2);
-  var ositoGananciaP=obVal(28,2);
-  var ositoRestaCobrarP=obVal(29,2);
+  var ositoRestaCuotasP=obVal(30,2);
+  var ositoGananciaP=obVal(31,2);
+  var ositoRestaCobrarP=obVal(32,2);
   // OSITO Comisiones USD
-  var ositoComInv=obVal(31,2);
-  var ositoComGan=obVal(32,2);
-  var ositoComResta=obVal(33,2);
+  var ositoComInv=obVal(34,2);
+  var ositoComGan=obVal(35,2);
+  var ositoComResta=obVal(36,2);
   // OSITO Comisiones Pesos
-  var ositoComGanP=obVal(35,2);
-  var ositoComRestaP=obVal(36,2);
+  var ositoComGanP=obVal(38,2);
+  var ositoComRestaP=obVal(39,2);
 
   // MARTIN USD (col F=5)
-  var martinCaja=obVal(21,5);
-  var martinInv=obVal(22,5);
-  var martinRestaCuotas=obVal(23,5);
-  var martinGanancia=obVal(24,5);
-  var martinRestaCobrar=obVal(25,5);
+  var martinCaja=obVal(23,5);
+  var martinInv=obVal(24,5);
+  var martinRestaCuotas=obVal(25,5);
+  var martinGanancia=obVal(26,5);
+  var martinRestaCobrar=obVal(27,5);
+  var martinPagarInv=obVal(28,5); // PAGAR A INVERSORES
   // MARTIN Pesos
-  var martinRestaCuotasP=obVal(27,5);
-  var martinGananciaP=obVal(28,5);
-  var martinRestaCobrarP=obVal(29,5);
+  var martinRestaCuotasP=obVal(30,5);
+  var martinGananciaP=obVal(31,5);
+  var martinRestaCobrarP=obVal(32,5);
   // MARTIN Comisiones USD
-  var martinComInv=obVal(31,5);
-  var martinComGan=obVal(32,5);
-  var martinComResta=obVal(33,5);
+  var martinComInv=obVal(34,5);
+  var martinComGan=obVal(35,5);
+  var martinComResta=obVal(36,5);
   // MARTIN Comisiones Pesos
-  var martinComGanP=obVal(35,5);
-  var martinComRestaP=obVal(36,5);
+  var martinComGanP=obVal(38,5);
+  var martinComRestaP=obVal(39,5);
 
   var html='';
 
@@ -3860,6 +3864,7 @@ function renderOsitoBalance(){
   html+='<div class="ob-kpi green"><div class="ob-kpi-label">USD a Cobrar</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(usdACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
   html+='<div class="ob-kpi blue"><div class="ob-kpi-label">$ a Cobrar</div><div class="ob-kpi-value" style="color:var(--blue)">'+obFmtP(pesosACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
   html+='<div class="ob-kpi green"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
+  html+='<div class="ob-kpi" style="border-top:2px solid var(--red)"><div class="ob-kpi-label">A Pagar Inversor</div><div class="ob-kpi-value" style="color:var(--red)">'+obFmtU(Math.abs(usdAPagarInversores))+'</div><div class="ob-kpi-sub">Deuda con inversores</div></div>';
   html+='</div>';
 
   // Ganancia Cards
@@ -3911,6 +3916,7 @@ function renderOsitoBalance(){
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val green">'+obFmtU(ositoRestaCuotas)+'</span></div>';
   html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(ositoGanancia)+'</span></div>';
   html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val green">'+obFmtU(ositoRestaCobrar)+'</span></div>';
+  html+='<div class="ob-row" style="border-top:1px solid var(--red)"><span class="ob-lbl" style="color:var(--red)">Pagar a Inversores</span><span class="ob-val" style="color:var(--red)">'+obFmtU(Math.abs(ositoPagarInv))+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(ositoRestaCuotasP)+'</span></div>';
@@ -3936,6 +3942,7 @@ function renderOsitoBalance(){
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val green">'+obFmtU(martinRestaCuotas)+'</span></div>';
   html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(martinGanancia)+'</span></div>';
   html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val green">'+obFmtU(martinRestaCobrar)+'</span></div>';
+  html+='<div class="ob-row" style="border-top:1px solid var(--red)"><span class="ob-lbl" style="color:var(--red)">Pagar a Inversores</span><span class="ob-val" style="color:var(--red)">'+obFmtU(Math.abs(martinPagarInv))+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(martinRestaCuotasP)+'</span></div>';

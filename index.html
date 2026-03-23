@@ -3708,12 +3708,21 @@ function renderSidebarStats(){
 // OSITO Balance Panel
 var ositoBalanceData=null;
 var ositoCajaRow=null;
+var dolarBlue=null;
+async function fetchDolarBlue(){
+  try{
+    var resp=await fetch('https://dolarapi.com/v1/dolares/blue');
+    var data=await resp.json();
+    dolarBlue=data.venta||data.compra||1300;
+  }catch(e){dolarBlue=1300;console.log('Blue dollar fetch failed, using 1300:',e);}
+}
 async function fetchOsitoBalance(){
   var sid='1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c';
   try{
     var results=await Promise.all([
       fetchRawSheetById(sid,'PANEL DE CONTROL'),
-      fetchSheetRangeById(sid,'CAJA DOLARES GENERAL','A4:H4')
+      fetchSheetRangeById(sid,'CAJA DOLARES GENERAL','A4:H4'),
+      fetchDolarBlue()
     ]);
     ositoBalanceData=results[0];
     ositoCajaRow=results[1]&&results[1][0]?results[1][0]:[];
@@ -3866,6 +3875,18 @@ function renderOsitoBalance(){
   html+='<div class="ob-kpi green"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
   html+='<div class="ob-kpi" style="border-top:2px solid var(--red)"><div class="ob-kpi-label">A Pagar Inversor</div><div class="ob-kpi-value" style="color:var(--red)">'+obFmtU(Math.abs(usdAPagarInversores))+'</div><div class="ob-kpi-sub">Deuda con inversores</div></div>';
   html+='</div>';
+
+  // BALANCE GENERAL — wide card spanning 2 columns
+  var pesosEnUSD=dolarBlue?Math.round(pesosACobrar/dolarBlue):0;
+  var balanceGeneral=cajaActual+usdACobrar+pesosEnUSD+usdAPagarInversores; // usdAPagarInversores is already negative
+  var blueLabel=dolarBlue?('Cotización Blue: $'+dolarBlue.toLocaleString('es-AR')):'';
+  html+='<div style="margin:16px 0"><div class="ob-kpi" style="border-top:3px solid var(--gold);grid-column:span 2;padding:24px 28px">';
+  html+='<div class="ob-kpi-label" style="font-size:11px;letter-spacing:1.5px">BALANCE GENERAL</div>';
+  html+='<div class="ob-kpi-value" style="color:var(--gold);font-size:36px;margin:8px 0">'+obFmtU(balanceGeneral)+'</div>';
+  html+='<div class="ob-kpi-sub" style="font-size:12px;line-height:1.8">';
+  html+='Caja '+obFmtU(cajaActual)+' + USD a Cobrar '+obFmtU(usdACobrar)+' + $ a Cobrar en USD '+obFmtU(pesosEnUSD)+' − A Pagar '+obFmtU(Math.abs(usdAPagarInversores));
+  html+='<br>'+blueLabel;
+  html+='</div></div></div>';
 
   // Ganancia Cards
   html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--green)"></span><em>Ganancias</em></div></div>';

@@ -382,7 +382,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ob-kpi-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--text)}
 .ob-kpi-sub{font-size:11px;color:var(--text2);margin-top:6px}
 .ob-section{margin:20px 0}
-.ob-section-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ob-section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--text);margin-bottom:18px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+.ob-section-title em{font-style:normal;color:var(--gold)}
 .ob-section-title .ob-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .ob-partners{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin:16px 0}
 .ob-partner-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
@@ -3862,7 +3863,7 @@ function renderOsitoBalance(){
   html+='</div>';
 
   // Ganancia Cards
-  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--green)"></span>Ganancias</div></div>';
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--green)"></span><em>Ganancias</em></div></div>';
   html+='<div class="ob-ganancia-grid">';
   // Empresa 2026
   html+='<div class="ob-gan-card" style="border-left:3px solid var(--green)"><div class="ob-gan-label">Ganancia Empresa 2026</div>';
@@ -3878,17 +3879,28 @@ function renderOsitoBalance(){
   html+='</div>';
   html+='</div>';
 
-  // Monthly Income Table
-  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--gold)"></span>Ingresos Mensuales Detallados 2026</div></div>';
-  html+='<div style="overflow-x:auto"><table class="ob-income-table"><thead><tr><th>Mes</th><th style="color:var(--blue)">Ventas Pesos</th><th style="color:var(--blue)">Créditos Pesos</th><th style="color:var(--green)">Ventas Dólares</th><th style="color:var(--green)">Costo Inversor</th></tr></thead><tbody>';
+  // Monthly Income Detail Cards (12 months)
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--gold)"></span>Detalles de Ingresos <em>Mensuales</em></div></div>';
+  html+='<div class="ingresos-monthly-grid">';
   monthlyData.forEach(function(d){
-    var cls=d.hasData?'class="active"':'';
-    html+='<tr '+cls+'><td>'+d.mes+'</td><td style="color:var(--blue)">'+obFmtP(d.pesos)+'</td><td style="color:var(--blue)">'+obFmtP(d.creditos)+'</td><td style="color:var(--green)">'+obFmtU(d.dolares)+'</td><td style="color:var(--green)">'+obFmtU(d.inversor)+'</td></tr>';
+    var noData=(d.pesos===0&&d.creditos===0&&d.dolares===0&&d.inversor===0);
+    var totalUSD=d.dolares+d.inversor;
+    var totalPesos=d.pesos+d.creditos;
+    html+='<div class="ing-month-card'+(noData?' no-data':'')+'">';
+    html+='<div class="ing-month-title"><span class="icon">📅</span>'+d.mes+'</div>';
+    html+='<table><thead><tr><th>Fuente</th><th>Monto</th></tr></thead><tbody>';
+    html+='<tr><td>Ventas Pesos</td><td style="color:var(--blue)">'+obFmtP(d.pesos)+'</td></tr>';
+    html+='<tr><td>Créditos Pesos</td><td style="color:var(--blue)">'+obFmtP(d.creditos)+'</td></tr>';
+    html+='<tr><td>Ventas Dólares</td><td style="color:var(--green)">'+obFmtU(d.dolares)+'</td></tr>';
+    html+='<tr><td>Costo Inversor</td><td style="color:var(--green)">'+obFmtU(d.inversor)+'</td></tr>';
+    html+='<tr class="total-row"><td>TOTAL U$D</td><td>'+obFmtU(totalUSD)+'</td></tr>';
+    html+='<tr class="total-row"><td>TOTAL $</td><td>'+obFmtP(totalPesos)+'</td></tr>';
+    html+='</tbody></table></div>';
   });
-  html+='</tbody><tfoot><tr><td>TOTAL</td><td style="color:var(--blue)">'+obFmtP(totPesos)+'</td><td style="color:var(--blue)">'+obFmtP(totCreditos)+'</td><td style="color:var(--green)">'+obFmtU(totDolares)+'</td><td style="color:var(--green)">'+obFmtU(totInversor)+'</td></tr></tfoot></table></div>';
+  html+='</div>';
 
   // Partner Breakdown — OSITO vs MARTIN
-  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--orange)"></span>Detalle por Socio</div></div>';
+  html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--orange)"></span>Detalle por <em>Socio</em></div></div>';
   html+='<div class="ob-partners">';
 
   // OSITO card

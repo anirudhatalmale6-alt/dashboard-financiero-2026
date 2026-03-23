@@ -804,10 +804,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <!-- OSITO Balance Panel (vendor-specific) -->
   <div id="ositoBalanceSection" style="display:none">
     <div class="section-divider" id="secOsitoBalance">
-      <h2>Balance General <em>OSITO S.r.l.</em></h2>
+      <h2>Balance General Sociedad / Empresa <em>OSITO S.r.l.</em></h2>
       <div class="divider-sub">Mapa financiero completo — inversiones, caja, ingresos y ganancias</div>
     </div>
     <div id="ositoBalanceContainer"></div>
+    <div id="ositoSeparator" style="display:none;margin:40px 0;padding:30px 0;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);text-align:center">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">Dashboard <em style="color:var(--gold)">Osito S.r.l.</em></h2>
+      <div style="font-size:12px;color:var(--text2);letter-spacing:1px;text-transform:uppercase">Panel exclusivo de vendedor — solo tu información</div>
+    </div>
   </div>
 
   <div class="section-divider" id="secEstadoCuentas">
@@ -1599,10 +1603,12 @@ function populateFilters(){
       var cuotasChartsDiv=cc&&cc.nextElementSibling&&cc.nextElementSibling.classList.contains('charts')?cc.nextElementSibling:null;
       var refNode=headerEl.nextSibling;
       var el;
+      // 0. OSITO Balance Panel (at the very top, before KPIs)
+      el=document.getElementById('ositoBalanceSection');if(el)mainEl.insertBefore(el,refNode);
+      // Show separator between balance and vendor dashboard
+      var sep=document.getElementById('ositoSeparator');if(sep)sep.style.display='';
       // 1. KPIs
       el=document.getElementById('vendedorKpis');if(el)mainEl.insertBefore(el,refNode);
-      // 1b. OSITO Balance Panel (only for Osito)
-      el=document.getElementById('ositoBalanceSection');if(el)mainEl.insertBefore(el,refNode);
       // 2. Ganancia de los Vendedores / Modulo de Ventas (monthly table)
       el=document.getElementById('secVendedorDash');if(el)mainEl.insertBefore(el,refNode);
       el=document.getElementById('vendedorDashContainer');if(el)mainEl.insertBefore(el,refNode);

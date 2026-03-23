@@ -418,6 +418,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ob-gan-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:600}
 .ob-gan-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
 .ob-gan-row .ob-val{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.ob-gan-row .ob-val.gold{color:var(--gold)}
+.ob-gan-row .ob-val.blue{color:var(--blue)}
+.ob-gan-row .ob-val.green{color:var(--green)}
+.ob-gan-row .ob-val.purple{color:var(--purple)}
 @media(max-width:900px){.ob-kpis{grid-template-columns:repeat(2,1fr)}.ob-partners{grid-template-columns:1fr}.ob-ganancia-grid{grid-template-columns:1fr}}
 
 /* Loading */
@@ -3851,10 +3855,10 @@ function renderOsitoBalance(){
 
   // KPI Cards
   html+='<div class="ob-kpis">';
-  html+='<div class="ob-kpi gold"><div class="ob-kpi-label">Caja Actual</div><div class="ob-kpi-value">'+obFmtU(cajaActual)+'</div><div class="ob-kpi-sub">Efectivo disponible</div></div>';
-  html+='<div class="ob-kpi green"><div class="ob-kpi-label">USD a Cobrar</div><div class="ob-kpi-value">'+obFmtU(usdACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
-  html+='<div class="ob-kpi blue"><div class="ob-kpi-label">$ a Cobrar</div><div class="ob-kpi-value">'+obFmtP(pesosACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
-  html+='<div class="ob-kpi purple"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
+  html+='<div class="ob-kpi green"><div class="ob-kpi-label">Caja Actual</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(cajaActual)+'</div><div class="ob-kpi-sub">Efectivo disponible</div></div>';
+  html+='<div class="ob-kpi green"><div class="ob-kpi-label">USD a Cobrar</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(usdACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
+  html+='<div class="ob-kpi blue"><div class="ob-kpi-label">$ a Cobrar</div><div class="ob-kpi-value" style="color:var(--blue)">'+obFmtP(pesosACobrar)+'</div><div class="ob-kpi-sub">Cuotas pendientes</div></div>';
+  html+='<div class="ob-kpi green"><div class="ob-kpi-label">Inversión Total</div><div class="ob-kpi-value" style="color:var(--green)">'+obFmtU(invTotal)+'</div><div class="ob-kpi-sub">Martin '+obFmtU(invMartin)+' · Osito '+obFmtU(invOsito)+' · Inversor '+obFmtU(invInversor)+'</div></div>';
   html+='</div>';
 
   // Ganancia Cards
@@ -3862,13 +3866,13 @@ function renderOsitoBalance(){
   html+='<div class="ob-ganancia-grid">';
   // Empresa 2026
   html+='<div class="ob-gan-card" style="border-left:3px solid var(--green)"><div class="ob-gan-label">Ganancia Empresa 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganEmpUSD2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val green">'+obFmtU(ganEmpUSD2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
   html+='</div>';
   // Empresa 2025+2026
   html+='<div class="ob-gan-card" style="border-left:3px solid var(--teal)"><div class="ob-gan-label">Ganancia Empresa 2025 + 2026</div>';
-  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val gold">'+obFmtU(ganEmpUSD2025+ganEmpUSD2026)+'</span></div>';
+  html+='<div class="ob-gan-row"><span class="ob-lbl">Dólares</span><span class="ob-val green">'+obFmtU(ganEmpUSD2025+ganEmpUSD2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Pesos</span><span class="ob-val blue">'+obFmtP(ganEmpPesos2025+ganEmpPesos2026)+'</span></div>';
   html+='<div class="ob-gan-row"><span class="ob-lbl">Créditos</span><span class="ob-val blue">'+obFmtP(ganEmpCreditos2026)+'</span></div>';
   html+='</div>';
@@ -3876,12 +3880,12 @@ function renderOsitoBalance(){
 
   // Monthly Income Table
   html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--gold)"></span>Ingresos Mensuales Detallados 2026</div></div>';
-  html+='<div style="overflow-x:auto"><table class="ob-income-table"><thead><tr><th>Mes</th><th>Ventas Pesos</th><th>Créditos Pesos</th><th>Ventas Dólares</th><th>Costo Inversor</th></tr></thead><tbody>';
+  html+='<div style="overflow-x:auto"><table class="ob-income-table"><thead><tr><th>Mes</th><th style="color:var(--blue)">Ventas Pesos</th><th style="color:var(--blue)">Créditos Pesos</th><th style="color:var(--green)">Ventas Dólares</th><th style="color:var(--green)">Costo Inversor</th></tr></thead><tbody>';
   monthlyData.forEach(function(d){
     var cls=d.hasData?'class="active"':'';
-    html+='<tr '+cls+'><td>'+d.mes+'</td><td>'+obFmtP(d.pesos)+'</td><td>'+obFmtP(d.creditos)+'</td><td>'+obFmtU(d.dolares)+'</td><td>'+obFmtU(d.inversor)+'</td></tr>';
+    html+='<tr '+cls+'><td>'+d.mes+'</td><td style="color:var(--blue)">'+obFmtP(d.pesos)+'</td><td style="color:var(--blue)">'+obFmtP(d.creditos)+'</td><td style="color:var(--green)">'+obFmtU(d.dolares)+'</td><td style="color:var(--green)">'+obFmtU(d.inversor)+'</td></tr>';
   });
-  html+='</tbody><tfoot><tr><td>TOTAL</td><td>'+obFmtP(totPesos)+'</td><td>'+obFmtP(totCreditos)+'</td><td>'+obFmtU(totDolares)+'</td><td>'+obFmtU(totInversor)+'</td></tr></tfoot></table></div>';
+  html+='</tbody><tfoot><tr><td>TOTAL</td><td style="color:var(--blue)">'+obFmtP(totPesos)+'</td><td style="color:var(--blue)">'+obFmtP(totCreditos)+'</td><td style="color:var(--green)">'+obFmtU(totDolares)+'</td><td style="color:var(--green)">'+obFmtU(totInversor)+'</td></tr></tfoot></table></div>';
 
   // Partner Breakdown — OSITO vs MARTIN
   html+='<div class="ob-section"><div class="ob-section-title"><span class="ob-dot" style="background:var(--orange)"></span>Detalle por Socio</div></div>';
@@ -3890,11 +3894,11 @@ function renderOsitoBalance(){
   // OSITO card
   html+='<div class="ob-partner-card"><div class="ob-partner-header"><div class="ob-avatar" style="background:var(--orange)">O</div><h4>OSITO</h4></div><div class="ob-partner-body">';
   html+='<div class="ob-partner-section"><div class="ob-ps-title usd">Dólares</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val gold">'+obFmtU(ositoCaja)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val gold">'+obFmtU(ositoInv)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val gold">'+obFmtU(ositoRestaCuotas)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val green">'+obFmtU(ositoCaja)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val green">'+obFmtU(ositoInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val green">'+obFmtU(ositoRestaCuotas)+'</span></div>';
   html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(ositoGanancia)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val gold">'+obFmtU(ositoRestaCobrar)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val green">'+obFmtU(ositoRestaCobrar)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(ositoRestaCuotasP)+'</span></div>';
@@ -3902,24 +3906,24 @@ function renderOsitoBalance(){
   html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Osito</span><span class="ob-val blue">'+obFmtP(ositoRestaCobrarP)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Dólares</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val purple">'+obFmtU(ositoComInv)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtU(ositoComGan)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtU(ositoComResta)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val green">'+obFmtU(ositoComInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(ositoComGan)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val green">'+obFmtU(ositoComResta)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Pesos</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtP(ositoComGanP)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtP(ositoComRestaP)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val blue">'+obFmtP(ositoComGanP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val blue">'+obFmtP(ositoComRestaP)+'</span></div>';
   html+='</div>';
   html+='</div></div>';
 
   // MARTIN card
   html+='<div class="ob-partner-card"><div class="ob-partner-header"><div class="ob-avatar" style="background:var(--gold)">M</div><h4>MARTIN</h4></div><div class="ob-partner-body">';
   html+='<div class="ob-partner-section"><div class="ob-ps-title usd">Dólares</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val gold">'+obFmtU(martinCaja)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val gold">'+obFmtU(martinInv)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val gold">'+obFmtU(martinRestaCuotas)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Caja Efectivo</span><span class="ob-val green">'+obFmtU(martinCaja)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val green">'+obFmtU(martinInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val green">'+obFmtU(martinRestaCuotas)+'</span></div>';
   html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(martinGanancia)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val gold">'+obFmtU(martinRestaCobrar)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val green">'+obFmtU(martinRestaCobrar)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title pesos">Pesos</div>';
   html+='<div class="ob-row"><span class="ob-lbl">Resta Cobrar Cuotas</span><span class="ob-val blue">'+obFmtP(martinRestaCuotasP)+'</span></div>';
@@ -3927,13 +3931,13 @@ function renderOsitoBalance(){
   html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar Martin</span><span class="ob-val blue">'+obFmtP(martinRestaCobrarP)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Dólares</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val purple">'+obFmtU(martinComInv)+'</span></div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtU(martinComGan)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtU(martinComResta)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Inversión Inicial</span><span class="ob-val green">'+obFmtU(martinComInv)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val green">'+obFmtU(martinComGan)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val green">'+obFmtU(martinComResta)+'</span></div>';
   html+='</div>';
   html+='<div class="ob-partner-section"><div class="ob-ps-title com">Comisiones Pesos</div>';
-  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val purple">'+obFmtP(martinComGanP)+'</span></div>';
-  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val purple">'+obFmtP(martinComRestaP)+'</span></div>';
+  html+='<div class="ob-row"><span class="ob-lbl">Ganancia</span><span class="ob-val blue">'+obFmtP(martinComGanP)+'</span></div>';
+  html+='<div class="ob-row highlight"><span class="ob-lbl">Resta Cobrar</span><span class="ob-val blue">'+obFmtP(martinComRestaP)+'</span></div>';
   html+='</div>';
   html+='</div></div>';
 

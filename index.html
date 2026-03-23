@@ -4013,18 +4013,29 @@ function renderOsitoSociedadCard(){
   var balance=cajaActual+usdACobrar+pesosEnUSD+usdAPagar;
   var blueLabel=dolarBlue?('Dólar Blue: $'+dolarBlue.toLocaleString('es-AR')):'';
 
+  // Monthly data (rows 2-13)
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var sMonthly=[];
+  for(var m=0;m<12;m++){
+    var ri=2+m;
+    var mp=obVal(ri,3),mc=obVal(ri,4),md=obVal(ri,5),mi=obVal(ri,6);
+    sMonthly.push({mes:meses[m],pesos:mp,creditos:mc,dolares:md,inversor:mi,hasData:mp||mc||md||mi});
+  }
+
   var h='';
   h+='<div style="margin:30px 0">';
   h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--orange)"></span>Sociedad / Empresa <em>OSITO S.r.l.</em></h3>';
-  h+='<div style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px;min-width:380px">';
 
-  // Title
+  // Layout: Balance card left + monthly cards right
+  h+='<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">';
+
+  // Balance General card
+  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px;min-width:340px;flex:0 0 340px">';
   h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Balance General</div>';
 
-  // Line items
   function row(label,val,color,isBold){
-    var style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)';
-    if(isBold)style+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px';
+    var style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:20px';
+    if(isBold)style+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
     var lblStyle='font-size:13px;color:var(--text2)';
     if(isBold)lblStyle='font-size:14px;color:var(--text);font-weight:700';
     var valStyle='font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:600;color:'+color;
@@ -4038,11 +4049,32 @@ function renderOsitoSociedadCard(){
   h+=row('$ a Cobrar',obFmtP(pesosACobrar),'var(--blue)',false);
   h+=row('A Pagar Inversores',obFmtU(Math.abs(usdAPagar)),'var(--red)',false);
   h+=row('Balance General',obFmtU(balance),'var(--gold)',true);
-
-  // Blue rate note
   h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
+  h+='</div>';
 
+  // Monthly income cards (right side)
+  h+='<div style="flex:1;min-width:0">';
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px">Detalles de Ingresos <em style="font-style:normal;color:var(--gold)">Mensuales</em></div>';
+  h+='<div class="ingresos-monthly-grid" style="grid-template-columns:repeat(3,1fr)">';
+  sMonthly.forEach(function(d){
+    var noData=!d.hasData;
+    var totalUSD=d.dolares+d.inversor;
+    var totalPesos=d.pesos+d.creditos;
+    h+='<div class="ing-month-card'+(noData?' no-data':'')+'">';
+    h+='<div class="ing-month-title"><span class="icon">📅</span>'+d.mes+'</div>';
+    h+='<table><thead><tr><th>Fuente</th><th>Monto</th></tr></thead><tbody>';
+    h+='<tr><td>Ventas Pesos</td><td style="color:var(--blue)">'+obFmtP(d.pesos)+'</td></tr>';
+    h+='<tr><td>Créditos Pesos</td><td style="color:var(--blue)">'+obFmtP(d.creditos)+'</td></tr>';
+    h+='<tr><td>Ventas Dólares</td><td style="color:var(--green)">'+obFmtU(d.dolares)+'</td></tr>';
+    h+='<tr><td>Costo Inversor</td><td style="color:var(--green)">'+obFmtU(d.inversor)+'</td></tr>';
+    h+='<tr class="total-row"><td>TOTAL U$D</td><td>'+obFmtU(totalUSD)+'</td></tr>';
+    h+='<tr class="total-row"><td>TOTAL $</td><td>'+obFmtP(totalPesos)+'</td></tr>';
+    h+='</tbody></table></div>';
+  });
   h+='</div></div>';
+
+  h+='</div>'; // close flex layout
+  h+='</div>'; // close margin wrapper
   container.innerHTML=h;
 }
 

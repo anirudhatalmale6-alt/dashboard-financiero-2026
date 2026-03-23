@@ -4048,13 +4048,18 @@ function renderOsitoSociedadCard(){
   h+='<div style="margin:30px 0">';
   h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--orange)"></span>Sociedad / Empresa <em>OSITO S.r.l.</em></h3>';
 
-  // Ganancia data for Ingresos Acumulados card
+  // Ganancia data for Ingresos Acumulados cards
   var ganEmpPesos2026=obVal(14,3);
   var ganEmpCreditos2026=obVal(14,4);
   var ganEmpUSD2026=obVal(14,5);
+  var ganEmpPesos2025=obVal(14,10);
+  var ganEmpUSD2025=obVal(14,11);
   var ganPesosTotal=ganEmpPesos2026+ganEmpCreditos2026;
   var ganPesosEnUSD=dolarBlue?Math.round(ganPesosTotal/dolarBlue):0;
   var ganTotalUSD=ganEmpUSD2026+ganPesosEnUSD;
+  var ganPesosTotal25_26=(ganEmpPesos2025+ganEmpPesos2026)+ganEmpCreditos2026;
+  var ganPesosEnUSD25_26=dolarBlue?Math.round(ganPesosTotal25_26/dolarBlue):0;
+  var ganTotalUSD25_26=(ganEmpUSD2025+ganEmpUSD2026)+ganPesosEnUSD25_26;
 
   // Layout: left column (Balance + Ingresos Acumulados) + monthly cards right
   h+='<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">';
@@ -4084,12 +4089,21 @@ function renderOsitoSociedadCard(){
   h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
   h+='</div>';
 
-  // Ingresos Acumulados card
+  // Ingresos Acumulados 2026 card
   h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
-  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados</div>';
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados 2026</div>';
   h+=row('Ganancia en $',obFmtP(ganPesosTotal),'var(--blue)',false);
   h+=row('Ganancia en U$D',obFmtU(ganEmpUSD2026),'var(--green)',false);
   h+=row('Total Unificado U$D',obFmtU(ganTotalUSD),'var(--gold)',true);
+  h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
+  h+='</div>';
+
+  // Ingresos Acumulados 2025 + 2026 card
+  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados 2025 + 2026</div>';
+  h+=row('Ganancia en $',obFmtP(ganPesosTotal25_26),'var(--blue)',false);
+  h+=row('Ganancia en U$D',obFmtU(ganEmpUSD2025+ganEmpUSD2026),'var(--green)',false);
+  h+=row('Total Unificado U$D',obFmtU(ganTotalUSD25_26),'var(--gold)',true);
   h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
   h+='</div>';
 

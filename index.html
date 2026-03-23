@@ -825,6 +825,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div id="estadoCuentasContainer" class="ec-grid"></div>
 
+  <!-- DASHBOARD SOCIEDAD / EMPRESA -->
+  <div id="secSociedadEmpresa" style="display:none">
+    <div style="margin:60px 0 0;padding:40px 0;border-top:3px solid var(--gold);border-bottom:3px solid var(--gold);text-align:center">
+      <h2 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:800;color:var(--text);margin:0;letter-spacing:-1px">Dashboard Sociedad / <em style="color:var(--gold);font-style:normal">Empresa</em></h2>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px;letter-spacing:1px;text-transform:uppercase">Panel consolidado de la sociedad</div>
+    </div>
+    <div id="sociedadEmpresaContainer"></div>
+  </div>
+
 </main>
 </div>
 
@@ -1534,6 +1543,8 @@ async function loadAllData(){
     )).then(()=>{renderEstadoCuentas();});
     // Fetch OSITO Balance panel if on Osito vendor link
     if(urlVendedor&&urlVendedor.toLowerCase().indexOf('osito')>=0){fetchOsitoBalance();}
+    // Show Sociedad/Empresa section on main dashboard
+    if(!urlVendedor){var secSoc=document.getElementById('secSociedadEmpresa');if(secSoc)secSoc.style.display='';}
     populateFilters();
     renderAll();
   }catch(e){

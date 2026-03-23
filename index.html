@@ -1543,8 +1543,8 @@ async function loadAllData(){
     )).then(()=>{renderEstadoCuentas();});
     // Fetch OSITO Balance panel if on Osito vendor link
     if(urlVendedor&&urlVendedor.toLowerCase().indexOf('osito')>=0){fetchOsitoBalance();}
-    // Show Sociedad/Empresa section on main dashboard
-    if(!urlVendedor){var secSoc=document.getElementById('secSociedadEmpresa');if(secSoc)secSoc.style.display='';}
+    // Show Sociedad/Empresa section on main dashboard and fetch data
+    if(!urlVendedor){var secSoc=document.getElementById('secSociedadEmpresa');if(secSoc)secSoc.style.display='';fetchOsitoBalance('main');}
     populateFilters();
     renderAll();
   }catch(e){
@@ -3727,7 +3727,7 @@ async function fetchDolarBlue(){
     dolarBlue=data.venta||data.compra||1300;
   }catch(e){dolarBlue=1300;console.log('Blue dollar fetch failed, using 1300:',e);}
 }
-async function fetchOsitoBalance(){
+async function fetchOsitoBalance(mode){
   var sid='1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c';
   try{
     var results=await Promise.all([
@@ -3737,7 +3737,8 @@ async function fetchOsitoBalance(){
     ]);
     ositoBalanceData=results[0];
     ositoCajaRow=results[1]&&results[1][0]?results[1][0]:[];
-    renderOsitoBalance();
+    if(mode==='main'){renderOsitoSociedadCard();}
+    else{renderOsitoBalance();}
   }catch(e){console.log('OSITO balance fetch error:',e);}
 }
 function obVal(row,col){
@@ -3994,6 +3995,55 @@ function renderOsitoBalance(){
   html+='</div>'; // close ob-partners
 
   container.innerHTML=html;
+}
+
+// Sociedad card for main dashboard
+function renderOsitoSociedadCard(){
+  var container=document.getElementById('sociedadEmpresaContainer');
+  if(!container)return;
+  // Reuse same data already fetched
+  var cajaActual=ocVal(6);
+  var invInversor=ocVal(1);var invOsito=ocVal(3);var invMartin=ocVal(4);
+  if(cajaActual<0){invInversor+=Math.abs(cajaActual);}
+  var invTotal=invInversor+invOsito+invMartin;
+  var usdACobrar=obVal(16,2);
+  var pesosACobrar=obVal(17,2);
+  var usdAPagar=obVal(18,2);
+  var pesosEnUSD=dolarBlue?Math.round(pesosACobrar/dolarBlue):0;
+  var balance=cajaActual+usdACobrar+pesosEnUSD+usdAPagar;
+  var blueLabel=dolarBlue?('Dólar Blue: $'+dolarBlue.toLocaleString('es-AR')):'';
+
+  var h='';
+  h+='<div style="margin:30px 0">';
+  h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--orange)"></span>Sociedad / Empresa <em>OSITO S.r.l.</em></h3>';
+  h+='<div style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px;min-width:380px">';
+
+  // Title
+  h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Balance General</div>';
+
+  // Line items
+  function row(label,val,color,isBold){
+    var style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+    if(isBold)style+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px';
+    var lblStyle='font-size:13px;color:var(--text2)';
+    if(isBold)lblStyle='font-size:14px;color:var(--text);font-weight:700';
+    var valStyle='font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:600;color:'+color;
+    if(isBold)valStyle='font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:800;color:'+color;
+    return '<div style="'+style+'"><span style="'+lblStyle+'">'+label+'</span><span style="'+valStyle+'">'+val+'</span></div>';
+  }
+
+  h+=row('Inversión Total',obFmtU(invTotal),'var(--green)',false);
+  h+=row('Caja Actual',obFmtU(cajaActual),'var(--green)',false);
+  h+=row('USD a Cobrar',obFmtU(usdACobrar),'var(--green)',false);
+  h+=row('$ a Cobrar',obFmtP(pesosACobrar),'var(--blue)',false);
+  h+=row('A Pagar Inversores',obFmtU(Math.abs(usdAPagar)),'var(--red)',false);
+  h+=row('Balance General',obFmtU(balance),'var(--gold)',true);
+
+  // Blue rate note
+  h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
+
+  h+='</div></div>';
+  container.innerHTML=h;
 }
 
 // Venta en Dólares

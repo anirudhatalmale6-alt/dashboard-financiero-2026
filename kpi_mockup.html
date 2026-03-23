@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KPI Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121318;--surface:rgba(30,31,40,.85);--border:rgba(255,255,255,.06);--text:#e8e6e3;--text2:#9a98a0;--text3:#6b6976;--gold:#d4a853;--green:#34d399;--blue:#60a5fa;--red:#f87171;--teal:#2dd4bf}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:40px}
+h2{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:30px;text-align:center}
+h2 em{font-style:normal;color:var(--gold)}
+
+.cards-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto 40px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px}
+.card-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:22px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px}
+.card-title .flag{font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;text-transform:uppercase}
+.flag.usd{background:rgba(52,211,153,.15);color:var(--green)}
+.flag.ars{background:rgba(96,165,250,.15);color:var(--blue)}
+
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:20px}
+.row:last-child{border-bottom:none}
+.row.highlight{border-top:2px solid var(--gold);margin-top:10px;padding-top:14px;border-bottom:none}
+.row .lbl{font-size:13px;color:var(--text2)}
+.row.highlight .lbl{font-size:14px;color:var(--text);font-weight:700}
+.row .val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.row.highlight .val{font-size:20px;font-weight:800}
+.row .trend{font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;margin-left:6px}
+.trend.flat{background:rgba(148,163,184,.12);color:#94a3b8}
+
+.green{color:var(--green)}.blue{color:var(--blue)}.red{color:var(--red)}.gold{color:var(--gold)}
+
+.note{text-align:center;font-size:13px;color:var(--text3);margin:30px auto;max-width:700px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<h2>Resumen General de <em>Ingresos</em></h2>
+
+<div class="cards-row">
+  <!-- USD Card -->
+  <div class="card">
+    <div class="card-title"><span class="flag usd">U$D</span> Resumen en Dólares</div>
+    <div class="row">
+      <span class="lbl">Ingresos en Dólares</span>
+      <span class="val green">U$D 46.130 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row">
+      <span class="lbl">Total Unificado Dólares</span>
+      <span class="val green">U$D 72.895 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row">
+      <span class="lbl">Gastos</span>
+      <span class="val red">U$D -6.218 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row highlight">
+      <span class="lbl">Total Neto U$D</span>
+      <span class="val gold">U$D 66.677</span>
+    </div>
+  </div>
+
+  <!-- Pesos Card -->
+  <div class="card">
+    <div class="card-title"><span class="flag ars">PESOS</span> Resumen en Pesos</div>
+    <div class="row">
+      <span class="lbl">Ingresos en Pesos</span>
+      <span class="val blue">$ 38.648.320 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row">
+      <span class="lbl">Total Unificado Pesos</span>
+      <span class="val blue">$ 106.169.733 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row">
+      <span class="lbl">Gastos</span>
+      <span class="val red">U$D -6.218 <span class="trend flat">= 0%</span></span>
+    </div>
+    <div class="row highlight">
+      <span class="lbl">Total Neto Pesos</span>
+      <span class="val gold">$ 96.925.533</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

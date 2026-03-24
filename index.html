@@ -784,7 +784,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <h3 class="section-title" id="secVendedorDash">Detalle Mensual por <em>Vendedor / Módulo</em> (Dashboard)</h3>
-  <div class="kpis" id="vendedorKpis" style="margin-bottom:20px;display:none"></div>
+  <div id="vendedorKpis" style="margin-bottom:20px;display:none"></div>
   <div id="vendedorDashContainer"></div>
 
   <div class="charts" id="secVendedorCharts" style="margin-top:28px;grid-template-columns:1fr">
@@ -2273,19 +2273,40 @@ function renderVendedorDash(){
       var mCount=[...new Set(vd.filter(function(r){return(r.Ganancia_USD||0)!==0||(r.Ganancia_Pesos||0)!==0;}).map(function(r){return r.Mes;}))].length;
       var pUSD=mCount>0?gUSD/mCount:0;
       var pPesos=mCount>0?gPesos/mCount:0;
-      // Find current month (last month with data for this vendor)
       var allMesesVK=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       var curMesVK=allMesesVK[new Date().getMonth()];var curUSD=0;var curPesos=0;
       var curMr=vdAll.find(function(r){return r.Mes===curMesVK;});if(curMr){curUSD=curMr.Ganancia_USD||0;curPesos=curMr.Ganancia_Pesos||0;}
+      // Trend: current vs previous month
+      var prevMesVK=new Date().getMonth()>0?allMesesVK[new Date().getMonth()-1]:null;
+      var prevUSD=0,prevPesos=0;
+      if(prevMesVK){var prevMr=vdAll.find(function(r){return r.Mes===prevMesVK;});if(prevMr){prevUSD=prevMr.Ganancia_USD||0;prevPesos=prevMr.Ganancia_Pesos||0;}}
+      var tGU=prevMesVK?trendBadge(curUSD,prevUSD):'';
+      var tGP=prevMesVK?trendBadge(curPesos,prevPesos):'';
+      function vkRow(label,val,trend,color,isBold){
+        var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
+        if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
+        var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
+        var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:"+color;
+        if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:"+color;
+        return '<div style="'+s+'"><span style="'+ls+'">'+label+'</span><span style="display:flex;align-items:center;gap:6px"><span style="'+vs+'">'+val+'</span>'+(trend||'')+'</span></div>';
+      }
       vKpiEl.style.display='';
       vKpiEl.innerHTML=
-        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA EN PESOS</div><div class="kpi-value">'+fmtPesos(gPesos)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+
-        '<div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">PROMEDIO MENSUAL PESOS</div><div class="kpi-value">'+fmtPesos(pPesos)+'</div></div>'+
-        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA EN DOLARES</div><div class="kpi-value">'+fmtUSD(gUSD)+'</div><div class="kpi-sub">'+mCount+' meses con datos</div></div>'+
-        '<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">PROMEDIO MENSUAL DOLARES</div><div class="kpi-value">'+fmtUSD(pUSD)+'</div></div>'+
-        '<div style="grid-column:1/-1;display:flex;gap:16px;justify-content:center;margin-top:4px">'+
-        '<div class="kpi" data-color="blue" style="flex:0 1 280px"><div class="kpi-flag ars">PESOS</div><div class="kpi-label" style="color:var(--gold)">GANANCIA '+curMesVK.toUpperCase()+' PESOS</div><div class="kpi-value">'+fmtPesos(curPesos)+'</div></div>'+
-        '<div class="kpi" data-color="green" style="flex:0 1 280px"><div class="kpi-flag usd">U$D</div><div class="kpi-label" style="color:var(--gold)">GANANCIA '+curMesVK.toUpperCase()+' DOLARES</div><div class="kpi-value">'+fmtUSD(curUSD)+'</div></div>'+
+        '<div style="display:flex;gap:24px;align-items:stretch;margin-bottom:8px">'+
+        '<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">'+
+        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>'+
+        vkRow('Ganancia Acumulada',fmtUSD(gUSD),'','var(--green)',false)+
+        vkRow('Promedio Mensual',fmtUSD(pUSD),'','var(--green)',false)+
+        vkRow(curMesVK+' U$D',fmtUSD(curUSD),tGU,'var(--gold)',true)+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">'+mCount+' meses con datos</div>'+
+        '</div>'+
+        '<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">'+
+        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>'+
+        vkRow('Ganancia Acumulada',fmtPesos(gPesos),'','var(--blue)',false)+
+        vkRow('Promedio Mensual',fmtPesos(pPesos),'','var(--blue)',false)+
+        vkRow(curMesVK+' $',fmtPesos(curPesos),tGP,'var(--gold)',true)+
+        '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">'+mCount+' meses con datos</div>'+
+        '</div>'+
         '</div>';
     } else {
       vKpiEl.style.display='none';
@@ -2832,6 +2853,8 @@ function renderAll(){
   buildCuotasPanels();
   renderAllCuotasPanels();
   renderSidebarStats();
+  // Re-render Sociedad/Empresa section on filter change (if data available)
+  if(!urlVendedor&&ositoBalanceData){renderOsitoSociedadCard();}
   // Reorder: move monthly table right below vendedorKpis when vendor filtered (dropdown)
   if(isFiltered&&!urlVendedor){
     var vKpis=document.getElementById('vendedorKpis');
@@ -2913,8 +2936,8 @@ function renderKPIs(){
   var cardsRow=document.getElementById('kpiCardsRow');
 
   if(filterVendedor!=='all'){
-    // Show old-style KPI grid for vendor filter, hide new cards
-    kpiEl.style.display='';kpiEl.className='kpis';
+    // Show card-style KPIs for vendor filter, hide new cards row
+    kpiEl.style.display='';kpiEl.className='';
     if(cardsRow)cardsRow.style.display='none';
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
@@ -2928,7 +2951,6 @@ function renderKPIs(){
     else{for(let i=2;i<=13;i++)monthRows.push(i);}
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
 
-    // Trend: compare current vs previous month for this vendedor
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     let curGanUSD=0,curGanPesos=0,prevGanUSD=0,prevGanPesos=0,curGastos=0,prevGastos=0;
     if(curIdx>=2){
@@ -2947,25 +2969,44 @@ function renderKPIs(){
     const tGanP=prevIdx>=2?trendBadge(curGanPesos,prevGanPesos):'';
     const tGas=prevIdx>=2?trendBadge(curGastos,prevGastos):'';
 
-    // Gastos Fijos only for these vendedores
     const showGastos=['Inversiones','Creditos','Tecno'].includes(filterVendedor);
-    const gastosCardUSD=showGastos?
-      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
-      `<div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Mejor Mes U$D</div><div class="kpi-value">${fmtUSD(Math.max(...allVd.map(r=>r.Ganancia_USD||0)))}</div></div>`;
-    const gastosCardPesos=showGastos?
-      `<div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>`:
-      `<div class="kpi" data-color="green"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Mejor Mes $</div><div class="kpi-value">${fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0)))}</div></div>`;
-
     const curMesName=curIdx>=2?allMeses[curIdx-2]:'—';
+
+    function rkRow(label,val,trend,color,isBold){
+      var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
+      if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
+      var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
+      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:"+color;
+      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:"+color;
+      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
+    }
+
+    let usdRows=rkRow('Ganancia Acumulada',fmtUSD(ganUSD),tGanU,'var(--green)',false)+
+      rkRow('Promedio Mensual',fmtUSD(promUSD),'','var(--green)',false);
+    if(showGastos)usdRows+=rkRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false);
+    else usdRows+=rkRow('Mejor Mes U$D',fmtUSD(Math.max(...allVd.map(r=>r.Ganancia_USD||0))),'','var(--green)',false);
+    usdRows+=rkRow(curMesName+' U$D',fmtUSD(curGanUSD),'','var(--gold)',true);
+
+    let pesosRows=rkRow('Ganancia Acumulada',fmtPesos(ganPesos),tGanP,'var(--blue)',false)+
+      rkRow('Promedio Mensual',fmtPesos(promPesos),'','var(--blue)',false);
+    if(showGastos)pesosRows+=rkRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false);
+    else pesosRows+=rkRow('Mejor Mes $',fmtPesos(Math.max(...allVd.map(r=>r.Ganancia_Pesos||0))),'','var(--blue)',false);
+    pesosRows+=rkRow(curMesName+' $',fmtPesos(curGanPesos),'','var(--gold)',true);
+
     kpiEl.innerHTML=`
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA ACUMULADA EN DOLARES</div><div class="kpi-value">${fmtUSD(ganUSD)}</div>${tGanU}<div class="kpi-sub">${mesesCount} meses con datos</div></div>
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">GANANCIA ${curMesName.toUpperCase()} DOLARES</div><div class="kpi-value">${fmtUSD(curGanUSD)}</div></div>
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">PROMEDIO MENSUAL DOLARES</div><div class="kpi-value">${fmtUSD(promUSD)}</div></div>
-      ${gastosCardUSD}
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA ACUMULADA EN PESOS</div><div class="kpi-value">${fmtPesos(ganPesos)}</div>${tGanP}<div class="kpi-sub">${mesesCount} meses con datos</div></div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">GANANCIA ${curMesName.toUpperCase()} PESOS</div><div class="kpi-value">${fmtPesos(curGanPesos)}</div></div>
-      <div class="kpi" data-color="purple"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">PROMEDIO MENSUAL PESOS</div><div class="kpi-value">${fmtPesos(promPesos)}</div></div>
-      ${gastosCardPesos}
+      <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen de <em>Ingresos</em></h2>
+      <div style="display:flex;gap:24px;align-items:stretch">
+        <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
+          ${usdRows}
+          <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">${mesesCount} meses con datos</div>
+        </div>
+        <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>
+          ${pesosRows}
+          <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">${mesesCount} meses con datos</div>
+        </div>
+      </div>
     `;
   } else {
     // Show new card-style KPIs, hide old grid
@@ -4051,6 +4092,12 @@ function renderOsitoBalance(){
 function renderOsitoSociedadCard(){
   var container=document.getElementById('sociedadEmpresaContainer');
   if(!container)return;
+  container.innerHTML='';
+  // If filtering by a non-OSITO vendor, skip OSITO section but still render other vendors
+  if(filterVendedor!=='all'&&filterVendedor.toLowerCase().indexOf('osito')<0){
+    renderVendorSociedadCards(container);
+    return;
+  }
   // Reuse same data already fetched
   var cajaActual=ocVal(6);
   var invInversor=ocVal(1);var invOsito=ocVal(3);var invMartin=ocVal(4);
@@ -4143,9 +4190,10 @@ function renderOsitoSociedadCard(){
   h+='<div class="ingresos-monthly-grid" style="grid-template-columns:repeat(3,1fr)">';
   sMonthly.forEach(function(d){
     var noData=!d.hasData;
+    var isFilteredMonth=filterMes!=='all'&&d.mes!==filterMes;
     var totalUSD=d.dolares+d.inversor;
     var totalPesos=d.pesos+d.creditos;
-    h+='<div class="ing-month-card'+(noData?' no-data':'')+'">';
+    h+='<div class="ing-month-card'+(noData?' no-data':'')+(isFilteredMonth?' no-data':'')+'">';
     h+='<div class="ing-month-title"><span class="icon">📅</span>'+d.mes+'</div>';
     h+='<table><thead><tr><th>Fuente</th><th>Monto</th></tr></thead><tbody>';
     h+='<tr><td>Ventas Pesos</td><td style="color:var(--blue)">'+obFmtP(d.pesos)+'</td></tr>';
@@ -4171,7 +4219,6 @@ function renderVendorSociedadCards(container){
   var vgData=allData.vendedorGains;
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  // Color map for known vendors (case-insensitive key)
   var colorMap={
     'mely':'var(--pink)','gonza':'var(--teal)','patito':'#e879f9','patito s.a.':'#e879f9',
     'tobias':'var(--cyan)','tino':'var(--red)','linea 314':'var(--blue)',
@@ -4180,12 +4227,13 @@ function renderVendorSociedadCards(container){
     'creditos':'var(--purple)','créditos':'var(--purple)'
   };
 
-  // Get unique vendor names, excluding OSITO (already rendered above)
   var allNames=[...new Set(vgData.map(function(r){return r.Vendedor;}))];
   var vendors=[];
   allNames.forEach(function(name){
     var lc=name.toLowerCase();
-    if(lc.indexOf('osito')>=0)return; // skip OSITO
+    if(lc.indexOf('osito')>=0)return;
+    // Filter by vendor if selected
+    if(filterVendedor!=='all'&&name!==filterVendedor)return;
     var color=colorMap[lc]||'var(--gold2)';
     vendors.push({name:name,label:name.toUpperCase(),color:color});
   });
@@ -4203,7 +4251,6 @@ function renderVendorSociedadCards(container){
   function fP(v){return '$ '+Math.round(v).toLocaleString('es-AR');}
 
   vendors.forEach(function(v){
-    // Get monthly data for this vendor
     var entries=vgData.filter(function(r){return r.Vendedor===v.name;});
     if(!entries.length)return;
 
@@ -4213,8 +4260,10 @@ function renderVendorSociedadCards(container){
       var e=entries.find(function(r){return r.Mes===mes;});
       var usd=e?e.Ganancia_USD:0;
       var pesos=e?e.Ganancia_Pesos:0;
-      totalUSD+=usd;totalPesos+=pesos;
-      monthly.push({mes:mes,usd:usd,pesos:pesos,hasData:usd!==0||pesos!==0});
+      // Only count towards totals if not filtered out by month
+      var isFilteredMonth=filterMes!=='all'&&mes!==filterMes;
+      if(!isFilteredMonth){totalUSD+=usd;totalPesos+=pesos;}
+      monthly.push({mes:mes,usd:usd,pesos:pesos,hasData:usd!==0||pesos!==0,filtered:isFilteredMonth});
     });
 
     var totalPesosEnUSD=dolarBlue?Math.round(totalPesos/dolarBlue):0;
@@ -4223,29 +4272,26 @@ function renderVendorSociedadCards(container){
     var h='<div style="margin:30px 0">';
     h+='<h3 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:'+v.color+'"></span>Sociedad / Empresa <em>'+v.label+'</em></h3>';
 
-    // Flex layout: Ingresos Acumulados card left + monthly cards right
     h+='<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">';
 
-    // Left column
     h+='<div style="min-width:340px;flex:0 0 340px;display:flex;flex-direction:column;gap:20px">';
 
-    // Ingresos Acumulados card
     h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">';
-    h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados</div>';
+    h+='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center">Ingresos Acumulados'+(filterMes!=='all'?' — '+filterMes:'')+'</div>';
     h+=sRow('Ganancia en $',fP(totalPesos),'var(--blue)',false);
     h+=sRow('Ganancia en U$D',fU(totalUSD),'var(--green)',false);
     h+=sRow('Total Unif U$D',fU(totalUnif),'var(--gold)',true);
     h+='<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:12px">'+blueLabel+'</div>';
     h+='</div>';
 
-    h+='</div>'; // close left column
+    h+='</div>';
 
-    // Monthly cards (right side)
     h+='<div style="flex:1;min-width:0">';
     h+='<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px">Detalles de Ingresos <em style="font-style:normal;color:var(--gold)">Mensuales</em></div>';
     h+='<div class="ingresos-monthly-grid" style="grid-template-columns:repeat(3,1fr)">';
     monthly.forEach(function(d){
-      h+='<div class="ing-month-card'+(d.hasData?'':' no-data')+'">';
+      var dimmed=d.filtered;
+      h+='<div class="ing-month-card'+(d.hasData?'':' no-data')+(dimmed?' no-data':'')+'">';
       h+='<div class="ing-month-title"><span class="icon">📅</span>'+d.mes+'</div>';
       h+='<table><thead><tr><th>Fuente</th><th>Monto</th></tr></thead><tbody>';
       h+='<tr><td>Ganancia U$D</td><td style="color:var(--green)">'+fU(d.usd)+'</td></tr>';
@@ -4256,8 +4302,8 @@ function renderVendorSociedadCards(container){
     });
     h+='</div></div>';
 
-    h+='</div>'; // close flex
-    h+='</div>'; // close margin wrapper
+    h+='</div>';
+    h+='</div>';
 
     container.innerHTML+=h;
   });

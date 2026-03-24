@@ -728,17 +728,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Ranking acumulado en pesos</div>
       <ul class="rank-list" id="rankPesos"></ul>
     </div>
-    <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:20px">
+    <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:18px;display:flex;flex-direction:column">
       <div class="chart-title"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
-      <div class="chart-subtitle" style="margin-bottom:10px">Participación en ganancias totales</div>
-      <div style="position:relative;width:100%;height:240px;margin:0 auto">
+      <div class="chart-subtitle" style="margin-bottom:8px">Participación en ganancias totales</div>
+      <div style="position:relative;flex:1;min-height:0">
         <canvas id="chartPie"></canvas>
         <div id="pieCenterLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:800;color:var(--gold)"></div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">TOTAL</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:800;color:var(--gold)"></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:1px">TOTAL</div>
         </div>
       </div>
-      <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;margin-top:12px"></div>
+      <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-top:8px"></div>
     </div>
   </div>
 
@@ -3391,10 +3391,10 @@ function renderChartPie(){
       datasets:[{data:sorted.map(([,v])=>v),backgroundColor:pieColors,borderColor:'rgba(0,0,0,.3)',borderWidth:2,hoverOffset:14,hoverBorderColor:'#fff',hoverBorderWidth:3,spacing:2,borderRadius:4}]
     },
     plugins:[ChartDataLabels],
-    options:{responsive:true,maintainAspectRatio:true,cutout:'58%',animation:{animateRotate:true,duration:1200},layout:{padding:8},plugins:{
+    options:{responsive:true,maintainAspectRatio:false,cutout:'52%',animation:{animateRotate:true,duration:1200},layout:{padding:4},plugins:{
       legend:{display:false},
       tooltip:{backgroundColor:'rgba(20,20,30,.95)',titleFont:{family:'DM Sans',size:13,weight:'600'},bodyFont:{family:'IBM Plex Mono',size:13},padding:12,cornerRadius:10,displayColors:true,boxPadding:6,callbacks:{label:function(ctx){var v=ctx.raw;var p=total>0?((v/total)*100).toFixed(1):'0';return ' '+fmt2(v)+' ('+p+'%)';}}},
-      datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:12,weight:'700'},textStrokeColor:'rgba(0,0,0,.6)',textStrokeWidth:3,formatter:function(value){var p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=6?p+'%':'';},anchor:'center',align:'center'}
+      datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:10,weight:'700'},textStrokeColor:'rgba(0,0,0,.7)',textStrokeWidth:3,formatter:function(value){var p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=10?p+'%':'';},anchor:'center',align:'center'}
     }}
   });
   // Center label

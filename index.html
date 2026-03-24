@@ -676,10 +676,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="print-header" style="display:none"><strong>Dashboard Financiero 2026</strong><span id="printDate"></span></div>
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
-  <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen de <em>Ingresos</em></h2>
+  <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen General de <em>Ingresos</em></h2>
   <div id="kpiCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:28px">
     <div id="kpiCardUSD" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
-    <div id="kpiCurrentMonth" style="display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:200px"></div>
+    <div id="kpiCurrentMonth" style="display:none"></div>
     <div id="kpiCardPesos" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
   </div>
   <div class="kpis" id="kpis" style="display:none"></div>
@@ -717,7 +717,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <h3 class="section-title" id="secRanking">Ranking de <em>Ganancias</em></h3>
-  <div class="rankings" id="rankings">
+  <div class="rankings" id="rankings" style="grid-template-columns:1fr 1fr 1fr">
     <div class="ranking-card">
       <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Top Vendedores USD</div>
       <div class="chart-subtitle">Ranking acumulado en dólares</div>
@@ -728,18 +728,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Ranking acumulado en pesos</div>
       <ul class="rank-list" id="rankPesos"></ul>
     </div>
-  </div>
-  <div class="chart-card" id="pieChartWrap" style="margin-top:20px;padding:32px 40px;text-align:center">
-    <div class="chart-title" style="font-size:18px;margin-bottom:2px"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
-    <div class="chart-subtitle" style="margin-bottom:18px">Participación en ganancias totales</div>
-    <div style="position:relative;width:340px;height:340px;margin:0 auto">
-      <canvas id="chartPie"></canvas>
-      <div id="pieCenterLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--gold)"></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">TOTAL</div>
+    <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:20px">
+      <div class="chart-title"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
+      <div class="chart-subtitle" style="margin-bottom:10px">Participación en ganancias totales</div>
+      <div style="position:relative;width:100%;height:240px;margin:0 auto">
+        <canvas id="chartPie"></canvas>
+        <div id="pieCenterLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:800;color:var(--gold)"></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">TOTAL</div>
+        </div>
       </div>
+      <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;margin-top:12px"></div>
     </div>
-    <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px 20px;margin-top:20px"></div>
   </div>
 
   <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
@@ -1650,7 +1650,7 @@ function populateFilters(){
     var hideIds=['kpis','kpiCardsRow','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
-      'secRanking','rankings','pieChartWrap','secModulos','modules','chartVendedoresWrap',
+      'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
       'secDetalle','moduleDetails',
       'secInversiones','invSection',
       'secDashVendedores',
@@ -2340,14 +2340,14 @@ function renderVendedorDash(){
       vKpiEl.innerHTML=
         '<div style="display:flex;gap:24px;align-items:stretch;margin-bottom:8px">'+
         '<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">'+
-        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>'+
+        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>'+
         vkRow('Ganancia Acumulada',fmtUSD(gUSD),'','var(--green)',false)+
         vkRow('Promedio Mensual',fmtUSD(pUSD),'','var(--green)',false)+
         vkRow(curMesVK+' U$D',fmtUSD(curUSD),tGU,'var(--gold)',true)+
         '<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">'+mCount+' meses con datos</div>'+
         '</div>'+
         '<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">'+
-        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>'+
+        '<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">PESOS</span></div>'+
         vkRow('Ganancia Acumulada',fmtPesos(gPesos),'','var(--blue)',false)+
         vkRow('Promedio Mensual',fmtPesos(pPesos),'','var(--blue)',false)+
         vkRow(curMesVK+' $',fmtPesos(curPesos),tGP,'var(--gold)',true)+
@@ -3055,12 +3055,12 @@ function renderKPIs(){
     kpiEl.innerHTML=`
       <div style="display:flex;gap:24px;align-items:stretch">
         <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">
-          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
           ${usdRows}
           <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">${mesesCount} meses con datos</div>
         </div>
         <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px">
-          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">PESOS</span></div>
           ${pesosRows}
           <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px">${mesesCount} meses con datos</div>
         </div>
@@ -3109,20 +3109,20 @@ function renderKPIs(){
     var pesosCard=document.getElementById('kpiCardPesos');
     if(usdCard){
       usdCard.innerHTML=`
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:22px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:22px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
         ${kpiRow('Ingresos en Dólares',fmtUSD(brutoUSD),tBrutoU,'var(--green)',false)}
         ${kpiRow('Total Unificado Dólares',fmtUSD(unificadoUSD),tUniU,'var(--green)',false)}
         ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
-        ${kpiRow('Total Neto U$D',fmtUSD(netoUSD),tNetoU,'var(--green)',true)}
+        ${kpiRow('Total Neto U$D',fmtUSD(netoUSD),'','var(--gold)',true)}
       `;
     }
     if(pesosCard){
       pesosCard.innerHTML=`
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:22px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:22px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">PESOS</span></div>
         ${kpiRow('Ingresos en Pesos',fmtPesos(brutoPesos),tBrutoP,'var(--blue)',false)}
         ${kpiRow('Total Unificado Pesos',fmtPesos(unificadoPesos),tUniP,'var(--blue)',false)}
         ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
-        ${kpiRow('Total Neto Pesos',fmtPesos(netoPesos),tNetoP,'var(--blue)',true)}
+        ${kpiRow('Total Neto Pesos',fmtPesos(netoPesos),'','var(--gold)',true)}
       `;
     }
   }
@@ -3406,11 +3406,10 @@ function renderChartPie(){
     lg.innerHTML=sorted.map(function(e,i){
       var name=e[0],val=e[1];
       var p=total>0?((val/total)*100).toFixed(1):'0';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">'+
-        '<span style="width:12px;height:12px;border-radius:3px;background:'+pieColors[i]+';flex-shrink:0"></span>'+
-        '<span style="font-size:12px;color:var(--text);font-weight:600">'+name+'</span>'+
-        '<span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text2)">'+fmt2(val)+'</span>'+
-        '<span style="font-size:10px;font-weight:700;color:'+pieColors[i]+';background:'+pieColors[i]+'22;padding:2px 6px;border-radius:4px">'+p+'%</span>'+
+      return '<div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">'+
+        '<span style="width:8px;height:8px;border-radius:2px;background:'+pieColors[i]+';flex-shrink:0"></span>'+
+        '<span style="font-size:10px;color:var(--text);font-weight:600">'+name+'</span>'+
+        '<span style="font-size:9px;font-weight:700;color:'+pieColors[i]+'">'+p+'%</span>'+
       '</div>';
     }).join('');
   }
@@ -4539,7 +4538,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','pieChartWrap','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

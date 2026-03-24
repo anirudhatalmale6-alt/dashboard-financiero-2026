@@ -660,6 +660,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="print-header" style="display:none"><strong>Dashboard Financiero 2026</strong><span id="printDate"></span></div>
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
+  <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen de <em>Ingresos</em></h2>
   <div id="kpiCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:28px">
     <div id="kpiCardUSD" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
     <div id="kpiCurrentMonth" style="display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:200px"></div>
@@ -3009,7 +3010,7 @@ function renderKPIs(){
     var pesosCard=document.getElementById('kpiCardPesos');
     if(usdCard){
       usdCard.innerHTML=`
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px"><span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span> Resumen en Dólares</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Dólares <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span></div>
         ${kpiRow('Ingresos en Dólares',fmtUSD(brutoUSD),tBrutoU,'var(--green)',false)}
         ${kpiRow('Total Unificado Dólares',fmtUSD(unificadoUSD),tUniU,'var(--green)',false)}
         ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
@@ -3018,7 +3019,7 @@ function renderKPIs(){
     }
     if(pesosCard){
       pesosCard.innerHTML=`
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px"><span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">PESOS</span> Resumen en Pesos</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px">Resumen Ingresos en Pesos <span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">$</span></div>
         ${kpiRow('Ingresos en Pesos',fmtPesos(brutoPesos),tBrutoP,'var(--blue)',false)}
         ${kpiRow('Total Unificado Pesos',fmtPesos(unificadoPesos),tUniP,'var(--blue)',false)}
         ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}

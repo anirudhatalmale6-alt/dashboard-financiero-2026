@@ -2969,7 +2969,7 @@ function renderKPIs(){
   } else {
     // Show new card-style KPIs, hide old grid
     kpiEl.style.display='none';
-    if(cardsRow)cardsRow.style.display='';
+    if(cardsRow)cardsRow.style.display='flex';
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
     else{for(let i=2;i<=13;i++)monthRows.push(i);}

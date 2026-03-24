@@ -3452,6 +3452,8 @@ function renderModules(){
     const invPesos=rows[0]?(rows[0].Inversion_Pesos||0):0;
     const restaUSD=rows[0]?(rows[0].Resta_Cobrar_USD||0):0;
     const restaPesos=rows[0]?(rows[0].Resta_Cobrar_Pesos||0):0;
+    const blue=dolarBlue||1300;
+    const restaUnifUSD=Math.round(restaUSD+(restaPesos/blue));
     const caja=rows[0]?(rows[0].Caja_Actual_USD||0):0;
     const cuotasPct=restaUSD>0&&totalUSD>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
     const invRecovery=Math.abs(invUSD)>0&&caja>0?Math.min(100,((caja)/Math.abs(invUSD))*100):0;
@@ -3466,6 +3468,7 @@ function renderModules(){
           <div class="module-stat"><span class="lbl">Inversión $</span><span class="val ${invPesos>=0?'positive':'negative'}">${fmtPesos(invPesos)}</span></div>
           <div class="module-stat"><span class="lbl">Resta Cobrar U$D</span><span class="val">${fmtUSD(restaUSD)}</span></div>
           <div class="module-stat"><span class="lbl">Resta Cobrar $</span><span class="val">${fmtPesos(restaPesos)}</span></div>
+          <div class="module-stat" style="border-top:1px solid var(--gold-dim);padding-top:6px;margin-top:4px"><span class="lbl" style="color:var(--gold);font-weight:600">Resta Cobrar Unif U$D</span><span class="val" style="color:var(--gold);font-weight:800">${fmtUSD(restaUnifUSD)}</span></div>
           <div class="module-stat"><span class="lbl">Caja Actual U$D</span><span class="val ${caja>=0?'positive':'negative'}">${fmtUSD(caja)}</span></div>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${cuotasPct.toFixed(0)}%"></div></div>

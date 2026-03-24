@@ -660,13 +660,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="print-header" style="display:none"><strong>Dashboard Financiero 2026</strong><span id="printDate"></span></div>
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
-  <div class="kpis" id="kpis">
-    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
-    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
-    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
-    <div class="kpi"><div class="kpi-label">Cargando...</div><div class="kpi-value">—</div></div>
+  <div id="kpiCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:28px">
+    <div id="kpiCardUSD" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
+    <div id="kpiCurrentMonth" style="display:flex;flex-direction:column;gap:12px;justify-content:center;min-width:200px"></div>
+    <div id="kpiCardPesos" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
   </div>
-  <div class="kpi-current-month" id="kpiCurrentMonth"></div>
+  <div class="kpis" id="kpis" style="display:none"></div>
 
   <h2 class="section-title" id="secIngresosTotales"><span class="dot" style="background:var(--gold)"></span>Ingresos <em>Totales</em></h2>
   <div class="it-wrap" id="ingresosTotalesWrap">
@@ -1601,7 +1600,7 @@ function populateFilters(){
     if(mainSub)mainSub.textContent='Panel exclusivo de vendedor — solo tu información';
     document.title='Dashboard '+matchedVend+' 2026';
     // Hide financial-only sections for vendor dashboard
-    var hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap',
+    var hideIds=['kpis','kpiCardsRow','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
@@ -2910,8 +2909,12 @@ function renderKPIs(){
     prevIdx=curIdx>2?curIdx-1:-1;
   }
 
+  var cardsRow=document.getElementById('kpiCardsRow');
+
   if(filterVendedor!=='all'){
-    kpiEl.className='kpis';
+    // Show old-style KPI grid for vendor filter, hide new cards
+    kpiEl.style.display='';kpiEl.className='kpis';
+    if(cardsRow)cardsRow.style.display='none';
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const ganPesos=vd.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
@@ -2964,7 +2967,9 @@ function renderKPIs(){
       ${gastosCardPesos}
     `;
   } else {
-    kpiEl.className='kpis';
+    // Show new card-style KPIs, hide old grid
+    kpiEl.style.display='none';
+    if(cardsRow)cardsRow.style.display='';
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
     else{for(let i=2;i<=13;i++)monthRows.push(i);}
@@ -2988,16 +2993,38 @@ function renderKPIs(){
       tUniP=trendBadge(dashNum(curIdx,7),dashNum(prevIdx,7));
     }
 
-    kpiEl.innerHTML=`
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Ingresos en Dólares</div><div class="kpi-value">${fmtUSD(brutoUSD)}</div>${tBrutoU}</div>
-      <div class="kpi kpi-unificado" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares</div><div class="kpi-value">${fmtUSD(unificadoUSD)}</div>${tUniU}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
-      <div class="kpi" data-color="green"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Total Unificado Dólares Neto</div><div class="kpi-value">${fmtUSD(netoUSD)}</div>${tNetoU}</div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Ingresos en Pesos</div><div class="kpi-value">${fmtPesos(brutoPesos)}</div>${tBrutoP}</div>
-      <div class="kpi kpi-unificado" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos</div><div class="kpi-value">${fmtPesos(unificadoPesos)}</div>${tUniP}</div>
-      <div class="kpi" data-color="silver"><div class="kpi-flag usd">U$D</div><div class="kpi-label">Gastos</div><div class="kpi-value">${fmtUSD(gastos)}</div>${tGas}</div>
-      <div class="kpi" data-color="blue"><div class="kpi-flag ars">PESOS</div><div class="kpi-label">Total Unificado Pesos Neto</div><div class="kpi-value">${fmtPesos(netoPesos)}</div>${tNetoP}</div>
-    `;
+    kpiEl.innerHTML='';
+
+    // Render new card-style KPIs
+    function kpiRow(label,val,trend,color,isBold){
+      var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
+      if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
+      var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
+      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:"+color;
+      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:"+color;
+      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
+    }
+
+    var usdCard=document.getElementById('kpiCardUSD');
+    var pesosCard=document.getElementById('kpiCardPesos');
+    if(usdCard){
+      usdCard.innerHTML=`
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px"><span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(52,211,153,.15);color:var(--green)">U$D</span> Resumen en Dólares</div>
+        ${kpiRow('Ingresos en Dólares',fmtUSD(brutoUSD),tBrutoU,'var(--green)',false)}
+        ${kpiRow('Total Unificado Dólares',fmtUSD(unificadoUSD),tUniU,'var(--green)',false)}
+        ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
+        ${kpiRow('Total Neto U$D',fmtUSD(netoUSD),tNetoU,'var(--gold)',true)}
+      `;
+    }
+    if(pesosCard){
+      pesosCard.innerHTML=`
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px"><span style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:rgba(96,165,250,.15);color:var(--blue)">PESOS</span> Resumen en Pesos</div>
+        ${kpiRow('Ingresos en Pesos',fmtPesos(brutoPesos),tBrutoP,'var(--blue)',false)}
+        ${kpiRow('Total Unificado Pesos',fmtPesos(unificadoPesos),tUniP,'var(--blue)',false)}
+        ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
+        ${kpiRow('Total Neto Pesos',fmtPesos(netoPesos),tNetoP,'var(--gold)',true)}
+      `;
+    }
   }
 }
 

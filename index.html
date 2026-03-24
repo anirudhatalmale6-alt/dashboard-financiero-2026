@@ -743,7 +743,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title" id="secDetalle">Detalle Mensual por <em>Módulo</em></h3>
+  <h3 class="section-title" id="secDetalle">Detalle De Ingresos Mensuales por <em>Módulo / Vendedor</em></h3>
   <div class="module-details-grid" id="moduleDetails"></div>
 
   <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
@@ -2995,6 +2995,12 @@ function renderKPIs(){
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
 
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
+    // Fix: use actual current month for vendor-filtered view (not global findLastDataMonth)
+    if(filterMes==='all'){
+      const actualMonthIdx=new Date().getMonth(); // 0-based (0=Jan, 2=Mar)
+      curIdx=2+actualMonthIdx; // convert to dashRaw row index (2=Jan, 4=Mar)
+      prevIdx=curIdx>2?curIdx-1:-1;
+    }
     let curGanUSD=0,curGanPesos=0,prevGanUSD=0,prevGanPesos=0,curGastos=0,prevGastos=0;
     if(curIdx>=2){
       const curMes=allMeses[curIdx-2];

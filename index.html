@@ -25,10 +25,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .app{display:flex;min-height:100vh;position:relative;z-index:1}
 
 /* Sidebar */
-.sidebar{width:280px;background:var(--surface);border-right:1px solid var(--border);padding:28px 20px;display:flex;flex-direction:column;gap:24px;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:24px 14px;display:flex;flex-direction:column;gap:18px;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10}
 .logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border)}
-.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--bg);font-weight:700}
-.logo h1{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.5px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--bg);font-weight:700}
+.logo h1{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.5px}
 .logo span{display:block;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);font-weight:300;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
 
 .filter-section{display:flex;flex-direction:column;gap:8px}
@@ -40,7 +40,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Sidebar Navigation */
 .sidebar-nav{display:flex;flex-direction:column;gap:2px}
 .sidebar-nav-title{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:4px;font-weight:600}
-.sidebar-nav a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:var(--text2);text-decoration:none;transition:.2s;cursor:pointer}
+.sidebar-nav a{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;font-size:11px;color:var(--text2);text-decoration:none;transition:.2s;cursor:pointer}
 .sidebar-nav a:hover{background:var(--surface2);color:var(--text);transform:translateX(2px)}
 .sidebar-nav a .nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
@@ -53,7 +53,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .refresh-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,168,83,.3)}
 
 /* Main */
-.main{flex:1;margin-left:280px;padding:28px 32px;min-width:0;overflow-x:hidden}
+.main{flex:1;margin-left:220px;padding:28px 32px;min-width:0;overflow-x:hidden}
 
 .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
 .header h2{font-family:'Playfair Display',serif;font-size:32px;font-weight:800;letter-spacing:-1px}
@@ -261,6 +261,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #cuotasCardsPesos .cuota-card .cuota-fill{background:linear-gradient(90deg,var(--blue),#93c5fd)}
 #cuotasCardsPesos .cuota-card::before{background:linear-gradient(90deg,var(--blue),#93c5fd)}
 #cuotasCardsPesos .cuota-card.acum::before{background:linear-gradient(90deg,var(--blue),#93c5fd)}
+#cuotasCardsUnif .cuota-card .cobrar{color:var(--gold)}
+#cuotasCardsUnif .cuota-card .cuota-fill{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+#cuotasCardsUnif .cuota-card::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+#cuotasCardsUnif .cuota-card.acum::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
 .cuota-card .pagar{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--red)}
 .cuota-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:1px}
 .cuota-card .cuota-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
@@ -621,26 +625,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="sidebar-nav-title">Navegación</div>
-    <a onclick="document.getElementById('kpis').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen General</a>
+    <a onclick="document.getElementById('kpiCardsRow').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen Ingresos</a>
     <a onclick="document.getElementById('secIngresosTotales').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
     <a onclick="document.getElementById('secDetalleIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Detalle Ingresos</a>
     <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>
-    <a onclick="document.getElementById('secGraficos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Ingresos Mensuales</a>
+    <a onclick="document.getElementById('secGraficos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ganancias</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
     <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
-    <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas Cobrar/Pagar</a>
-    <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cronograma Inversiones</a>
-    <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Control de Cuotas</a>
+    <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
+    <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
+    <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
+    <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Inversiones</a>
+    <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Control de Cuotas</a>
     <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
     <a onclick="document.getElementById('secEstadoCuentas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--orange)"></span>Estado de Cuentas</a>
+    <a onclick="document.getElementById('secSociedadEmpresa').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Sociedad / Empresa</a>
   </nav>
 
   <div class="sidebar-stats" id="sidebarStats"></div>
-
-  <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar Datos</button>
+  <div id="sidebarDate" style="font-size:10px;color:var(--text3);text-align:center;letter-spacing:.3px"></div>
+  <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar</button>
 </aside>
 
 <main class="main">
@@ -747,6 +754,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
+
+  <h3 class="section-title" id="secCuotasUnif"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em></h3>
+  <div class="cuotas-cards" id="cuotasCardsUnif"></div>
+  <div class="charts" style="grid-template-columns:1fr">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Cuotas Unificadas en U$D</div>
+      <div class="chart-subtitle">Cuotas en Pesos convertidas a dólares (blue) + Cuotas en U$D</div>
+      <div class="chart-container"><canvas id="chartCuotasUnif"></canvas></div>
+    </div>
+  </div>
 
   <!-- Control de Cuotas a Cobrar — Expandable Data Panels (dynamically generated) -->
   <div class="panel-area" id="secVentaDolares">
@@ -2823,7 +2840,7 @@ function renderAll(){
   renderModules();
   renderModuleDetails();
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
-  var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos'];
+  var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
   var invOnlyIds=['secInversiones','invSection'];
   invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
@@ -2836,10 +2853,15 @@ function renderAll(){
   var cuotasPesosContainer=document.getElementById('cuotasCardsPesos');
   var cuotasPesosCharts=cuotasPesosContainer?cuotasPesosContainer.nextElementSibling:null;
   if(cuotasPesosCharts)cuotasPesosCharts.style.display='';
+  var cuotasUnifContainer=document.getElementById('cuotasCardsUnif');
+  var cuotasUnifCharts=cuotasUnifContainer?cuotasUnifContainer.nextElementSibling:null;
+  if(cuotasUnifCharts)cuotasUnifCharts.style.display='';
   renderCuotasCards();
   renderCuotasCardsPesos();
+  renderCuotasCardsUnif();
   renderChartCuotasUSD();
   renderChartCuotasPesos();
+  renderChartCuotasUnif();
   if(!isFiltered){
     renderChartBalanceGeneral();
     renderInversiones();
@@ -2868,7 +2890,9 @@ function renderAll(){
       if(vdCont)parent.insertBefore(vdCont,ref);
     }
   }
-  document.getElementById('headerDate').textContent='Actualizado: '+new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var dateStr=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('headerDate').textContent='Actualizado: '+dateStr;
+  var sidebarDateEl=document.getElementById('sidebarDate');if(sidebarDateEl)sidebarDateEl.textContent='Actualizado: '+dateStr;
 }
 
 function getFilteredResumen(){
@@ -3770,6 +3794,76 @@ function renderCuotasCardsPesos(){
       <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
       ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
     </div>`;
+}
+
+function renderCuotasCardsUnif(){
+  const q=extractCuotasData(filterVendedor);
+  const container=document.getElementById('cuotasCardsUnif');
+  if(!container)return;
+  container.innerHTML='';
+  const isVendor=filterVendedor!=='all';
+  var secTitle=document.getElementById('secCuotasUnif');
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em>'+(vLabel||'');}
+  const blue=dolarBlue||1300;
+  let totalCobrar=0,totalPagar=0;
+  q.labels.forEach((mes,i)=>{
+    const cobrarUnif=Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
+    const pagarUnif=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
+    totalCobrar+=cobrarUnif;
+    totalPagar+=pagarUnif;
+    const pct=cobrarUnif>0&&pagarUnif>0?Math.min(100,Math.round((cobrarUnif/(cobrarUnif+pagarUnif))*100)):cobrarUnif>0?100:0;
+    const pagarHTML=isVendor?'':`
+        <span class="lbl">A Pagar</span>
+        <div class="pagar">${pagarUnif>0?'-':''}${fmtUSD(pagarUnif)}</div>`;
+    container.innerHTML+=`
+      <div class="cuota-card">
+        <div class="mes">${mes}</div>
+        <span class="lbl">A Cobrar Unif</span>
+        <div class="cobrar">${fmtUSD(cobrarUnif)}</div>
+        ${pagarHTML}
+        <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
+        ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
+      </div>`;
+  });
+  const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  const totalPagarHTML=isVendor?'':`
+      <span class="lbl">Total A Pagar</span>
+      <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>`;
+  container.innerHTML+=`
+    <div class="cuota-card acum">
+      <div class="mes">Acumulado Anual</div>
+      <span class="lbl">Total A Cobrar Unif</span>
+      <div class="cobrar">${fmtUSD(totalCobrar)}</div>
+      ${totalPagarHTML}
+      <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
+      ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
+    </div>`;
+  // Blue dollar info
+  container.innerHTML+=`<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:8px;grid-column:1/-1">Dólar Blue: $${blue.toLocaleString('es-AR')} — Pesos convertidos a U$D al tipo de cambio del día</div>`;
+}
+
+function renderChartCuotasUnif(){
+  const q=extractCuotasData(filterVendedor);
+  const blue=dolarBlue||1300;
+  const cobrarUnif=q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue)));
+  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue)));
+  if(charts.cuotasUnif)charts.cuotasUnif.destroy();
+  var canvas=document.getElementById('chartCuotasUnif');
+  if(!canvas)return;
+  charts.cuotasUnif=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:q.labels,
+      datasets:filterVendedor!=='all'?[
+        {label:'Cuotas Unificadas U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5}
+      ]:[
+        {label:'Cuotas a Cobrar Unif U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:'A Pagar Unif U$D',data:pagarUnif,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+      ]
+    },
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+  });
 }
 
 function renderSidebarStats(){

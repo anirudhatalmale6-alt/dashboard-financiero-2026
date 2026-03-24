@@ -25,7 +25,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .app{display:flex;min-height:100vh;position:relative;z-index:1}
 
 /* Sidebar */
-.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:24px 14px;display:flex;flex-direction:column;gap:18px;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:24px 14px;display:flex;flex-direction:column;gap:18px;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10;transition:transform .3s ease,box-shadow .3s ease}
+.sidebar.collapsed{transform:translateX(-220px);box-shadow:none}
+.sidebar-toggle{position:fixed;top:12px;left:220px;z-index:11;width:28px;height:28px;border-radius:0 8px 8px 0;background:var(--surface);border:1px solid var(--border);border-left:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:left .3s ease,background .2s;padding:0}
+.sidebar-toggle:hover{background:var(--surface2);color:var(--gold)}
+.sidebar.collapsed~.sidebar-toggle{left:0}
+.sidebar.collapsed~.main{margin-left:0}
 .logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border)}
 .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--bg);font-weight:700}
 .logo h1{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.5px}
@@ -53,7 +58,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .refresh-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,168,83,.3)}
 
 /* Main */
-.main{flex:1;margin-left:220px;padding:28px 32px;min-width:0;overflow-x:hidden}
+.main{flex:1;margin-left:220px;padding:28px 32px;min-width:0;overflow-x:hidden;transition:margin-left .3s ease}
 
 .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
 .header h2{font-family:'Playfair Display',serif;font-size:32px;font-weight:800;letter-spacing:-1px}
@@ -655,6 +660,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <button class="refresh-btn" onclick="loadAllData()">⟳ Actualizar</button>
 </aside>
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Mostrar/ocultar panel">&#9776;</button>
 
 <main class="main">
   <div class="header" style="flex-direction:column;align-items:center;text-align:center">
@@ -1221,6 +1227,16 @@ function renderCuotasPanel(panelKey){
   var vigentes=rows.filter(function(r){return r.estado==='VIGENTE';}).length;
   var totalCols=12+monthHeaders.filter(function(h){return!!h;}).length;
   table.innerHTML=thead+'<tbody>'+tbody+totalsRow+'</tbody><tfoot><tr><td colspan="'+totalCols+'" style="text-align:right;font-size:11px;color:var(--text3)">'+rows.length+' ventas ('+vigentes+' vigentes)</td></tr></tfoot>';
+}
+function toggleSidebar(){
+  var sb=document.querySelector('.sidebar');
+  var btn=document.getElementById('sidebarToggle');
+  var main=document.querySelector('.main');
+  sb.classList.toggle('collapsed');
+  var hidden=sb.classList.contains('collapsed');
+  btn.innerHTML=hidden?'&#9776;':'&#10005;';
+  btn.style.left=hidden?'0':'220px';
+  main.style.marginLeft=hidden?'0':'220px';
 }
 function toggleTheme(){
   var isLight=document.documentElement.getAttribute('data-theme')==='light';

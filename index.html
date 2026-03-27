@@ -732,15 +732,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:18px;display:flex;flex-direction:column">
       <div class="chart-title"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
-      <div class="chart-subtitle" style="margin-bottom:8px">Participación en ganancias totales</div>
-      <div style="position:relative;flex:1;min-height:0;padding:20px">
-        <canvas id="chartPie"></canvas>
-        <div id="pieCenterLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:800;color:var(--gold)"></div>
-          <div style="font-size:9px;color:var(--text3);margin-top:1px">TOTAL</div>
+      <div class="chart-subtitle" style="margin-bottom:4px">Participación en ganancias totales</div>
+      <div style="display:flex;gap:8px;flex:1;min-height:0">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:2px">U$D</div>
+          <div style="position:relative;flex:1;min-height:0;width:100%;padding:4px">
+            <canvas id="chartPieUSD"></canvas>
+            <div id="pieCenterUSD" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;color:var(--green)"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--blue);margin-bottom:2px">PESOS</div>
+          <div style="position:relative;flex:1;min-height:0;width:100%;padding:4px">
+            <canvas id="chartPiePesos"></canvas>
+            <div id="pieCenterPesos" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;color:var(--blue)"></div>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-top:8px"></div>
+      <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-top:6px"></div>
     </div>
   </div>
 
@@ -3405,46 +3418,48 @@ function renderChartBalance(){
 
 function renderChartPie(){
   const d=getFilteredVendedor();
-  const isUSD=currency==='usd'||currency==='ambas';
-  const agg={};
-  d.forEach(r=>{
-    const k=r.Vendedor;
-    const v=isUSD?r.Ganancia_USD:r.Ganancia_Pesos;
-    agg[k]=(agg[k]||0)+(v||0);
-  });
-  const sorted=Object.entries(agg).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const total=sorted.reduce((s,[,v])=>s+v,0);
-  const pcts=sorted.map(([,v])=>total>0?((v/total)*100).toFixed(1):0);
-  const labelsWithPct=sorted.map(([k],i)=>`${k}  (${pcts[i]}%)`);
-  if(charts.pie)charts.pie.destroy();
-  const pieColors=COLORS.slice(0,sorted.length);
-  const fmt2=isUSD?fmtUSD:fmtPesos;
-  charts.pie=new Chart(document.getElementById('chartPie'),{
-    type:'doughnut',
-    data:{
-      labels:sorted.map(([k])=>k),
-      datasets:[{data:sorted.map(([,v])=>v),backgroundColor:pieColors,borderColor:'rgba(0,0,0,.3)',borderWidth:2,hoverOffset:14,hoverBorderColor:'#fff',hoverBorderWidth:3,spacing:2,borderRadius:4}]
-    },
-    plugins:[ChartDataLabels],
-    options:{responsive:true,maintainAspectRatio:false,cutout:'52%',animation:{animateRotate:true,duration:1200},layout:{padding:4},plugins:{
-      legend:{display:false},
-      tooltip:{backgroundColor:'rgba(20,20,30,.95)',titleFont:{family:'DM Sans',size:13,weight:'600'},bodyFont:{family:'IBM Plex Mono',size:13},padding:12,cornerRadius:10,displayColors:true,boxPadding:6,callbacks:{label:function(ctx){var v=ctx.raw;var p=total>0?((v/total)*100).toFixed(1):'0';return ' '+fmt2(v)+' ('+p+'%)';}}},
-      datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:10,weight:'700'},textStrokeColor:'rgba(0,0,0,.7)',textStrokeWidth:3,formatter:function(value){var p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=10?p+'%':'';},anchor:'center',align:'center'}
-    }}
-  });
-  // Center label
-  var cl=document.getElementById('pieCenterLabel');
-  if(cl)cl.children[0].textContent=fmt2(total);
-  // Custom legend below
+  // Aggregate USD
+  const aggUSD={};
+  d.forEach(r=>{aggUSD[r.Vendedor]=(aggUSD[r.Vendedor]||0)+(r.Ganancia_USD||0);});
+  const sortedUSD=Object.entries(aggUSD).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const totalUSD=sortedUSD.reduce((s,[,v])=>s+v,0);
+  // Aggregate Pesos
+  const aggPesos={};
+  d.forEach(r=>{aggPesos[r.Vendedor]=(aggPesos[r.Vendedor]||0)+(r.Ganancia_Pesos||0);});
+  const sortedPesos=Object.entries(aggPesos).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const totalPesos=sortedPesos.reduce((s,[,v])=>s+v,0);
+
+  function buildPie(canvasId,sorted,total,fmtFn,chartKey){
+    if(charts[chartKey])charts[chartKey].destroy();
+    var pieColors=COLORS.slice(0,sorted.length);
+    charts[chartKey]=new Chart(document.getElementById(canvasId),{
+      type:'doughnut',
+      data:{labels:sorted.map(([k])=>k),datasets:[{data:sorted.map(([,v])=>v),backgroundColor:pieColors,borderColor:'rgba(0,0,0,.3)',borderWidth:1.5,hoverOffset:8,hoverBorderColor:'#fff',hoverBorderWidth:2,spacing:1,borderRadius:3}]},
+      plugins:[ChartDataLabels],
+      options:{responsive:true,maintainAspectRatio:false,cutout:'50%',animation:{animateRotate:true,duration:1200},layout:{padding:2},plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'rgba(20,20,30,.95)',titleFont:{family:'DM Sans',size:11,weight:'600'},bodyFont:{family:'IBM Plex Mono',size:11},padding:10,cornerRadius:8,displayColors:true,boxPadding:4,callbacks:{label:function(ctx){var v=ctx.raw;var p=total>0?((v/total)*100).toFixed(1):'0';return ' '+fmtFn(v)+' ('+p+'%)';}}},
+        datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:9,weight:'700'},textStrokeColor:'rgba(0,0,0,.7)',textStrokeWidth:2,formatter:function(value){var p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=12?p+'%':'';},anchor:'center',align:'center'}
+      }}
+    });
+    return pieColors;
+  }
+  var colorsUSD=buildPie('chartPieUSD',sortedUSD,totalUSD,fmtUSD,'pieUSD');
+  var colorsPesos=buildPie('chartPiePesos',sortedPesos,totalPesos,fmtPesos,'piePesos');
+  // Center labels
+  var clU=document.getElementById('pieCenterUSD');
+  if(clU)clU.children[0].textContent=fmtUSD(totalUSD);
+  var clP=document.getElementById('pieCenterPesos');
+  if(clP)clP.children[0].textContent=fmtPesos(totalPesos);
+  // Shared legend (use USD sort order as primary)
+  var allVends=[...new Set([...sortedUSD.map(([k])=>k),...sortedPesos.map(([k])=>k)])];
   var lg=document.getElementById('pieLegendCustom');
   if(lg){
-    lg.innerHTML=sorted.map(function(e,i){
-      var name=e[0],val=e[1];
-      var p=total>0?((val/total)*100).toFixed(1):'0';
-      return '<div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">'+
-        '<span style="width:8px;height:8px;border-radius:2px;background:'+pieColors[i]+';flex-shrink:0"></span>'+
-        '<span style="font-size:10px;color:var(--text);font-weight:600">'+name+'</span>'+
-        '<span style="font-size:9px;font-weight:700;color:'+pieColors[i]+'">'+p+'%</span>'+
+    lg.innerHTML=allVends.map(function(name,i){
+      var c=COLORS[i%COLORS.length];
+      return '<div style="display:flex;align-items:center;gap:4px;padding:2px 6px;background:var(--surface2);border-radius:5px;border:1px solid var(--border)">'+
+        '<span style="width:7px;height:7px;border-radius:2px;background:'+c+';flex-shrink:0"></span>'+
+        '<span style="font-size:9px;color:var(--text);font-weight:600">'+name+'</span>'+
       '</div>';
     }).join('');
   }

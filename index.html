@@ -677,10 +677,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
   <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen General de <em>Ingresos</em></h2>
-  <div id="kpiCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:28px;max-width:900px;margin-left:auto;margin-right:auto">
+  <div id="kpiCardsRow" style="display:flex;gap:16px;align-items:stretch;margin-bottom:28px;max-width:1100px;margin-left:auto;margin-right:auto">
+    <div id="kpiMonthLeft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 14px;text-align:center"></div>
     <div id="kpiCardUSD" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
     <div id="kpiCurrentMonth" style="display:none"></div>
     <div id="kpiCardPesos" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 36px"></div>
+    <div id="kpiMonthRight" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 14px;text-align:center"></div>
   </div>
   <div class="kpis" id="kpis" style="display:none"></div>
 
@@ -2992,6 +2994,8 @@ function renderKPIs(){
     // Show card-style KPIs for vendor filter, hide new cards row
     kpiEl.style.display='';kpiEl.className='';
     if(cardsRow)cardsRow.style.display='none';
+    var mlH=document.getElementById('kpiMonthLeft');if(mlH)mlH.style.display='none';
+    var mrH=document.getElementById('kpiMonthRight');if(mrH)mrH.style.display='none';
     const vd=getFilteredVendedor();
     const ganUSD=vd.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const ganPesos=vd.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
@@ -3124,6 +3128,35 @@ function renderKPIs(){
         ${kpiRow('Gastos',fmtUSD(gastos),tGas,'var(--red)',false)}
         ${kpiRow('Total Neto Pesos',fmtPesos(netoPesos),'','var(--gold)',true)}
       `;
+    }
+    // Populate current month side indicators
+    var mLeft=document.getElementById('kpiMonthLeft');
+    var mRight=document.getElementById('kpiMonthRight');
+    if(mLeft||mRight){
+      var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      var cmIdx=new Date().getMonth();
+      var cmName=cmNames[cmIdx];
+      var cmRow=2+cmIdx;
+      var cmUniUSD=dashNum(cmRow,8);
+      var cmUniPesos=dashNum(cmRow,7);
+      var cmBrutoUSD=dashNum(cmRow,4);
+      var cmBrutoPesos=dashNum(cmRow,5);
+      if(mLeft){
+        mLeft.style.display='flex';
+        mLeft.innerHTML=`
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">${fmtUSD(cmUniUSD)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado U$D</div>
+          <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
+      }
+      if(mRight){
+        mRight.style.display='flex';
+        mRight.innerHTML=`
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">${fmtPesos(cmUniPesos)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado Pesos</div>
+          <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
+      }
     }
   }
 }

@@ -2940,7 +2940,7 @@ function getFilteredVendedor(){
 }
 
 function trendBadge(cur,prev){
-  if(prev===0&&cur===0)return '';
+  if(prev===0&&cur===0)return '<div class="kpi-trend flat">&#9644; 0%</div>';
   if(prev===0)return '<div class="kpi-trend up">&#9650; nuevo</div>';
   const pct=((cur-prev)/Math.abs(prev)*100).toFixed(1);
   if(Math.abs(pct)<0.5)return '<div class="kpi-trend flat">&#9644; 0%</div>';

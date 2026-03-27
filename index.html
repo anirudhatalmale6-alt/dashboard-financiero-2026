@@ -3005,7 +3005,7 @@ function renderKPIs(){
     let gastos=0;
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
-    else{for(let i=2;i<=13;i++)monthRows.push(i);}
+    else{var maxRowV=2+new Date().getMonth();for(let i=2;i<=maxRowV;i++)monthRows.push(i);}
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
 
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
@@ -3076,7 +3076,7 @@ function renderKPIs(){
     if(cardsRow)cardsRow.style.display='flex';
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
-    else{for(let i=2;i<=13;i++)monthRows.push(i);}
+    else{var maxRow=2+new Date().getMonth();for(let i=2;i<=maxRow;i++)monthRows.push(i);}
 
     let brutoUSD=0,brutoPesos=0,unificadoPesos=0,unificadoUSD=0,gastos=0,netoPesos=0,netoUSD=0;
     monthRows.forEach(r=>{

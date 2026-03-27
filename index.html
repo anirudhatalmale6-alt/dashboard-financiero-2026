@@ -3039,9 +3039,9 @@ function renderKPIs(){
       var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
       if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
       var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
-      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:"+color;
-      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:"+color;
-      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
+      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;white-space:nowrap;color:"+color;
+      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;white-space:nowrap;color:"+color;
+      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
     }
 
     let usdRows=rkRow('Ganancia Acumulada',fmtUSD(ganUSD),tGanU,'var(--green)',false)+
@@ -3104,9 +3104,9 @@ function renderKPIs(){
       var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
       if(isBold)s+=';border-top:2px solid var(--gold);margin-top:8px;padding-top:14px;border-bottom:none';
       var ls='font-size:13px;color:var(--text2)';if(isBold)ls='font-size:14px;color:var(--text);font-weight:700';
-      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:"+color;
-      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;color:"+color;
-      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
+      var vs="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;white-space:nowrap;color:"+color;
+      if(isBold)vs="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;white-space:nowrap;color:"+color;
+      return `<div style="${s}"><span style="${ls}">${label}</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="${vs}">${val}</span>${trend||''}</span></div>`;
     }
 
     var usdCard=document.getElementById('kpiCardUSD');

@@ -1858,72 +1858,62 @@ function invStr(row,col){
 }
 
 function renderInversiones(){
-  if(!invRaw||invRaw.length<165)return;
+  if(!invRaw||invRaw.length<50)return;
   const isUSD=currency==='usd'||currency==='ambas';
   const headerEl=document.getElementById('invHeader');
   const catsEl=document.getElementById('invCats');
   const summaryEl=document.getElementById('invSummary');
 
-  // Parse data from INVERSIONES CRONOGRAMA sheet (0-indexed rows)
-  // Col D=3 (description), Col F=5 (USD), Col G=6 (Pesos)
-  const cotizacion=invNum(162,6)||1450;
+  // Dynamically find "Cronograma de Inversiones" header
+  var hdrRow=-1;
+  for(var i=0;i<invRaw.length;i++){
+    var rv=invRaw[i];if(!rv)continue;
+    for(var c=0;c<rv.length;c++){
+      if(typeof rv[c]==='string'&&rv[c].toLowerCase().indexOf('cronograma de inversiones')>=0){hdrRow=i;break;}
+    }
+    if(hdrRow>=0)break;
+  }
+  if(hdrRow<0)return;
 
-  // PROPIEDADES & VEHICULOS (rows 164-172)
-  const properties=[];
-  for(let r=164;r<=172;r++){
-    const name=invStr(r,3);
-    const usd=invNum(r,5);
-    const pesos=invNum(r,6);
-    if(name && !name.startsWith('X') && usd) properties.push({name,usd,pesos:pesos||usd*cotizacion});
+  // Cotizacion: first row after header, col G(6) or F(5)
+  const cotizacion=invNum(hdrRow+1,6)||invNum(hdrRow+1,5)||1450;
+
+  // Totals row: hdrRow+2 has pre-calculated totals
+  var preTotalUSD=invNum(hdrRow+2,5)||0;
+  var preTotalPesos=invNum(hdrRow+2,6)||0;
+
+  // Scan all items from hdrRow+3 onward, classify dynamically
+  const properties=[],credits=[],cuotas=[],debts=[],cash=[];
+  var grandTotalUSD=preTotalUSD,grandTotalPesos=preTotalPesos;
+
+  for(var r=hdrRow+3;r<invRaw.length;r++){
+    var nm=invStr(r,3)||invStr(r,2)||invStr(r,1)||'';
+    var usd=invNum(r,5);
+    var pesos=invNum(r,6);
+    if(!nm||nm.startsWith('X'))continue;
+    var nl=nm.toLowerCase().trim();
+    // End marker: standalone "Total" or "Totales" after items
+    if((nl==='total'||nl==='totales')&&r>hdrRow+3){
+      grandTotalUSD=usd||grandTotalUSD;grandTotalPesos=pesos||grandTotalPesos;break;
+    }
+    if(!usd&&!pesos)continue;
+    // Classify by keywords and sign
+    if(nl.indexOf('caja')>=0||nl.indexOf('dinero')>=0){
+      cash.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
+    }else if(nl.indexOf('cuota')>=0||nl.indexOf('cobrar')>=0){
+      cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
+    }else if(nl.indexOf('cr\u00e9dito')>=0||nl.indexOf('credito')>=0||(nl.indexOf('deuda')>=0&&usd>0)){
+      credits.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
+    }else if(usd<0||nl.indexOf('compra')>=0||nl.indexOf('resta pagar')>=0){
+      debts.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
+    }else{
+      properties.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
+    }
   }
 
-  // CRÉDITOS A COBRAR (rows 174-176)
-  const credits=[];
-  for(let r=174;r<=176;r++){
-    const name=invStr(r,3);
-    const usd=invNum(r,5);
-    const pesos=invNum(r,6);
-    if(name && !name.startsWith('X') && usd) credits.push({name,usd,pesos:pesos||usd*cotizacion});
-  }
-
-  // CUOTAS POR COBRAR (rows 178-179)
-  const cuotas=[];
-  for(let r=178;r<=179;r++){
-    const name=invStr(r,3);
-    const usd=invNum(r,5);
-    const pesos=invNum(r,6);
-    if(name && !name.startsWith('X') && (usd||pesos)) cuotas.push({name,usd,pesos:pesos||0});
-  }
-
-  // EQUIPAMIENTO DEUDA (row 181)
-  const equipDebt=[];
-  {
-    const name=invStr(181,3);
-    const usd=invNum(181,5);
-    if(name && !name.startsWith('X') && usd) equipDebt.push({name,usd,pesos:usd*cotizacion});
-  }
-
-  // COMPRAS / DEUDAS A PAGAR (rows 183-188)
-  const debts=[];
-  for(let r=183;r<=188;r++){
-    const name=invStr(r,3);
-    const usd=invNum(r,5);
-    if(name && !name.startsWith('X')) debts.push({name,usd,pesos:usd*cotizacion});
-  }
-  // Combine equipment debt + compras debts
-  const allDebts=[...equipDebt,...debts].filter(d=>d.usd!==0);
-
-  // CAJA ACTUAL (row 190)
-  const cash=[];
-  {
-    const name=invStr(190,3)||'Dinero en Caja';
-    const usd=invNum(190,5);
-    if(usd) cash.push({name,usd,pesos:usd*cotizacion});
-  }
-
-  // Grand totals from row 163 (Totales) or row 191 (Total)
-  const totalUSD=invNum(163,5)||invNum(191,5)||0;
-  const totalPesos=invNum(163,6)||invNum(191,6)||0;
+  const allDebts=debts.filter(d=>d.usd!==0);
+  const totalUSD=grandTotalUSD;
+  const totalPesos=grandTotalPesos;
 
   // Computed summaries
   const inversionUSD=properties.reduce((s,i)=>s+i.usd,0);

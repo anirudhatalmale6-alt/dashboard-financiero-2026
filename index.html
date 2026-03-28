@@ -3641,16 +3641,16 @@ function extractCuotasData(vendorFilter){
     for(let j=0;j<row.length;j++){
       if(!row[j]||typeof row[j]!=='string')continue;
       const v=row[j].toLowerCase();
-      if(v.includes('ingresos de cuotas en dolares')){
+      if(v.includes('ingresos de cuotas en dolares')&&cobrarUSDHeaderRow<0){
         cobrarUSDHeaderRow=i;
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
         }
       }
-      if(v.includes('resta pagar')&&!v.includes('pesos')){compromisoRow=i;}
-      if(v.includes('resta pagar')&&v.includes('pesos')){compromisoPesosRow=i;}
-      if(v.includes('gastos mensuales')&&v.includes('sueldo')){gastosHeaderRow=i;}
-      if(v.includes('ingresos de cuotas en pesos')){
+      if(v.includes('resta pagar')&&!v.includes('pesos')&&compromisoRow<0){compromisoRow=i;}
+      if(v.includes('resta pagar')&&v.includes('pesos')&&compromisoPesosRow<0){compromisoPesosRow=i;}
+      if(v.includes('gastos mensuales')&&v.includes('sueldo')&&gastosHeaderRow<0){gastosHeaderRow=i;}
+      if(v.includes('ingresos de cuotas en pesos')&&cobrarPesosHeaderRow<0){
         cobrarPesosHeaderRow=i;
         for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
           if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}

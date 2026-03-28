@@ -1933,12 +1933,14 @@ function renderInversiones(){
     {id:'debt',icon:'📉',title:'Deudas & Compromisos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
     {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'},
   ];
-  // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (dashRaw rows 253-264)
-  if(dashRaw&&dashRaw.length>265){
+  // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (dynamic scan)
+  var gastosStart=-1;
+  if(dashRaw){for(var gi=0;gi<dashRaw.length;gi++){if(dashRaw[gi]){for(var gj=0;gj<dashRaw[gi].length;gj++){if(dashRaw[gi][gj]&&typeof dashRaw[gi][gj]==='string'&&dashRaw[gi][gj].toLowerCase().indexOf('gastos mensuales')>=0&&dashRaw[gi][gj].toLowerCase().indexOf('sueldo')>=0){gastosStart=gi;break;}}}if(gastosStart>=0)break;}}
+  if(dashRaw&&gastosStart>=0){
     const gastosMens=[];
     const mNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     for(let mi=0;mi<12;mi++){
-      const r=dashRaw[253+mi];
+      const r=dashRaw[gastosStart+1+mi];
       if(!r)continue;
       const usdRaw=r[3],pesosRaw=r[4];
       function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}

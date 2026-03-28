@@ -1864,52 +1864,39 @@ function renderInversiones(){
   const catsEl=document.getElementById('invCats');
   const summaryEl=document.getElementById('invSummary');
 
-  // Dynamically find "Cronograma de Inversiones" header
-  var hdrRow=-1;
-  for(var i=0;i<invRaw.length;i++){
-    var rv=invRaw[i];if(!rv)continue;
-    for(var c=0;c<rv.length;c++){
-      if(typeof rv[c]==='string'&&rv[c].toLowerCase().indexOf('cronograma de inversiones')>=0){hdrRow=i;break;}
-    }
-    if(hdrRow>=0)break;
-  }
-  if(hdrRow<0)return;
+  // Fixed row positions in INVERSIONES CRONOGRAMA sheet (invRaw indices)
+  // Header: invRaw[161], Cotizacion: [162], Totales: [163]
+  // Properties: [164-174], Credits: [175-176], Cuotas: [177-178]
+  // Debts: [179-185], Cash: [186], Grand Total: [187]
+  const cotizacion=invNum(162,6)||1450;
 
-  // Cotizacion: first row after header, col G(6) or F(5)
-  const cotizacion=invNum(hdrRow+1,6)||invNum(hdrRow+1,5)||1450;
-
-  // Totals row: hdrRow+2 has pre-calculated totals
-  var preTotalUSD=invNum(hdrRow+2,5)||0;
-  var preTotalPesos=invNum(hdrRow+2,6)||0;
-
-  // Scan all items from hdrRow+3 onward, classify dynamically
   const properties=[],credits=[],cuotas=[],debts=[],cash=[];
-  var grandTotalUSD=preTotalUSD,grandTotalPesos=preTotalPesos;
+  var grandTotalUSD=invNum(163,5)||invNum(187,5)||0;
+  var grandTotalPesos=invNum(163,6)||invNum(187,6)||0;
 
-  for(var r=hdrRow+3;r<invRaw.length;r++){
-    var nm=invStr(r,3)||invStr(r,2)||invStr(r,1)||'';
-    var usd=invNum(r,5);
-    var pesos=invNum(r,6);
-    if(!nm||nm.startsWith('X'))continue;
-    var nl=nm.toLowerCase().trim();
-    // End marker: standalone "Total" or "Totales" after items
-    if((nl==='total'||nl==='totales')&&r>hdrRow+3){
-      grandTotalUSD=usd||grandTotalUSD;grandTotalPesos=pesos||grandTotalPesos;break;
-    }
-    if(!usd&&!pesos)continue;
-    // Classify by keywords and sign
-    if(nl.indexOf('caja')>=0||nl.indexOf('dinero')>=0){
-      cash.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
-    }else if(nl.indexOf('cuota')>=0){
-      cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
-    }else if(nl.indexOf('cr\u00e9dito')>=0||nl.indexOf('credito')>=0||(nl.indexOf('deuda')>=0&&usd>0)){
-      credits.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
-    }else if(usd<0||nl.indexOf('compra')>=0||nl.indexOf('resta pagar')>=0){
-      debts.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
-    }else{
-      properties.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
-    }
+  // PROPIEDADES & VEHICULOS (rows 164-174)
+  for(var r=164;r<=174;r++){
+    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+    if(nm&&usd) properties.push({name:nm,usd,pesos:pesos||usd*cotizacion});
   }
+  // CREDITOS A COBRAR (rows 175-176)
+  for(var r=175;r<=176;r++){
+    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+    if(nm&&usd) credits.push({name:nm,usd,pesos:pesos||usd*cotizacion});
+  }
+  // CUOTAS POR COBRAR (rows 177-178)
+  for(var r=177;r<=178;r++){
+    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+    if(nm&&(usd||pesos)) cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
+  }
+  // DEUDAS & COMPROMISOS (rows 179-185)
+  for(var r=179;r<=185;r++){
+    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+    if(nm&&usd) debts.push({name:nm,usd,pesos:pesos||usd*cotizacion});
+  }
+  // CAJA ACTUAL (row 186)
+  {var nm=invStr(186,3)||'Dinero en Caja';var usd=invNum(186,5);
+    if(usd) cash.push({name:nm,usd,pesos:usd*cotizacion});}
 
   const allDebts=debts.filter(d=>d.usd!==0);
   const totalUSD=grandTotalUSD;
@@ -1933,14 +1920,12 @@ function renderInversiones(){
     {id:'debt',icon:'📉',title:'Deudas & Compromisos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
     {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'},
   ];
-  // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (dynamic scan)
-  var gastosStart=-1;
-  if(dashRaw){for(var gi=0;gi<dashRaw.length;gi++){if(dashRaw[gi]){for(var gj=0;gj<dashRaw[gi].length;gj++){if(dashRaw[gi][gj]&&typeof dashRaw[gi][gj]==='string'&&dashRaw[gi][gj].toLowerCase().indexOf('gastos mensuales')>=0&&dashRaw[gi][gj].toLowerCase().indexOf('sueldo')>=0){gastosStart=gi;break;}}}if(gastosStart>=0)break;}}
-  if(dashRaw&&gastosStart>=0){
+  // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (fixed: header at dashRaw[264], data at 265-276)
+  if(dashRaw&&dashRaw.length>277){
     const gastosMens=[];
     const mNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     for(let mi=0;mi<12;mi++){
-      const r=dashRaw[gastosStart+1+mi];
+      const r=dashRaw[265+mi];
       if(!r)continue;
       const usdRaw=r[3],pesosRaw=r[4];
       function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
@@ -3664,22 +3649,11 @@ function renderModuleDetails(){
 
 function extractCuotasData(vendorFilter,useEmpresas){
   if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],vendors:[]};
-  // Find MARTIN and SOCIEDADES section markers
-  let martinStart=-1,sociedadesStart=-1;
-  for(let i=0;i<dashRaw.length;i++){
-    if(!dashRaw[i])continue;
-    for(let j=0;j<dashRaw[i].length;j++){
-      if(!dashRaw[i][j]||typeof dashRaw[i][j]!=='string')continue;
-      var vv=dashRaw[i][j].toLowerCase();
-      if(vv.includes('martin cuotas a cobrar')&&martinStart<0)martinStart=i;
-      if(vv.includes('sociedades cuotas a cobrar')&&sociedadesStart<0)sociedadesStart=i;
-    }
-  }
+  // Fixed section positions: SOCIEDADES at dashRaw[114], MARTIN at dashRaw[279]
+  var martinStart=279,sociedadesStart=114;
   // Choose section: main dashboard=MARTIN, empresas=SOCIEDADES
   var scanStart=useEmpresas?sociedadesStart:martinStart;
-  var scanEnd=useEmpresas?(martinStart>sociedadesStart?martinStart:dashRaw.length):(dashRaw.length);
-  // Fallback: if MARTIN not found, use SOCIEDADES
-  if(scanStart<0){scanStart=sociedadesStart>=0?sociedadesStart:0;scanEnd=dashRaw.length;}
+  var scanEnd=useEmpresas?martinStart:dashRaw.length;
   // Find rows by scanning for marker text within chosen section
   let cobrarUSDHeaderRow=-1,cobrarUSDTotalRow=-1,compromisoRow=-1;
   let cobrarPesosHeaderRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
@@ -3717,18 +3691,9 @@ function extractCuotasData(vendorFilter,useEmpresas){
       }
     }
   }
-  // Gastos and Compromisos may be outside MARTIN section (in SOCIEDADES area), scan full sheet if not found
-  if(compromisoRow<0||gastosHeaderRow<0){
-    for(let i=0;i<dashRaw.length;i++){
-      if(!dashRaw[i])continue;
-      for(let j=0;j<dashRaw[i].length;j++){
-        if(!dashRaw[i][j]||typeof dashRaw[i][j]!=='string')continue;
-        var vf=dashRaw[i][j].toLowerCase();
-        if(vf.includes('resta pagar')&&!vf.includes('pesos')&&compromisoRow<0)compromisoRow=i;
-        if(vf.includes('gastos mensuales')&&vf.includes('sueldo')&&gastosHeaderRow<0)gastosHeaderRow=i;
-      }
-    }
-  }
+  // Fixed fallback: Gastos header at dashRaw[264], Compromisos at dashRaw[155] (SOCIEDADES section)
+  if(gastosHeaderRow<0)gastosHeaderRow=264;
+  if(compromisoRow<0)compromisoRow=155;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const labels=meses.slice();
   function getNum(row,col){

@@ -3629,13 +3629,29 @@ function renderModuleDetails(){
   });
 }
 
-function extractCuotasData(vendorFilter){
+function extractCuotasData(vendorFilter,useEmpresas){
   if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],vendors:[]};
-  // Find rows by scanning for marker text in DASHBOARD raw data
+  // Find MARTIN and SOCIEDADES section markers
+  let martinStart=-1,sociedadesStart=-1;
+  for(let i=0;i<dashRaw.length;i++){
+    if(!dashRaw[i])continue;
+    for(let j=0;j<dashRaw[i].length;j++){
+      if(!dashRaw[i][j]||typeof dashRaw[i][j]!=='string')continue;
+      var vv=dashRaw[i][j].toLowerCase();
+      if(vv.includes('martin cuotas a cobrar')&&martinStart<0)martinStart=i;
+      if(vv.includes('sociedades cuotas a cobrar')&&sociedadesStart<0)sociedadesStart=i;
+    }
+  }
+  // Choose section: main dashboard=MARTIN, empresas=SOCIEDADES
+  var scanStart=useEmpresas?sociedadesStart:martinStart;
+  var scanEnd=useEmpresas?(martinStart>sociedadesStart?martinStart:dashRaw.length):(dashRaw.length);
+  // Fallback: if MARTIN not found, use SOCIEDADES
+  if(scanStart<0){scanStart=sociedadesStart>=0?sociedadesStart:0;scanEnd=dashRaw.length;}
+  // Find rows by scanning for marker text within chosen section
   let cobrarUSDHeaderRow=-1,cobrarUSDTotalRow=-1,compromisoRow=-1;
   let cobrarPesosHeaderRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
   let gastosHeaderRow=-1;
-  for(let i=0;i<dashRaw.length;i++){
+  for(let i=scanStart;i<scanEnd&&i<dashRaw.length;i++){
     const row=dashRaw[i];
     if(!row)continue;
     for(let j=0;j<row.length;j++){
@@ -3665,6 +3681,18 @@ function extractCuotasData(vendorFilter){
           }
           if(compromisoPesosRow>=0)break;
         }
+      }
+    }
+  }
+  // Gastos and Compromisos may be outside MARTIN section (in SOCIEDADES area), scan full sheet if not found
+  if(compromisoRow<0||gastosHeaderRow<0){
+    for(let i=0;i<dashRaw.length;i++){
+      if(!dashRaw[i])continue;
+      for(let j=0;j<dashRaw[i].length;j++){
+        if(!dashRaw[i][j]||typeof dashRaw[i][j]!=='string')continue;
+        var vf=dashRaw[i][j].toLowerCase();
+        if(vf.includes('resta pagar')&&!vf.includes('pesos')&&compromisoRow<0)compromisoRow=i;
+        if(vf.includes('gastos mensuales')&&vf.includes('sueldo')&&gastosHeaderRow<0)gastosHeaderRow=i;
       }
     }
   }

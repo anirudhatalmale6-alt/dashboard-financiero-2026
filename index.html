@@ -643,6 +643,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
     <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Inversiones</a>
     <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Control de Cuotas</a>
+    <a onclick="document.getElementById('secDashEmpresas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Dashboard Empresas</a>
     <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
     <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
     <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
@@ -826,6 +827,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Evolución del Patrimonio</div>
       <div class="chart-subtitle">Seguimiento mensual — ¿sube o baja tu capital?</div>
       <div class="chart-container"><canvas id="chartEvolucion"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-divider" id="secDashEmpresas">
+    <h2>Dashboard <em>Empresas</em></h2>
+    <div class="divider-sub">Cuotas a cobrar y pagar — Sociedades / Empresas</div>
+  </div>
+
+  <h3 class="section-title" id="secEmpCuotasUSD">Cuotas Empresas — <em>Cobrar vs Pagar en Dólares</em></h3>
+  <div class="cuotas-cards" id="empCuotasCardsUSD"></div>
+  <div class="charts">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Cuotas Empresas en U$D</div>
+      <div class="chart-subtitle">Cobro de cuotas vs Compromisos de pago mensual — Sociedades</div>
+      <div class="chart-container"><canvas id="chartEmpCuotasUSD"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Cuotas Empresas en Pesos</div>
+      <div class="chart-subtitle">Cobro de cuotas en pesos por mes — Sociedades</div>
+      <div class="chart-container"><canvas id="chartEmpCuotasPesos"></canvas></div>
+    </div>
+  </div>
+
+  <h3 class="section-title" id="secEmpCuotasPesos">Cuotas Empresas — <em>Cobrar vs Pagar en Pesos</em></h3>
+  <div class="cuotas-cards" id="empCuotasCardsPesos"></div>
+
+  <h3 class="section-title" id="secEmpCuotasUnif"><span class="dot" style="background:var(--gold)"></span>Cuotas Empresas — <em>Cobrar Unificadas en Dólares</em></h3>
+  <div class="cuotas-cards" id="empCuotasCardsUnif"></div>
+  <div class="charts" style="grid-template-columns:1fr">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Cuotas Unificadas Empresas en U$D</div>
+      <div class="chart-subtitle">Cuotas en Pesos convertidas a dólares (blue) + Cuotas en U$D — Sociedades</div>
+      <div class="chart-container"><canvas id="chartEmpCuotasUnif"></canvas></div>
     </div>
   </div>
 
@@ -2906,6 +2940,13 @@ function renderAll(){
   renderChartCuotasUSD();
   renderChartCuotasPesos();
   renderChartCuotasUnif();
+  // Dashboard Empresas (SOCIEDADES)
+  renderEmpCuotasCardsUSD();
+  renderEmpCuotasCardsPesos();
+  renderEmpCuotasCardsUnif();
+  renderChartEmpCuotasUSD();
+  renderChartEmpCuotasPesos();
+  renderChartEmpCuotasUnif();
   if(!isFiltered){
     renderChartBalanceGeneral();
     renderInversiones();
@@ -4001,6 +4042,85 @@ function renderChartCuotasUnif(){
   });
 }
 
+// ========== DASHBOARD EMPRESAS — SOCIEDADES cuotas ==========
+function renderEmpCuotasCardsUSD(){
+  const q=extractCuotasData('all',true);
+  const container=document.getElementById('empCuotasCardsUSD');
+  if(!container)return;
+  container.innerHTML='';
+  let totalCobrar=0,totalPagar=0;
+  q.labels.forEach((mes,i)=>{
+    const cobrar=q.cobrarUSD[i]||0;const pagar=q.pagarUSD[i]||0;
+    totalCobrar+=cobrar;totalPagar+=pagar;
+    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    container.innerHTML+=`<div class="cuota-card"><div class="mes">${mes}</div><span class="lbl">A Cobrar</span><div class="cobrar">${fmtUSD(cobrar)}</div><span class="lbl">A Pagar</span><div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div><div class="cuota-pct">Cobro: ${pct}%</div></div>`;
+  });
+  const tp=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  container.innerHTML+=`<div class="cuota-card acum"><div class="mes">Acumulado Anual</div><span class="lbl">Total A Cobrar</span><div class="cobrar">${fmtUSD(totalCobrar)}</div><span class="lbl">Total A Pagar</span><div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${tp}%"></div></div><div class="cuota-pct">Cobro: ${tp}%</div></div>`;
+}
+function renderEmpCuotasCardsPesos(){
+  const q=extractCuotasData('all',true);
+  const container=document.getElementById('empCuotasCardsPesos');
+  if(!container)return;
+  container.innerHTML='';
+  let totalCobrar=0,totalPagar=0;
+  q.labels.forEach((mes,i)=>{
+    const cobrar=q.cobrarPesos[i]||0;const pagar=q.pagarPesos[i]||0;
+    totalCobrar+=cobrar;totalPagar+=pagar;
+    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    container.innerHTML+=`<div class="cuota-card"><div class="mes">${mes}</div><span class="lbl">A Cobrar</span><div class="cobrar">${fmtPesos(cobrar)}</div><span class="lbl">A Pagar</span><div class="pagar">${pagar>0?'-':''}${fmtPesos(pagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div><div class="cuota-pct">Cobro: ${pct}%</div></div>`;
+  });
+  const tp=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  container.innerHTML+=`<div class="cuota-card acum"><div class="mes">Acumulado Anual</div><span class="lbl">Total A Cobrar</span><div class="cobrar">${fmtPesos(totalCobrar)}</div><span class="lbl">Total A Pagar</span><div class="pagar">${totalPagar>0?'-':''}${fmtPesos(totalPagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${tp}%"></div></div><div class="cuota-pct">Cobro: ${tp}%</div></div>`;
+}
+function renderEmpCuotasCardsUnif(){
+  const q=extractCuotasData('all',true);
+  const blue=dolarBlue||1300;
+  const container=document.getElementById('empCuotasCardsUnif');
+  if(!container)return;
+  container.innerHTML='';
+  let totalCobrar=0,totalPagar=0;
+  q.labels.forEach((mes,i)=>{
+    const cobrar=Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
+    const pagar=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
+    totalCobrar+=cobrar;totalPagar+=pagar;
+    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
+    container.innerHTML+=`<div class="cuota-card"><div class="mes">${mes}</div><span class="lbl">A Cobrar Unif</span><div class="cobrar">${fmtUSD(cobrar)}</div><span class="lbl">A Pagar</span><div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${pct}%"></div></div><div class="cuota-pct">Cobro: ${pct}%</div></div>`;
+  });
+  const tp=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  container.innerHTML+=`<div class="cuota-card acum"><div class="mes">Acumulado Anual</div><span class="lbl">Total A Cobrar Unif</span><div class="cobrar">${fmtUSD(totalCobrar)}</div><span class="lbl">Total A Pagar</span><div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div><div class="cuota-bar"><div class="cuota-fill" style="width:${tp}%"></div></div><div class="cuota-pct">Cobro: ${tp}%</div></div>`;
+}
+function renderChartEmpCuotasUSD(){
+  const q=extractCuotasData('all',true);
+  if(charts.empCuotasUSD)charts.empCuotasUSD.destroy();
+  var canvas=document.getElementById('chartEmpCuotasUSD');if(!canvas)return;
+  charts.empCuotasUSD=new Chart(canvas,{type:'bar',data:{labels:q.labels,datasets:[
+    {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
+    {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+  ]},plugins:[ChartDataLabels],options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}});
+}
+function renderChartEmpCuotasPesos(){
+  const q=extractCuotasData('all',true);
+  if(charts.empCuotasPesos)charts.empCuotasPesos.destroy();
+  var canvas=document.getElementById('chartEmpCuotasPesos');if(!canvas)return;
+  charts.empCuotasPesos=new Chart(canvas,{type:'bar',data:{labels:q.labels,datasets:[
+    {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6,barPercentage:.6}
+  ]},plugins:[ChartDataLabels],options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100000?fmt(v,'$ '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'$ ')},grid:{color:'rgba(42,43,58,.3)'}}}}});
+}
+function renderChartEmpCuotasUnif(){
+  const q=extractCuotasData('all',true);
+  const blue=dolarBlue||1300;
+  const cobrarUnif=q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue)));
+  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue)));
+  if(charts.empCuotasUnif)charts.empCuotasUnif.destroy();
+  var canvas=document.getElementById('chartEmpCuotasUnif');if(!canvas)return;
+  charts.empCuotasUnif=new Chart(canvas,{type:'bar',data:{labels:q.labels,datasets:[
+    {label:'Cuotas a Cobrar Unif U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
+    {label:'A Pagar Unif U$D',data:pagarUnif,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+  ]},plugins:[ChartDataLabels],options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}});
+}
+// ========== END DASHBOARD EMPRESAS ==========
+
 function renderSidebarStats(){
   const d=allData.resumen;
   const mesesConDatos=d.filter(r=>(r.Ingresos_USD||0)>2000).length;
@@ -4616,7 +4736,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

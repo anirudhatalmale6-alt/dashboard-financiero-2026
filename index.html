@@ -1900,7 +1900,7 @@ function renderInversiones(){
     // Classify by keywords and sign
     if(nl.indexOf('caja')>=0||nl.indexOf('dinero')>=0){
       cash.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});
-    }else if(nl.indexOf('cuota')>=0||nl.indexOf('cobrar')>=0){
+    }else if(nl.indexOf('cuota')>=0){
       cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
     }else if(nl.indexOf('cr\u00e9dito')>=0||nl.indexOf('credito')>=0||(nl.indexOf('deuda')>=0&&usd>0)){
       credits.push({name:nm,usd:usd||0,pesos:pesos||usd*cotizacion});

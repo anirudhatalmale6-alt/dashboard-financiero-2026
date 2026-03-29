@@ -1597,9 +1597,9 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
-    // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 191, cols R-AC = 12 months of 2026)
+    // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
     try{
-      var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R191:AC191');
+      var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R189:AC189');
       if(deudasRange&&deudasRange[0]){
         invDeudasMensuales=deudasRange[0].map(function(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var n=v.replace(/[^0-9\-]/g,'');return parseInt(n)||0;}return 0;});
       }

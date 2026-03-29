@@ -735,26 +735,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-subtitle">Ranking acumulado en pesos</div>
       <ul class="rank-list" id="rankPesos"></ul>
     </div>
-    <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:18px;display:flex;flex-direction:column">
+    <div class="ranking-card" id="pieChartWrap" style="text-align:center;padding:14px 16px;display:flex;flex-direction:column">
       <div class="chart-title"><span class="dot" style="background:var(--teal)"></span>Distribución por Vendedor</div>
-      <div class="chart-subtitle" style="margin-bottom:4px">Participación en ganancias totales</div>
-      <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0">
-        <div style="display:flex;flex-direction:column;align-items:center">
-          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:2px">U$D</div>
-          <div style="position:relative;width:100%;height:220px">
-            <canvas id="chartPieUSD"></canvas>
-            <div id="pieCenterUSD" style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:800;color:var(--green)"></div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center">
-          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--blue);margin-bottom:2px">PESOS</div>
-          <div style="position:relative;width:100%;height:220px">
-            <canvas id="chartPiePesos"></canvas>
-            <div id="pieCenterPesos" style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:800;color:var(--blue)"></div>
-            </div>
+      <div class="chart-subtitle" style="margin-bottom:4px">Ingresos unificados en U$D</div>
+      <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center">
+        <div style="position:relative;width:100%;max-width:280px;aspect-ratio:1/1">
+          <canvas id="chartPieUnified"></canvas>
+          <div id="pieCenterUnified" style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:800;color:var(--green)"></div>
           </div>
         </div>
       </div>
@@ -880,7 +868,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title" id="secVendedorDetail">Acumulado Ganancias Vendedores / Modulos de <em>Ventas</em></h3>
+  <h3 class="section-title" id="secVendedorDetail">Acumulado Ganancias Vendedores / Modulos de <em>Negocios</em></h3>
   <div id="vendedorDetailContainer"></div>
 
   <div class="charts" id="secAcumVendChart" style="margin-top:28px;grid-template-columns:1fr">
@@ -2868,7 +2856,7 @@ function updateDynamicTitles(){
   })();
   (function(){
     var el=document.getElementById('secModulos');
-    if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Control Financiero y Balance / Modulos de <em>Ventas</em>';
+    if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Control Financiero y Balance / Modulos de <em>Negocios</em>';
   })();
   setT('secCuotasPesos',114,2,'Cuotas a Cobrar vs Pagar en Pesos',null);
   setT('secCuotas',130,2,'Cuotas a Cobrar vs Pagar en Dólares',null);
@@ -3434,48 +3422,42 @@ function renderChartBalance(){
 
 function renderChartPie(){
   const d=getFilteredVendedor();
-  // Aggregate USD
-  const aggUSD={};
-  d.forEach(r=>{aggUSD[r.Vendedor]=(aggUSD[r.Vendedor]||0)+(r.Ganancia_USD||0);});
-  const sortedUSD=Object.entries(aggUSD).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const totalUSD=sortedUSD.reduce((s,[,v])=>s+v,0);
-  // Aggregate Pesos
-  const aggPesos={};
-  d.forEach(r=>{aggPesos[r.Vendedor]=(aggPesos[r.Vendedor]||0)+(r.Ganancia_Pesos||0);});
-  const sortedPesos=Object.entries(aggPesos).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const totalPesos=sortedPesos.reduce((s,[,v])=>s+v,0);
+  const blue=dolarBlue||1300;
+  // Aggregate unified: USD + Pesos converted to USD
+  const aggUnified={};
+  d.forEach(r=>{
+    const usd=(r.Ganancia_USD||0)+((r.Ganancia_Pesos||0)/blue);
+    aggUnified[r.Vendedor]=(aggUnified[r.Vendedor]||0)+usd;
+  });
+  const sortedUnified=Object.entries(aggUnified).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const totalUnified=sortedUnified.reduce((s,[,v])=>s+v,0);
 
-  function buildPie(canvasId,sorted,total,fmtFn,chartKey){
-    if(charts[chartKey])charts[chartKey].destroy();
-    var pieColors=COLORS.slice(0,sorted.length);
-    charts[chartKey]=new Chart(document.getElementById(canvasId),{
-      type:'doughnut',
-      data:{labels:sorted.map(([k])=>k),datasets:[{data:sorted.map(([,v])=>v),backgroundColor:pieColors,borderColor:'rgba(0,0,0,.3)',borderWidth:1.5,hoverOffset:8,hoverBorderColor:'#fff',hoverBorderWidth:2,spacing:1,borderRadius:3}]},
-      plugins:[ChartDataLabels],
-      options:{responsive:true,maintainAspectRatio:false,cutout:'50%',animation:{animateRotate:true,duration:1200},layout:{padding:2},plugins:{
-        legend:{display:false},
-        tooltip:{backgroundColor:'rgba(20,20,30,.95)',titleFont:{family:'DM Sans',size:11,weight:'600'},bodyFont:{family:'IBM Plex Mono',size:11},padding:10,cornerRadius:8,displayColors:true,boxPadding:4,callbacks:{label:function(ctx){var v=ctx.raw;var p=total>0?((v/total)*100).toFixed(1):'0';return ' '+fmtFn(v)+' ('+p+'%)';}}},
-        datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:9,weight:'700'},textStrokeColor:'rgba(0,0,0,.7)',textStrokeWidth:2,formatter:function(value){var p=total>0?((value/total)*100).toFixed(1):'0';return parseFloat(p)>=12?p+'%':'';},anchor:'center',align:'center'}
-      }}
-    });
-    return pieColors;
-  }
-  var colorsUSD=buildPie('chartPieUSD',sortedUSD,totalUSD,fmtUSD,'pieUSD');
-  var colorsPesos=buildPie('chartPiePesos',sortedPesos,totalPesos,fmtPesos,'piePesos');
-  // Center labels
-  var clU=document.getElementById('pieCenterUSD');
-  if(clU)clU.children[0].textContent=fmtUSD(totalUSD);
-  var clP=document.getElementById('pieCenterPesos');
-  if(clP)clP.children[0].textContent=fmtPesos(totalPesos);
-  // Shared legend (use USD sort order as primary)
-  var allVends=[...new Set([...sortedUSD.map(([k])=>k),...sortedPesos.map(([k])=>k)])];
+  if(charts.pieUnified)charts.pieUnified.destroy();
+  var pieColors=COLORS.slice(0,sortedUnified.length);
+  var canvas=document.getElementById('chartPieUnified');
+  if(!canvas)return;
+  charts.pieUnified=new Chart(canvas,{
+    type:'doughnut',
+    data:{labels:sortedUnified.map(([k])=>k),datasets:[{data:sortedUnified.map(([,v])=>v),backgroundColor:pieColors,borderColor:'rgba(0,0,0,.3)',borderWidth:1.5,hoverOffset:8,hoverBorderColor:'#fff',hoverBorderWidth:2,spacing:2,borderRadius:4}]},
+    plugins:[ChartDataLabels],
+    options:{responsive:true,maintainAspectRatio:true,cutout:'45%',animation:{animateRotate:true,duration:1200},layout:{padding:4},plugins:{
+      legend:{display:false},
+      tooltip:{backgroundColor:'rgba(20,20,30,.95)',titleFont:{family:'DM Sans',size:11,weight:'600'},bodyFont:{family:'IBM Plex Mono',size:11},padding:10,cornerRadius:8,displayColors:true,boxPadding:4,callbacks:{label:function(ctx){var v=ctx.raw;var p=totalUnified>0?((v/totalUnified)*100).toFixed(1):'0';return ' '+fmtUSD(Math.round(v))+' ('+p+'%)';}}},
+      datalabels:{color:'#fff',font:{family:'IBM Plex Mono',size:10,weight:'700'},textStrokeColor:'rgba(0,0,0,.7)',textStrokeWidth:2,formatter:function(value){var p=totalUnified>0?((value/totalUnified)*100).toFixed(1):'0';return parseFloat(p)>=8?p+'%':'';},anchor:'center',align:'center'}
+    }}
+  });
+  // Center label
+  var cl=document.getElementById('pieCenterUnified');
+  if(cl)cl.children[0].textContent=fmtUSD(Math.round(totalUnified));
+  // Legend
   var lg=document.getElementById('pieLegendCustom');
   if(lg){
-    lg.innerHTML=allVends.map(function(name,i){
+    lg.innerHTML=sortedUnified.map(function(entry,i){
       var c=COLORS[i%COLORS.length];
+      var pct=totalUnified>0?((entry[1]/totalUnified)*100).toFixed(1):'0';
       return '<div style="display:flex;align-items:center;gap:4px;padding:2px 6px;background:var(--surface2);border-radius:5px;border:1px solid var(--border)">'+
         '<span style="width:7px;height:7px;border-radius:2px;background:'+c+';flex-shrink:0"></span>'+
-        '<span style="font-size:9px;color:var(--text);font-weight:600">'+name+'</span>'+
+        '<span style="font-size:9px;color:var(--text);font-weight:600">'+entry[0]+'</span>'+
       '</div>';
     }).join('');
   }

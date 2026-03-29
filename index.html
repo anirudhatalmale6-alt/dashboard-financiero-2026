@@ -1601,7 +1601,7 @@ async function loadAllData(){
     try{
       var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R191:AC191');
       if(deudasRange&&deudasRange[0]){
-        invDeudasMensuales=deudasRange[0].map(function(v){return typeof v==='string'?parseFloat(v.replace(/[^0-9.\-]/g,''))||0:(typeof v==='number'?v:0);});
+        invDeudasMensuales=deudasRange[0].map(function(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var n=v.replace(/[^0-9\-]/g,'');return parseInt(n)||0;}return 0;});
       }
     }catch(e){invDeudasMensuales=null;}
     addNewModulesFromRaw(dRaw);

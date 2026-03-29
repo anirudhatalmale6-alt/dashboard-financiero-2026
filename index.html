@@ -73,7 +73,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-divider .divider-sub{font-size:13px;color:var(--text3);font-weight:300;margin-top:4px}
 
 /* KPI Cards */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:48px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.3s}
 .kpi:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -120,7 +120,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-cm.usd .cm-value{color:var(--green)}
 .kpi-cm.ars .cm-value{color:var(--blue)}
 .kpi-cm .cm-month{font-size:10px;color:var(--gold);margin-top:3px;font-weight:600}
-.kpi-ranking-compact{display:flex;gap:28px;margin-bottom:28px;align-items:flex-start}
+.kpi-ranking-compact{display:flex;gap:28px;margin-bottom:48px;align-items:flex-start}
 .kpi-ranking-compact .kpis-col{flex:1;min-width:0}
 .kpi-ranking-compact .rankings-col{width:380px;flex-shrink:0}
 .kpi-ranking-compact .rankings-col .ranking-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
@@ -128,7 +128,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @media(max-width:900px){.kpi-ranking-compact{flex-direction:column}.kpi-ranking-compact .rankings-col{width:100%}}
 
 /* Ingresos Totales Table */
-.it-wrap{margin-bottom:32px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+.it-wrap{margin-bottom:48px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
 .it-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .it-table{width:100%;border-collapse:collapse;font-size:13px;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
 .it-table thead th{padding:10px 14px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;border-bottom:2px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:1}
@@ -155,8 +155,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @media(max-width:900px){.it-table{font-size:11px}.it-table thead th,.it-table tbody td,.it-table tfoot td{padding:7px 10px}}
 
 /* Chart Grid */
-.charts{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:48px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s;margin-bottom:12px}
 .chart-card:hover{border-color:rgba(212,168,83,.3)}
 .chart-card.full{grid-column:1/-1}
 .chart-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
@@ -171,7 +171,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .chart-container.tall{height:380px}
 
 /* Rankings */
-.rankings{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.rankings{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:48px}
 .ranking-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .rank-list{list-style:none;display:flex;flex-direction:column;gap:3px;margin-top:6px}
 .rank-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;background:var(--surface2);transition:.2s}
@@ -187,7 +187,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ranking-card .chart-subtitle{font-size:10px}
 
 /* Module Cards */
-.modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+.modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:48px}
 .module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:.3s}
 .module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .module-name{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -201,11 +201,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .progress-bar{height:6px;background:var(--surface3);border-radius:3px;margin-top:10px;overflow:hidden}
 .progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:.6s}
 
-.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;letter-spacing:-.5px}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px;margin-top:40px;letter-spacing:-.5px}
 .section-title em{font-style:normal;color:var(--gold)}
 
 /* Acumulado Monthly Cards */
-.ingresos-monthly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.ingresos-monthly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:48px}
 .ing-month-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;overflow:hidden;transition:.3s}
 .ing-month-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ing-month-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
@@ -224,7 +224,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card .positive{color:var(--green)}
 .ing-month-card .negative{color:var(--red)}
 .ing-month-card.no-data{opacity:.35}
-.acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:28px}
+.acum-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:48px}
 .acum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;transition:.3s;position:relative;overflow:hidden}
 .acum-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .acum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))}
@@ -254,7 +254,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .vd-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 
 /* Cuotas Mini Cards */
-.cuotas-cards{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px}
+.cuotas-cards{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:48px}
 .cuota-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;transition:.3s;position:relative;overflow:hidden}
 .cuota-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .cuota-card.acum{grid-column:span 2;background:linear-gradient(135deg,var(--surface),var(--surface2));border-color:var(--gold-dim)}
@@ -1886,7 +1886,7 @@ function renderInversiones(){
     var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
     if(nm&&(usd||pesos)) cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
   }
-  // DEUDAS & COMPROMISOS (rows 179-185)
+  // INVERSIONES Y GASTOS (rows 179-185)
   for(var r=179;r<=185;r++){
     var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
     if(nm&&usd) debts.push({name:nm,usd,pesos:pesos||usd*cotizacion});
@@ -1914,7 +1914,7 @@ function renderInversiones(){
     {id:'prop',icon:'🏠',title:'Propiedades & Vehículos',items:properties,color:'var(--gold)',cls:'cat-prop'},
     {id:'credit',icon:'💰',title:'Créditos a Cobrar',items:credits,color:'var(--blue)',cls:'cat-credit'},
     {id:'cuota',icon:'📊',title:'Cuotas por Cobrar',items:cuotas,color:'var(--green)',cls:'cat-cuota'},
-    {id:'debt',icon:'📉',title:'Deudas & Compromisos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
+    {id:'debt',icon:'📉',title:'Inversiones y Gastos',items:allDebts,color:'var(--red)',cls:'cat-debt'},
     {id:'cash',icon:'💵',title:'Caja Actual',items:cash,color:'var(--purple)',cls:'cat-cash'},
   ];
   // GASTOS MENSUALES / SUELDO MARTIN from DASHBOARD (fixed: header at dashRaw[264], data at 265-276)
@@ -2005,7 +2005,7 @@ function renderInversiones(){
     {label:'Propiedades\n& Vehículos',value:propTotal,color:'#d4a853'},
     {label:'Créditos\na Cobrar',value:creditTotal,color:'#60a5fa'},
     {label:'Cuotas\npor Cobrar',value:cuotaTotal,color:'#34d399'},
-    {label:'Deudas &\nCompromisos',value:debtTotal,color:'#f87171'},
+    {label:'Inversiones\ny Gastos',value:debtTotal,color:'#f87171'},
     {label:'Caja\nActual',value:cashTotal,color:'#a78bfa'}
   ];
 
@@ -3832,7 +3832,7 @@ function renderChartBalanceGeneral(){
         {label:'Entrada Cuotas $ (en U$D)',data:cobrarPesosUSD,backgroundColor:grd('rgba(96,165,250,.9)','rgba(96,165,250,.3)'),borderColor:'#60a5fa',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
         {label:'Gastos a Pagar U$D',data:q.pagarUSD,backgroundColor:grd('rgba(248,113,113,.9)','rgba(248,113,113,.3)'),borderColor:'#f87171',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
         {label:'Gastos Personales $ (en U$D)',data:gastosPesosUSD,backgroundColor:grd('rgba(244,114,182,.9)','rgba(244,114,182,.3)'),borderColor:'#f472b6',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
-        {label:'Deudas y Compromisos U$D',data:q.deudasMensuales,backgroundColor:grd('rgba(239,68,68,.9)','rgba(239,68,68,.3)'),borderColor:'#ef4444',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
+        {label:'Inversiones y Gastos U$D',data:q.deudasMensuales,backgroundColor:grd('rgba(239,68,68,.9)','rgba(239,68,68,.3)'),borderColor:'#ef4444',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
         {label:'INGRESOS UNIFICADOS U$D',data:q.unifiedIncome,backgroundColor:grd('rgba(212,168,83,.95)','rgba(212,168,83,.4)'),borderColor:'#d4a853',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85},
         {label:'GASTOS UNIFICADOS U$D',data:q.unifiedExpenses,backgroundColor:grd('rgba(153,27,27,.9)','rgba(153,27,27,.4)'),borderColor:'#991b1b',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85}
       ]

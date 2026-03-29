@@ -633,7 +633,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('kpiCardsRow').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen Ingresos</a>
     <a onclick="document.getElementById('secIngresosTotales').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
     <a onclick="document.getElementById('secDetalleIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Detalle Ingresos</a>
-    <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual</a>
+    <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual Neto</a>
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ganancias</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
@@ -692,7 +692,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="it-scroll"><table class="it-table" id="ingresosTotalesTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div>
   </div>
 
-  <h2 class="section-title" id="secAcumuladoAnual"><span class="dot" style="background:var(--blue)"></span>Acumulado <em>Anual</em></h2>
+  <h2 class="section-title" id="secAcumuladoAnual"><span class="dot" style="background:var(--blue)"></span>Acumulado <em>Anual Neto</em></h2>
   <div class="acum-cards" id="acumCards"></div>
 
   <h2 class="section-title" id="secDetalleIngresos"><span class="dot" style="background:var(--gold)"></span>Detalle <em>Ingresos Mensuales</em></h2>
@@ -713,7 +713,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="charts" id="secGraficos" style="grid-template-columns:1fr">
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual Neto</div>
       <div class="chart-subtitle">Ingresos, gastos y balance acumulado mes a mes</div>
       <div class="chart-container"><canvas id="chartBalance"></canvas></div>
     </div>
@@ -885,7 +885,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="charts" id="secAcumVendChart" style="margin-top:28px;grid-template-columns:1fr">
     <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual</div>
+      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual Neto</div>
       <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
       <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
     </div>

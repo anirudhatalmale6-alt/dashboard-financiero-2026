@@ -917,6 +917,7 @@ const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3
 let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;
+let invDeudasMensuales=null; // Monthly deudas from INVERSIONES CRONOGRAMA row 191, cols R-AC (Enero-Diciembre 2026)
 let trackRaw=null;
 let ventaDolaresRaw=null;
 let ventaDolaresMonths=null;
@@ -1596,6 +1597,13 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
+    // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 191, cols R-AC = 12 months of 2026)
+    try{
+      var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R191:AC191');
+      if(deudasRange&&deudasRange[0]){
+        invDeudasMensuales=deudasRange[0].map(function(v){return typeof v==='string'?parseFloat(v.replace(/[^0-9.\-]/g,''))||0:(typeof v==='number'?v:0);});
+      }
+    }catch(e){invDeudasMensuales=null;}
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
@@ -3751,17 +3759,20 @@ function extractCuotasData(vendorFilter,useEmpresas){
   // Get monthly cotizacion (dollar blue) from allData.resumen
   const mesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const cotizacion=[];
-  const unifiedIncome=[],unifiedExpenses=[];
+  const unifiedIncome=[],unifiedExpenses=[],deudasMensuales=[];
   for(let m=0;m<12;m++){
     var resEntry=allData.resumen.find(function(r){return r.Mes===mesesFull[m];});
     var cot=(resEntry&&resEntry.Cotizacion_Dolar)?resEntry.Cotizacion_Dolar:1450;
     cotizacion.push(cot);
+    // Monthly deudas y compromisos from INVERSIONES CRONOGRAMA
+    var deuda=(invDeudasMensuales&&invDeudasMensuales[m])?Math.abs(invDeudasMensuales[m]):0;
+    deudasMensuales.push(deuda);
     // Unified income: cuotas USD + cuotas pesos converted to USD
     unifiedIncome.push(Math.round(cobrarUSD[m]+(cobrarPesos[m]/cot)));
-    // Unified expenses: gastos a pagar USD + gastos personales pesos converted to USD
-    unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)));
+    // Unified expenses: gastos a pagar USD + gastos personales pesos converted to USD + deudas y compromisos
+    unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)+deuda));
   }
-  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,gastosPesos,gastosUSD,cotizacion,unifiedIncome,unifiedExpenses,vendors:vendorsList};
+  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,gastosPesos,gastosUSD,cotizacion,unifiedIncome,unifiedExpenses,deudasMensuales,vendors:vendorsList};
 }
 
 function renderChartCuotasUSD(){
@@ -3810,16 +3821,17 @@ function renderChartBalanceGeneral(){
   // Convert pesos columns to USD equivalent for single-axis display
   var cobrarPesosUSD=q.cobrarPesos.map(function(v,i){return Math.round(v/(q.cotizacion[i]||1450));});
   var gastosPesosUSD=q.gastosPesos.map(function(v,i){return Math.round(v/(q.cotizacion[i]||1450));});
-  // Option A: 6 gradient columns — all in USD
+  // 7 gradient columns — all in USD, only unified visible by default
   charts.balanceGeneral=new Chart(canvas,{
     type:'bar',
     data:{
       labels:q.labels,
       datasets:[
-        {label:'Entrada Cuotas U$D',data:q.cobrarUSD,backgroundColor:grd('rgba(52,211,153,.9)','rgba(52,211,153,.3)'),borderColor:'#34d399',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
-        {label:'Entrada Cuotas $ (en U$D)',data:cobrarPesosUSD,backgroundColor:grd('rgba(96,165,250,.9)','rgba(96,165,250,.3)'),borderColor:'#60a5fa',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
-        {label:'Gastos a Pagar U$D',data:q.pagarUSD,backgroundColor:grd('rgba(248,113,113,.9)','rgba(248,113,113,.3)'),borderColor:'#f87171',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
-        {label:'Gastos Personales $ (en U$D)',data:gastosPesosUSD,backgroundColor:grd('rgba(244,114,182,.9)','rgba(244,114,182,.3)'),borderColor:'#f472b6',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85},
+        {label:'Entrada Cuotas U$D',data:q.cobrarUSD,backgroundColor:grd('rgba(52,211,153,.9)','rgba(52,211,153,.3)'),borderColor:'#34d399',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
+        {label:'Entrada Cuotas $ (en U$D)',data:cobrarPesosUSD,backgroundColor:grd('rgba(96,165,250,.9)','rgba(96,165,250,.3)'),borderColor:'#60a5fa',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
+        {label:'Gastos a Pagar U$D',data:q.pagarUSD,backgroundColor:grd('rgba(248,113,113,.9)','rgba(248,113,113,.3)'),borderColor:'#f87171',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
+        {label:'Gastos Personales $ (en U$D)',data:gastosPesosUSD,backgroundColor:grd('rgba(244,114,182,.9)','rgba(244,114,182,.3)'),borderColor:'#f472b6',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
+        {label:'Deudas y Compromisos U$D',data:q.deudasMensuales,backgroundColor:grd('rgba(239,68,68,.9)','rgba(239,68,68,.3)'),borderColor:'#ef4444',borderWidth:0,borderRadius:8,barPercentage:.8,categoryPercentage:.85,hidden:true},
         {label:'INGRESOS UNIFICADOS U$D',data:q.unifiedIncome,backgroundColor:grd('rgba(212,168,83,.95)','rgba(212,168,83,.4)'),borderColor:'#d4a853',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85},
         {label:'GASTOS UNIFICADOS U$D',data:q.unifiedExpenses,backgroundColor:grd('rgba(153,27,27,.9)','rgba(153,27,27,.4)'),borderColor:'#991b1b',borderWidth:2,borderRadius:10,barPercentage:.8,categoryPercentage:.85}
       ]

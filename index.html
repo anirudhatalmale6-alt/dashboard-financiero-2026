@@ -637,7 +637,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ganancias</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
-    <a onclick="document.getElementById('secDetalle').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle por Módulo</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
     <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
@@ -769,8 +768,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title" id="secDetalle">Detalle Ingresos Mensuales por <em>Módulos de Ventas</em></h3>
-  <div class="module-details-grid" id="moduleDetails"></div>
+  <div id="moduleDetails" style="display:none"></div>
 
   <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
   <div class="cuotas-cards" id="cuotasCards"></div>
@@ -1700,7 +1698,6 @@ function populateFilters(){
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
-      'secDetalle','moduleDetails',
       'secInversiones','invSection',
       'secDashVendedores',
       'secAcumuladoAnual','acumCards'];
@@ -2893,7 +2890,6 @@ function renderAll(){
   renderChartVendedores();
   renderRankings();
   renderModules();
-  renderModuleDetails();
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
   var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
@@ -3565,8 +3561,11 @@ function renderModules(){
   const container=document.getElementById('modules');
   container.innerHTML='';
 
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
   mods.forEach((mod,idx)=>{
     let rows=allData.modulos.filter(r=>r.Modulo===mod);
+    const allRows=allData.modulos.filter(r=>r.Modulo===mod);
     if(filterMes!=='all')rows=rows.filter(r=>r.Mes===filterMes);
     const totalUSD=rows.reduce((s,r)=>s+(r.Ganancia_USD||0),0);
     const totalPesos=rows.reduce((s,r)=>s+(r.Ganancia_Pesos||0),0);
@@ -3580,8 +3579,21 @@ function renderModules(){
     const cuotasPct=restaUSD>0&&totalUSD>0?Math.min(100,((totalUSD)/(totalUSD+restaUSD))*100):0;
     const invRecovery=Math.abs(invUSD)>0&&caja>0?Math.min(100,((caja)/Math.abs(invUSD))*100):0;
 
+    // Build monthly detail table
+    let detailTotalUSD=0,detailTotalPesos=0;
+    let tbodyHTML='';
+    meses.forEach(mes=>{
+      const row=allRows.find(r=>r.Mes===mes);
+      const usd=row?(row.Ganancia_USD||0):0;
+      const pesos=row?(row.Ganancia_Pesos||0):0;
+      detailTotalUSD+=usd;
+      detailTotalPesos+=pesos;
+      tbodyHTML+=`<tr><td>${mes}</td><td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td><td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td></tr>`;
+    });
+    tbodyHTML+=`<tr class="total-row"><td>TOTAL</td><td>${fmtUSD(detailTotalUSD)}</td><td>${fmtPesos(detailTotalPesos)}</td></tr>`;
+
     container.innerHTML+=`
-      <div class="module-card">
+      <div class="module-card" style="display:flex;flex-direction:column">
         <div class="module-name"><span class="icon">${icons[idx%icons.length]}</span>${mod}</div>
         <div class="module-stats">
           <div class="module-stat"><span class="lbl">Ganancia U$D</span><span class="val ${totalUSD>=0?'positive':'negative'}">${fmtUSD(totalUSD)}</span></div>
@@ -3597,6 +3609,12 @@ function renderModules(){
         <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Cuotas Cobradas: ${cuotasPct.toFixed(0)}%</div>
         <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${Math.min(invRecovery,100).toFixed(0)}%;background:linear-gradient(90deg,var(--green),var(--teal))"></div></div>
         <div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:right">Recuperación de Inversión: ${invRecovery.toFixed(0)}%</div>
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          <table class="module-table">
+            <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+            <tbody>${tbodyHTML}</tbody>
+          </table>
+        </div>
       </div>
     `;
   });
@@ -4693,7 +4711,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secDetalle','moduleDetails','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

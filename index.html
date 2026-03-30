@@ -1886,10 +1886,15 @@ function renderInversiones(){
     var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
     if(nm&&(usd||pesos)) cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
   }
-  // INVERSIONES Y GASTOS (rows 179-185)
-  for(var r=179;r<=185;r++){
-    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
-    if(nm&&usd) debts.push({name:nm,usd,pesos:pesos||usd*cotizacion});
+  // INVERSIONES Y GASTOS - monthly from row 189 (lo que falta cancelar por mes)
+  {
+    const mNombres=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    if(invDeudasMensuales){
+      for(var mi=0;mi<12;mi++){
+        var val=Math.abs(invDeudasMensuales[mi]||0);
+        if(val>0) debts.push({name:mNombres[mi],usd:val,pesos:val*cotizacion});
+      }
+    }
   }
   // CAJA ACTUAL (row 186)
   {var nm=invStr(186,3)||'Dinero en Caja';var usd=invNum(186,5);

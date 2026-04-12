@@ -2536,48 +2536,52 @@ function renderChartAcumVend(){
 }
 
 function renderDetalleIngresos(){
-  if(!dashRaw||dashRaw.length<45)return;
+  if(!dashRaw||dashRaw.length<60)return;
   const container=document.getElementById('ingresosMensualContainer');
   container.innerHTML='';
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const mesesShort=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  // Vendedor columns in the USD/Pesos income blocks (dashRaw rows 17-28 USD, 32-43 Pesos)
-  const vendCols=[
-    {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
-    {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
-    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
+  // DASHBOARD MARTIN: vendors in ROWS, months in COLUMNS (E=Ene,F=Feb,...P=Dic)
+  // Ganancia en Dolares: rows 33-43, Ganancia en Pesos: rows 46-56
+  const vendRows=[
+    {name:'Tecno',usdRow:33,pesosRow:46},
+    {name:'Inversiones',usdRow:34,pesosRow:47},
+    {name:'Creditos',usdRow:35,pesosRow:48},
+    {name:'Osito S.r.l.',usdRow:36,pesosRow:49},
+    {name:'Patito S.A.',usdRow:37,pesosRow:50},
+    {name:'Gonza',usdRow:38,pesosRow:51},
+    {name:'Mely',usdRow:39,pesosRow:52},
+    {name:'Tobias',usdRow:41,pesosRow:54},
+    {name:'Tino',usdRow:42,pesosRow:55},
+    {name:'Linea 314',usdRow:43,pesosRow:56}
   ];
+
+  function parseVal(v){
+    if(typeof v==='number')return v;
+    if(typeof v==='string'){
+      const neg=v.includes('-')?-1:1;
+      const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+      const n=parseFloat(clean);
+      return isNaN(n)?0:n*neg;
+    }
+    return 0;
+  }
 
   meses.forEach((mes,mi)=>{
     if(filterMes!=='all'&&mes!==filterMes)return;
-    const usdRow=dashRaw[17+mi];
-    const pesosRow=dashRaw[32+mi];
+    const monthCol=4+mi; // E=4 for Enero, F=5 for Febrero, etc.
     let totalUSD=0,totalPesos=0;
     let hasAnyData=false;
 
-    // Filter vendedores if filter active
-    const filteredCols=filterVendedor!=='all'?vendCols.filter(vc=>vc.name===filterVendedor):vendCols;
-
-    function parseVal(v){
-      if(typeof v==='number')return v;
-      if(typeof v==='string'){
-        const neg=v.includes('-')?-1:1;
-        const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
-        const n=parseFloat(clean);
-        return isNaN(n)?0:n*neg;
-      }
-      return 0;
-    }
+    const filteredVend=filterVendedor!=='all'?vendRows.filter(vr=>vr.name===filterVendedor):vendRows;
 
     let tbodyHTML='';
-    filteredCols.forEach(vc=>{
-      const usd=parseVal(usdRow?usdRow[vc.col]:0);
-      const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
+    filteredVend.forEach(vr=>{
+      const usd=parseVal(dashRaw[vr.usdRow]?dashRaw[vr.usdRow][monthCol]:0);
+      const pesos=parseVal(dashRaw[vr.pesosRow]?dashRaw[vr.pesosRow][monthCol]:0);
       totalUSD+=usd;totalPesos+=pesos;
       if(usd!==0||pesos!==0)hasAnyData=true;
       tbodyHTML+=`<tr>
-        <td>${vc.name}</td>
+        <td>${vr.name}</td>
         <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
         <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
       </tr>`;
@@ -2588,7 +2592,7 @@ function renderDetalleIngresos(){
       <td>${fmtPesos(totalPesos)}</td>
     </tr>`;
 
-    // Total Unificado from DASHBOARD MARTIN (rows 3-14, col 8=USD, col 7=Pesos)
+    // Total Unificado from Ingresos Generales (rows 3-14, col 8=USD, col 7=Pesos)
     const uniUSD=dashNum(3+mi,8);
     const uniPesos=dashNum(3+mi,7);
     tbodyHTML+=`<tr class="total-row uni-row">

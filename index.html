@@ -1519,7 +1519,7 @@ function enrichResumenFromRaw(raw){
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
   meses.forEach((mes,mi)=>{
-    const row=raw[2+mi];
+    const row=raw[3+mi];
     if(!row)return;
     const ingUSD=pv(row[4]);     // Total income USD
     const ingPesos=pv(row[5]);   // Total income Pesos
@@ -1592,7 +1592,7 @@ async function loadAllData(){
       fetchSheet('LS_Ganancias_Vendedor'),
       fetchSheet('LS_Modulos_Negocio'),
       fetchSheet('LS_Panel_Control'),
-      fetchRawSheet('DASHBOARD'),
+      fetchRawSheet('DASHBOARD MARTIN'),
       fetchRawSheet('INVERSIONES CRONOGRAMA')
     ]);
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
@@ -2588,9 +2588,9 @@ function renderDetalleIngresos(){
       <td>${fmtPesos(totalPesos)}</td>
     </tr>`;
 
-    // Total Unificado from DASHBOARD summary (rows 2-13, col 8=USD, col 7=Pesos)
-    const uniUSD=dashNum(2+mi,8);
-    const uniPesos=dashNum(2+mi,7);
+    // Total Unificado from DASHBOARD MARTIN (rows 3-14, col 8=USD, col 7=Pesos)
+    const uniUSD=dashNum(3+mi,8);
+    const uniPesos=dashNum(3+mi,7);
     tbodyHTML+=`<tr class="total-row uni-row">
       <td>TOTAL UNIFICADO</td>
       <td>${fmtUSD(uniUSD)}</td>
@@ -2788,7 +2788,7 @@ function renderIngresosTotales(){
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
   for(let mi=0;mi<12;mi++){
-    const row=dashRaw[2+mi];
+    const row=dashRaw[3+mi];
     if(!row)continue;
     const mes=row[2]?String(row[2]):'';
     const usd=pv(row[4]);const pesos=pv(row[5]);const cotiz=pv(row[6]);
@@ -2808,12 +2808,12 @@ function renderIngresosTotales(){
       <td class="col-final-usd">${fU(finalUSD)}</td>
     </tr>`;
   }
-  const tRow=dashRaw[14];
+  const tRow=dashRaw[15];
   if(tRow){
     totPesos=pv(tRow[5])||totPesos;totUniP=pv(tRow[7])||totUniP;totUniU=pv(tRow[8])||totUniU;
     totGastos=pv(tRow[9])||totGastos;totFP=pv(tRow[10])||totFP;totFU=pv(tRow[11])||totFU;
   }
-  const hr=dashRaw[1]||[];
+  const hr=dashRaw[2]||[];
   function hdr(col,fb){return hr[col]?String(hr[col]).trim():fb;}
   const h4=hdr(4,'Ventas U$D'),h5=hdr(5,'Ventas $'),h6=hdr(6,'Dolar');
   const h7=hdr(7,'Unificado $'),h8=hdr(8,'Unificado U$D');
@@ -3008,16 +3008,16 @@ function renderKPIs(){
   // Determine current month index and previous month for trend
   // Find last month with data as the "current" month
   function findLastDataMonth(){
-    for(let i=13;i>=2;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
+    for(let i=14;i>=3;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
     return -1;
   }
   let curIdx=-1,prevIdx=-1;
   if(filterMes!=='all'){
-    curIdx=2+allMeses.indexOf(filterMes);
-    prevIdx=curIdx>2?curIdx-1:-1;
+    curIdx=3+allMeses.indexOf(filterMes);
+    prevIdx=curIdx>3?curIdx-1:-1;
   } else {
     curIdx=findLastDataMonth();
-    prevIdx=curIdx>2?curIdx-1:-1;
+    prevIdx=curIdx>3?curIdx-1:-1;
   }
 
   var cardsRow=document.getElementById('kpiCardsRow');
@@ -3037,35 +3037,35 @@ function renderKPIs(){
     let gastos=0;
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
-    else{var maxRowV=2+new Date().getMonth();for(let i=2;i<=maxRowV;i++)monthRows.push(i);}
+    else{var maxRowV=3+new Date().getMonth();for(let i=3;i<=maxRowV;i++)monthRows.push(i);}
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
 
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     // Fix: use actual current month for vendor-filtered view (not global findLastDataMonth)
     if(filterMes==='all'){
       const actualMonthIdx=new Date().getMonth(); // 0-based (0=Jan, 2=Mar)
-      curIdx=2+actualMonthIdx; // convert to dashRaw row index (2=Jan, 4=Mar)
-      prevIdx=curIdx>2?curIdx-1:-1;
+      curIdx=3+actualMonthIdx; // convert to dashRaw row index (3=Jan, 5=Mar)
+      prevIdx=curIdx>3?curIdx-1:-1;
     }
     let curGanUSD=0,curGanPesos=0,prevGanUSD=0,prevGanPesos=0,curGastos=0,prevGastos=0;
-    if(curIdx>=2){
-      const curMes=allMeses[curIdx-2];
+    if(curIdx>=3){
+      const curMes=allMeses[curIdx-3];
       const cr=allVd.find(r=>r.Mes===curMes);
       curGanUSD=cr?(cr.Ganancia_USD||0):0;curGanPesos=cr?(cr.Ganancia_Pesos||0):0;
       curGastos=dashNum(curIdx,9);
     }
     if(prevIdx>=2){
-      const prevMes=allMeses[prevIdx-2];
+      const prevMes=allMeses[prevIdx-3];
       const pr=allVd.find(r=>r.Mes===prevMes);
       prevGanUSD=pr?(pr.Ganancia_USD||0):0;prevGanPesos=pr?(pr.Ganancia_Pesos||0):0;
       prevGastos=dashNum(prevIdx,9);
     }
-    const tGanU=prevIdx>=2?trendBadge(curGanUSD,prevGanUSD):'';
-    const tGanP=prevIdx>=2?trendBadge(curGanPesos,prevGanPesos):'';
-    const tGas=prevIdx>=2?trendBadge(curGastos,prevGastos):'';
+    const tGanU=prevIdx>=3?trendBadge(curGanUSD,prevGanUSD):'';
+    const tGanP=prevIdx>=3?trendBadge(curGanPesos,prevGanPesos):'';
+    const tGas=prevIdx>=3?trendBadge(curGastos,prevGastos):'';
 
     const showGastos=['Inversiones','Creditos','Tecno'].includes(filterVendedor);
-    const curMesName=curIdx>=2?allMeses[curIdx-2]:'—';
+    const curMesName=curIdx>=3?allMeses[curIdx-3]:'—';
 
     function rkRow(label,val,trend,color,isBold){
       var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
@@ -3119,7 +3119,7 @@ function renderKPIs(){
 
     // Trend: current month vs previous month
     let tBrutoU='',tBrutoP='',tGas='',tNetoU='',tNetoP='',tUniU='',tUniP='';
-    if(curIdx>=2&&prevIdx>=2){
+    if(curIdx>=3&&prevIdx>=3){
       tBrutoU=trendBadge(dashNum(curIdx,4),dashNum(prevIdx,4));
       tBrutoP=trendBadge(dashNum(curIdx,5),dashNum(prevIdx,5));
       tGas=trendBadge(dashNum(curIdx,9),dashNum(prevIdx,9));
@@ -3168,7 +3168,7 @@ function renderKPIs(){
       var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       var cmIdx=new Date().getMonth();
       var cmName=cmNames[cmIdx];
-      var cmRow=2+cmIdx;
+      var cmRow=3+cmIdx;
       var cmUniUSD=dashNum(cmRow,8);
       var cmUniPesos=dashNum(cmRow,7);
       var cmBrutoUSD=dashNum(cmRow,4);
@@ -3203,11 +3203,11 @@ function renderCurrentMonthKPIs(){
   var allMeses=mesNames;
   var curIdx=allMeses.indexOf(curMes);
   if(curIdx<0)return;
-  var rowIdx=2+curIdx;
+  var rowIdx=3+curIdx;
   var uniUSD=dashNum(rowIdx,8);
   var uniPesos=dashNum(rowIdx,7);
   var tUSD='',tPesos='';
-  if(curIdx>0){var prevRow=2+curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
+  if(curIdx>0){var prevRow=3+curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
   cmEl.innerHTML=`
     <div class="kpi-cm usd">
       <div class="cm-label">Total Unificado Dólares</div>

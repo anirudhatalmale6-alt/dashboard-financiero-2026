@@ -1802,9 +1802,9 @@ function renderAcumuladoCards(){
       months.push({mes:allMeses[i],mesFull:mesName,neto:neto1,neto2,cumNeto,cumNeto2,hasData});
     }
   } else {
-    // Global mode: read from DASHBOARD columns
+    // Global mode: read from DASHBOARD MARTIN columns
     for(let i=0;i<12;i++){
-      const row=2+i;
+      const row=3+i;
       const netoUSD=dashNum(row,11);
       const netoPesos=dashNum(row,10);
       const neto1=isUSD?netoUSD:netoPesos;
@@ -3178,8 +3178,8 @@ function renderKPIs(){
         mLeft.innerHTML=`
           <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">Mes Actual</div>
           <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">${fmtUSD(cmUniUSD)}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado U$D</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">${fmtPesos(cmUniPesos)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado Pesos</div>
           <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
       }
       if(mRight){
@@ -3187,8 +3187,8 @@ function renderKPIs(){
         mRight.innerHTML=`
           <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">Mes Actual</div>
           <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">${fmtPesos(cmUniPesos)}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado Pesos</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">${fmtUSD(cmUniUSD)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado U$D</div>
           <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
       }
     }

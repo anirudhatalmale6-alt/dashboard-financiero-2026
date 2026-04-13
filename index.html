@@ -1670,16 +1670,15 @@ async function loadAllData(){
         {name:'Inversiones',tab:'Inversiones',sql:'select B, I where B is not null limit 13'},
         {name:'Tecno',tab:'VENTA TECNO EN DOLARES',sql:'select AW, BD where AW is not null limit 15'}
       ];
-      // Fetch in two batches to avoid gviz rate limiting
-      var batch1=invTabs.slice(0,5);
-      var batch2=invTabs.slice(5);
-      function invFetch(t){
-        if(t.sql) return fetchSheetSQL(t.tab,t.sql).catch(function(){return null;});
-        return fetchSheetRange(t.tab,t.range).catch(function(){return null;});
+      // Fetch sequentially to avoid gviz rate limiting
+      var invResults=[];
+      for(var ii=0;ii<invTabs.length;ii++){
+        try{
+          var t=invTabs[ii];
+          if(t.sql) invResults.push(await fetchSheetSQL(t.tab,t.sql));
+          else invResults.push(await fetchSheetRange(t.tab,t.range));
+        }catch(e){invResults.push(null);}
       }
-      var r1=await Promise.all(batch1.map(invFetch));
-      var r2=await Promise.all(batch2.map(invFetch));
-      var invResults=r1.concat(r2);
       window._vendorInvestments={};
       var mesNames=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
       invResults.forEach(function(rows,idx){

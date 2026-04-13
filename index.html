@@ -2915,7 +2915,17 @@ function updateDynamicTitles(){
     var el=document.getElementById('secDetalleIngresos');
     if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalles de Ingresos <em>Mensuales</em>';
   })();
-  setT('secModulos',124,2,'Control Financiero y Balance / Modulos de Negocios','--gold');
+  // Dynamic: scan for "Balance y Ganancias" text in dashRaw
+  (function(){
+    var title='Control Financiero y Balance / Modulos de Negocios';
+    if(dashRaw){for(var i=100;i<dashRaw.length&&i<220;i++){
+      if(dashRaw[i]&&typeof dashRaw[i][2]==='string'&&dashRaw[i][2].indexOf('Balance y Ganancias')>=0){title=dashRaw[i][2];break;}
+    }}
+    title=toTitleCase(title);
+    var el=document.getElementById('secModulos');if(!el)return;
+    var parts=title.split(' ');var last=parts.pop();
+    el.innerHTML='<span class="dot" style="background:var(--gold)"></span>'+parts.join(' ')+' <em>'+last+'</em>';
+  })();
   // These sections use dynamic scanning so title row positions change — use hardcoded titles
   (function(){var el=document.getElementById('secCuotasPesos');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Pesos</em>';})();
   (function(){var el=document.getElementById('secCuotas');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Dólares</em>';})();
@@ -3698,26 +3708,23 @@ function renderModules(){
     }
     tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td></tr>';
 
-    // Helper: show USD (green) + Pesos (celeste) stacked when both exist
-    function statPair(label,usd,pesos,highlight){
-      var sty=highlight?'border-top:1px solid var(--gold-dim);padding-top:6px;margin-top:4px':'';
-      var lblSty=highlight?'color:var(--gold);font-weight:600':'';
-      var h='<div class="module-stat" style="'+sty+'"><span class="lbl" style="'+lblSty+'">'+label+'</span>';
-      h+='<span class="val" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">';
-      h+='<span style="color:var(--green);font-weight:'+(highlight?'800':'600')+'">'+fmtUSD(usd)+'</span>';
-      if(pesos) h+='<span style="color:var(--blue);font-size:11px;font-weight:'+(highlight?'700':'500')+'">'+fmtPesos(pesos)+'</span>';
-      h+='</span></div>';
-      return h;
-    }
-
-    // Dynamic labels from spreadsheet cells
-    var statsHTML='';
-    statsHTML+=statPair(lbl(balRows.gan,'Ganancia Actual'),ganU,ganP,false);
-    statsHTML+=statPair(lbl(balRows.ganUnif,'Ganancia Unificada'),ganUnifU,ganUnifP,false);
-    statsHTML+=statPair(lbl(balRows.balInv,'Balance Inversión'),balInvU,balInvP,false);
-    statsHTML+=statPair(lbl(balRows.resta,'Resta Cobrar'),restaU,restaP,true);
-    statsHTML+=statPair(lbl(balRows.caja,'Caja Actual'),cajaU,cajaP,false);
-    statsHTML+=statPair(lbl(balRows.prom,'Promedio Inversión'),promU,promP,false);
+    // Build balance stats as a table matching the monthly table typography
+    var balData=[
+      {lbl:lbl(balRows.gan,'Ganancia Actual'),u:ganU,p:ganP,hi:false},
+      {lbl:lbl(balRows.ganUnif,'Ganancia Unificada'),u:ganUnifU,p:ganUnifP,hi:false},
+      {lbl:lbl(balRows.balInv,'Balance Inversión'),u:balInvU,p:balInvP,hi:false},
+      {lbl:lbl(balRows.resta,'Resta Cobrar'),u:restaU,p:restaP,hi:true},
+      {lbl:lbl(balRows.caja,'Caja Actual'),u:cajaU,p:cajaP,hi:false},
+      {lbl:lbl(balRows.prom,'Promedio Inversión'),u:promU,p:promP,hi:false}
+    ];
+    var statsHTML='<table class="module-table" style="margin-bottom:0"><thead><tr><th style="text-align:left"></th><th>U$D</th><th>$</th></tr></thead><tbody>';
+    balData.forEach(function(d){
+      var cls=d.hi?' class="total-row"':'';
+      statsHTML+='<tr'+cls+'><td style="text-align:left;color:var(--text2);font-size:11px">'+d.lbl+'</td>';
+      statsHTML+='<td style="color:var(--green)">'+fmtUSD(d.u)+'</td>';
+      statsHTML+='<td style="color:var(--blue)">'+(d.p?fmtPesos(d.p):'$0')+'</td></tr>';
+    });
+    statsHTML+='</tbody></table>';
 
     container.innerHTML+=`
       <div class="module-card" style="display:flex;flex-direction:column">

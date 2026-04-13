@@ -1818,8 +1818,8 @@ function renderAcumuladoCards(){
 
   // Year blocks based on filter
   var yearBlocks=[];
-  if(yearFilterAcum==='2026'||yearFilterAcum==='all') yearBlocks.push({start:0,label:'2026'});
-  if(yearFilterAcum==='2027'||yearFilterAcum==='all') yearBlocks.push({start:14,label:'2027'});
+  if(yearFilterAcum==='2026'||yearFilterAcum==='all') yearBlocks.push({start:3,label:'2026'});
+  if(yearFilterAcum==='2027'||yearFilterAcum==='all') yearBlocks.push({start:17,label:'2027'});
 
   let cumNeto=0, cumNeto2=0;
   const months=[];
@@ -2614,8 +2614,8 @@ function renderDetalleIngresos(){
 
   // Year blocks for Detalles
   var detYearBlocks=[];
-  if(yearFilterDetalle==='2026'||yearFilterDetalle==='all') detYearBlocks.push({colStart:4,uniRowStart:0,label:'2026'});
-  if(yearFilterDetalle==='2027'||yearFilterDetalle==='all') detYearBlocks.push({colStart:16,uniRowStart:14,label:'2027'});
+  if(yearFilterDetalle==='2026'||yearFilterDetalle==='all') detYearBlocks.push({colStart:4,uniRowStart:3,label:'2026'});
+  if(yearFilterDetalle==='2027'||yearFilterDetalle==='all') detYearBlocks.push({colStart:16,uniRowStart:17,label:'2027'});
 
   detYearBlocks.forEach(function(blk){
     meses.forEach((mes,mi)=>{
@@ -2846,8 +2846,8 @@ function renderIngresosTotales(){
 
   // Year ranges: 2026=rows 3-14 (total 15), 2027=rows 17-28 (total 29), combined total=row 30
   var yearBlocks=[];
-  if(yearFilter==='2026'||yearFilter==='all') yearBlocks.push({start:0,total:12,label:'2026'});
-  if(yearFilter==='2027'||yearFilter==='all') yearBlocks.push({start:14,total:26,label:'2027'});
+  if(yearFilter==='2026'||yearFilter==='all') yearBlocks.push({start:3,total:15,label:'2026'});
+  if(yearFilter==='2027'||yearFilter==='all') yearBlocks.push({start:17,total:29,label:'2027'});
 
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
@@ -3091,7 +3091,7 @@ function renderKPIs(){
   // Determine current month index and previous month for trend
   // Find last month with data as the "current" month
   function findLastDataMonth(){
-    for(let i=11;i>=0;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
+    for(let i=11;i>=0;i--){if(dashNum(3+i,4)!==0||dashNum(3+i,5)!==0)return i;}
     return -1;
   }
   let curIdx=-1,prevIdx=-1;
@@ -3121,7 +3121,7 @@ function renderKPIs(){
     let monthRows=[];
     if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[idx];}
     else{var maxRowV=new Date().getMonth();for(let i=0;i<=maxRowV;i++)monthRows.push(i);}
-    monthRows.forEach(r=>{gastos+=dashNum(r,9);});
+    monthRows.forEach(r=>{gastos+=dashNum(3+r,9);});
 
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     // Fix: use actual current month for vendor-filtered view (not global findLastDataMonth)
@@ -3135,13 +3135,13 @@ function renderKPIs(){
       const curMes=allMeses[curIdx];
       const cr=allVd.find(r=>r.Mes===curMes);
       curGanUSD=cr?(cr.Ganancia_USD||0):0;curGanPesos=cr?(cr.Ganancia_Pesos||0):0;
-      curGastos=dashNum(curIdx,9);
+      curGastos=dashNum(3+curIdx,9);
     }
     if(prevIdx>=0){
       const prevMes=allMeses[prevIdx];
       const pr=allVd.find(r=>r.Mes===prevMes);
       prevGanUSD=pr?(pr.Ganancia_USD||0):0;prevGanPesos=pr?(pr.Ganancia_Pesos||0):0;
-      prevGastos=dashNum(prevIdx,9);
+      prevGastos=dashNum(3+prevIdx,9);
     }
     const tGanU=prevIdx>=0?trendBadge(curGanUSD,prevGanUSD):'';
     const tGanP=prevIdx>=0?trendBadge(curGanPesos,prevGanPesos):'';
@@ -3195,21 +3195,21 @@ function renderKPIs(){
 
     let brutoUSD=0,brutoPesos=0,unificadoPesos=0,unificadoUSD=0,gastos=0,netoPesos=0,netoUSD=0;
     monthRows.forEach(r=>{
-      brutoUSD+=dashNum(r,4);brutoPesos+=dashNum(r,5);
-      unificadoPesos+=dashNum(r,7);unificadoUSD+=dashNum(r,8);
-      gastos+=dashNum(r,9);netoPesos+=dashNum(r,10);netoUSD+=dashNum(r,11);
+      brutoUSD+=dashNum(3+r,4);brutoPesos+=dashNum(3+r,5);
+      unificadoPesos+=dashNum(3+r,7);unificadoUSD+=dashNum(3+r,8);
+      gastos+=dashNum(3+r,9);netoPesos+=dashNum(3+r,10);netoUSD+=dashNum(3+r,11);
     });
 
     // Trend: current month vs previous month
     let tBrutoU='',tBrutoP='',tGas='',tNetoU='',tNetoP='',tUniU='',tUniP='';
     if(curIdx>=0&&prevIdx>=0){
-      tBrutoU=trendBadge(dashNum(curIdx,4),dashNum(prevIdx,4));
-      tBrutoP=trendBadge(dashNum(curIdx,5),dashNum(prevIdx,5));
-      tGas=trendBadge(dashNum(curIdx,9),dashNum(prevIdx,9));
-      tNetoU=trendBadge(dashNum(curIdx,11),dashNum(prevIdx,11));
-      tNetoP=trendBadge(dashNum(curIdx,10),dashNum(prevIdx,10));
-      tUniU=trendBadge(dashNum(curIdx,8),dashNum(prevIdx,8));
-      tUniP=trendBadge(dashNum(curIdx,7),dashNum(prevIdx,7));
+      tBrutoU=trendBadge(dashNum(3+curIdx,4),dashNum(3+prevIdx,4));
+      tBrutoP=trendBadge(dashNum(3+curIdx,5),dashNum(3+prevIdx,5));
+      tGas=trendBadge(dashNum(3+curIdx,9),dashNum(3+prevIdx,9));
+      tNetoU=trendBadge(dashNum(3+curIdx,11),dashNum(3+prevIdx,11));
+      tNetoP=trendBadge(dashNum(3+curIdx,10),dashNum(3+prevIdx,10));
+      tUniU=trendBadge(dashNum(3+curIdx,8),dashNum(3+prevIdx,8));
+      tUniP=trendBadge(dashNum(3+curIdx,7),dashNum(3+prevIdx,7));
     }
 
     kpiEl.innerHTML='';
@@ -3251,7 +3251,7 @@ function renderKPIs(){
       var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       var cmIdx=new Date().getMonth();
       var cmName=cmNames[cmIdx];
-      var cmRow=cmIdx;
+      var cmRow=3+cmIdx;
       var cmUniUSD=dashNum(cmRow,8);
       var cmUniPesos=dashNum(cmRow,7);
       var cmBrutoUSD=dashNum(cmRow,4);
@@ -3353,11 +3353,11 @@ function renderCurrentMonthKPIs(){
   var allMeses=mesNames;
   var curIdx=allMeses.indexOf(curMes);
   if(curIdx<0)return;
-  var rowIdx=curIdx;
+  var rowIdx=3+curIdx;
   var uniUSD=dashNum(rowIdx,8);
   var uniPesos=dashNum(rowIdx,7);
   var tUSD='',tPesos='';
-  if(curIdx>0){var prevRow=curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
+  if(curIdx>0){var prevRow=3+curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
   cmEl.innerHTML=`
     <div class="kpi-cm usd">
       <div class="cm-label">Total Unificado Dólares</div>

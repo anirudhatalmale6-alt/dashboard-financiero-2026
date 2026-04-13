@@ -1679,28 +1679,23 @@ async function loadAllData(){
           else invResults.push(await fetchSheetRange(t.tab,t.range));
         }catch(e){invResults.push(null);}
       }
-      window._invCallCount=(window._invCallCount||0)+1;
       window._vendorInvestments={};
-      window._invDebug=[];
-      var mesNames=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-      invResults.forEach(function(rows,idx){
-        var vn=invTabs[idx].name;
-        if(!rows){window._invDebug.push({vn:vn,status:'null'});return;}
-        window._invDebug.push({vn:vn,status:'ok',rowCount:rows.length,sample0:rows[0],sample2:rows[2]});
+      var MN={ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
+      function parseInvVal(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
+      for(var ti=0;ti<invResults.length;ti++){
+        var rows=invResults[ti];
+        var vn=invTabs[ti].name;
+        if(!rows){window._vendorInvestments[vn]=[0,0,0,0,0,0,0,0,0,0,0,0];continue;}
         var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
-        if(vn==='Gonza'){window._gonzaRows=rows.slice(0,5);window._gonzaMesNames=mesNames;window._gonzaTest={label0:rows[2]&&rows[2][0]?String(rows[2][0]).trim().toUpperCase():'FAIL',indexOf:mesNames.indexOf('ENERO'),mesLen:mesNames.length};}
         for(var ri=0;ri<rows.length;ri++){
-          var label=rows[ri]&&rows[ri][0]?String(rows[ri][0]).trim().toUpperCase():'';
-          var mi=mesNames.indexOf(label);
-          if(mi<0) continue;
-          var val=rows[ri][rows[ri].length-1];
-          var num=0;
-          if(typeof val==='number')num=val;
-          else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
-          monthly[mi]=Math.abs(num);
+          if(!rows[ri]||!rows[ri][0])continue;
+          var lb=String(rows[ri][0]).trim().toUpperCase();
+          if(lb in MN){
+            monthly[MN[lb]]=parseInvVal(rows[ri][rows[ri].length-1]);
+          }
         }
         window._vendorInvestments[vn]=monthly;
-      });
+      }
     }catch(e){window._invError=e.message||String(e);}
     // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
     try{

@@ -688,9 +688,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div class="kpis" id="kpis" style="display:none"></div>
 
-  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
-    <h2 class="section-title" id="secIngresosTotales" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Ingresos <em>Totales</em></h2>
-    <div id="yearToggle" style="display:flex;gap:6px;margin-top:4px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
+    <h2 class="section-title" id="secIngresosTotales" style="margin-bottom:0;margin-top:0"><span class="dot" style="background:var(--gold)"></span>Ingresos <em>Generales</em></h2>
+    <div id="yearToggle" style="display:flex;gap:6px">
       <button class="cm-btn active" data-year="2026" onclick="setYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-year="2027" onclick="setYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
       <button class="cm-btn" data-year="all" onclick="setYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
@@ -3621,18 +3621,31 @@ function renderModules(){
     }
     tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td>'+fmtUSD(dtU)+'</td><td>'+fmtPesos(dtP)+'</td></tr>';
 
+    // Helper: show USD + Pesos stacked when both exist
+    function statPair(label,usd,pesos,highlight){
+      var sty=highlight?'border-top:1px solid var(--gold-dim);padding-top:6px;margin-top:4px':'';
+      var lblSty=highlight?'color:var(--gold);font-weight:600':'';
+      var valSty=highlight?'color:var(--gold);font-weight:800':'';
+      var h='<div class="module-stat" style="'+sty+'"><span class="lbl" style="'+lblSty+'">'+label+'</span>';
+      h+='<span class="val" style="'+valSty+';display:flex;flex-direction:column;align-items:flex-end;gap:2px">';
+      h+='<span class="'+(usd>=0?'positive':'negative')+'">'+fmtUSD(usd)+'</span>';
+      if(pesos) h+='<span class="'+(pesos>=0?'positive':'negative')+'" style="font-size:11px;opacity:.8">'+fmtPesos(pesos)+'</span>';
+      h+='</span></div>';
+      return h;
+    }
+
+    var statsHTML='';
+    statsHTML+=statPair('Ganancia 2026+2027',ganU,ganP,false);
+    statsHTML+=statPair('Ganancia Unificada',ganUnifU,ganUnifP,false);
+    statsHTML+=statPair('Balance Inversión',balInvU,balInvP,false);
+    statsHTML+=statPair('Resta Cobrar',restaU,restaP,true);
+    statsHTML+=statPair('Caja Actual',cajaU,cajaP,false);
+    statsHTML+=statPair('Promedio Inversión',promU,promP,false);
+
     container.innerHTML+=`
       <div class="module-card" style="display:flex;flex-direction:column">
         <div class="module-name"><span class="icon">${v.icon}</span>${v.name}</div>
-        <div class="module-stats">
-          <div class="module-stat"><span class="lbl">Ganancia 2026+2027 U$D</span><span class="val ${ganU>=0?'positive':'negative'}">${fmtUSD(ganU)}</span></div>
-          <div class="module-stat"><span class="lbl">Ganancia 2026+2027 $</span><span class="val ${ganP>=0?'positive':'negative'}">${fmtPesos(ganP)}</span></div>
-          <div class="module-stat"><span class="lbl">Ganancia Unificada U$D</span><span class="val ${ganUnifU>=0?'positive':'negative'}">${fmtUSD(ganUnifU)}</span></div>
-          <div class="module-stat"><span class="lbl">Balance Inversión U$D</span><span class="val ${balInvU>=0?'positive':'negative'}">${fmtUSD(balInvU)}</span></div>
-          <div class="module-stat" style="border-top:1px solid var(--gold-dim);padding-top:6px;margin-top:4px"><span class="lbl" style="color:var(--gold);font-weight:600">Resta Cobrar U$D</span><span class="val" style="color:var(--gold);font-weight:800">${fmtUSD(restaU)}</span></div>
-          <div class="module-stat"><span class="lbl">Caja Actual U$D</span><span class="val ${cajaU>=0?'positive':'negative'}">${fmtUSD(cajaU)}</span></div>
-          <div class="module-stat"><span class="lbl">Promedio Inversión Mensual</span><span class="val">${fmtUSD(promU)}</span></div>
-        </div>
+        <div class="module-stats">${statsHTML}</div>
         <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
           <table class="module-table">
             <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>

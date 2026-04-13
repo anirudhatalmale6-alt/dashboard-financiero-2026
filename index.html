@@ -1462,12 +1462,6 @@ function addNewModulesFromRaw(raw){
         Inversion_Pesos:cellVal(raw,mod.invRow,mod.pesosCol)||0,
         Resta_Cobrar_Pesos:cellVal(raw,mod.restaRow,mod.pesosCol)||0
       });
-      // Also add to vendedor data so they appear in all charts
-      allData.vendedor.push({
-        Vendedor:mod.name,Mes:m,
-        Ganancia_USD:ganUSD,
-        Ganancia_Pesos:ganPesos
-      });
     });
   });
 }

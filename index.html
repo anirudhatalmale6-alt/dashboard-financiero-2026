@@ -187,7 +187,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ranking-card .chart-subtitle{font-size:10px}
 
 /* Module Cards */
-.modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:48px}
+.modules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.sidebar.collapsed~.main .modules{grid-template-columns:repeat(4,1fr)}
 .module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:.3s}
 .module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .module-name{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -452,7 +453,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .print-btn:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .print-btn svg{width:16px;height:16px;fill:currentColor}
 
-@media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.vd-cards{grid-template-columns:repeat(3,1fr)!important}.ingresos-monthly-grid{grid-template-columns:repeat(2,1fr)}#vendedorDetailContainer{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.vd-cards{grid-template-columns:repeat(3,1fr)!important}.ingresos-monthly-grid{grid-template-columns:repeat(2,1fr)}#vendedorDetailContainer{grid-template-columns:repeat(2,1fr)}.modules{grid-template-columns:repeat(2,1fr)}}
 /* Mobile filter bar */
 .mobile-bar{display:none;position:sticky;top:0;z-index:20;background:var(--surface2);border-bottom:2px solid var(--gold-dim);padding:12px 16px;gap:10px;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,.5)}
 .mobile-bar .filter-select{padding:8px 10px;font-size:12px;flex:1;min-width:0}

@@ -1658,7 +1658,9 @@ async function loadAllData(){
         {name:'Tobias',tab:'Tobias',range:'B1:G56'},
         {name:'Tino',tab:'Tino',range:'B1:G56'},
         {name:'Linea 314',tab:'Linea 314',range:'B1:H54'},
-        {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'}
+        {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'},
+        {name:'Creditos',tab:'VENTA DE CREDITOS EN PESOS',range:'B1:I15'},
+        {name:'Inversiones',tab:'Inversiones',range:'B1:I15'}
       ];
       var invResults=await Promise.all(invTabs.map(function(t){return fetchSheetRange(t.tab,t.range).catch(function(){return null;});}));
       window._vendorInvestments={};
@@ -1674,7 +1676,7 @@ async function loadAllData(){
             var num=0;
             if(typeof val==='number')num=val;
             else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
-            monthly.push(num);
+            monthly.push(Math.abs(num));
             monthCount++;
           }
         }

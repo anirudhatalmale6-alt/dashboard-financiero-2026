@@ -1606,6 +1606,13 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
+    // Fetch vendor header rows for Balance section (merged cells not returned in full-sheet fetch)
+    try{
+      var socHead=await fetchSheetRange('DASHBOARD MARTIN','C206:AB206');
+      var martHead=await fetchSheetRange('DASHBOARD MARTIN','C254:AB254');
+      if(socHead&&socHead[0]) window._socVendorNames=socHead[0]; // [Osito, , , , , Patito, , , , , Gonza, ...]
+      if(martHead&&martHead[0]) window._martVendorNames=martHead[0];
+    }catch(e){}
     // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
     try{
       var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R189:AC189');
@@ -1812,7 +1819,7 @@ function renderAcumuladoCards(){
   } else {
     // Global mode: read from DASHBOARD MARTIN columns
     for(let i=0;i<12;i++){
-      const row=3+i;
+      const row=i;
       const netoUSD=dashNum(row,11);
       const netoPesos=dashNum(row,10);
       const neto1=isUSD?netoUSD:netoPesos;
@@ -2549,19 +2556,29 @@ function renderDetalleIngresos(){
   container.innerHTML='';
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   // DASHBOARD MARTIN: vendors in ROWS, months in COLUMNS (E=Ene,F=Feb,...P=Dic)
-  // Ganancia en Dolares: rows 33-43, Ganancia en Pesos: rows 46-56
-  const vendRows=[
-    {name:'Tecno',usdRow:33,pesosRow:46},
-    {name:'Inversiones',usdRow:34,pesosRow:47},
-    {name:'Creditos',usdRow:35,pesosRow:48},
-    {name:'Osito S.r.l.',usdRow:36,pesosRow:49},
-    {name:'Patito S.A.',usdRow:37,pesosRow:50},
-    {name:'Gonza',usdRow:38,pesosRow:51},
-    {name:'Mely',usdRow:39,pesosRow:52},
-    {name:'Tobias',usdRow:41,pesosRow:54},
-    {name:'Tino',usdRow:42,pesosRow:55},
-    {name:'Linea 314',usdRow:43,pesosRow:56}
-  ];
+  // Dynamically find Ganancia en Dolares/Pesos sections
+  var usdStart=-1,pesosStart=-1,usdEnd=-1,pesosEnd=-1;
+  for(var si=20;si<80&&si<dashRaw.length;si++){
+    var cv=dashRaw[si]&&dashRaw[si][2]?String(dashRaw[si][2]):'';
+    if(cv.indexOf('Ganancia en Dolares')>=0) usdStart=si+1;
+    if(cv.indexOf('Ganancia en Pesos')>=0){pesosStart=si+1;if(usdEnd<0)usdEnd=si;}
+    if(pesosStart>0&&cv==='Total'){pesosEnd=si;break;}
+  }
+  if(usdStart<0||pesosStart<0){usdStart=30;usdEnd=42;pesosStart=43;pesosEnd=56;}
+  if(usdEnd<0)usdEnd=pesosStart-1;
+  // Build vendor rows dynamically
+  const vendRows=[];
+  for(var ui=usdStart;ui<usdEnd;ui++){
+    var vn=dashRaw[ui]&&dashRaw[ui][2]?String(dashRaw[ui][2]).trim():'';
+    if(!vn||vn==='Total')continue;
+    // Find matching pesos row
+    var pr=-1;
+    for(var pi=pesosStart;pi<=pesosEnd;pi++){
+      var pn=dashRaw[pi]&&dashRaw[pi][2]?String(dashRaw[pi][2]).trim():'';
+      if(pn===vn){pr=pi;break;}
+    }
+    vendRows.push({name:vn,usdRow:ui,pesosRow:pr>=0?pr:ui+(pesosStart-usdStart)});
+  }
 
   function parseVal(v){
     if(typeof v==='number')return v;
@@ -2600,9 +2617,9 @@ function renderDetalleIngresos(){
       <td>${fmtPesos(totalPesos)}</td>
     </tr>`;
 
-    // Total Unificado from Ingresos Generales (rows 3-14, col 8=USD, col 7=Pesos)
-    const uniUSD=dashNum(3+mi,8);
-    const uniPesos=dashNum(3+mi,7);
+    // Total Unificado from Ingresos Generales (rows 0-11, col 8=USD, col 7=Pesos)
+    const uniUSD=dashNum(mi,8);
+    const uniPesos=dashNum(mi,7);
     tbodyHTML+=`<tr class="total-row uni-row">
       <td>TOTAL UNIFICADO</td>
       <td>${fmtUSD(uniUSD)}</td>
@@ -2799,8 +2816,8 @@ function renderIngresosTotales(){
 
   // Year ranges: 2026=rows 3-14 (total 15), 2027=rows 17-28 (total 29), combined total=row 30
   var yearBlocks=[];
-  if(yearFilter==='2026'||yearFilter==='all') yearBlocks.push({start:3,total:15,label:'2026'});
-  if(yearFilter==='2027'||yearFilter==='all') yearBlocks.push({start:17,total:29,label:'2027'});
+  if(yearFilter==='2026'||yearFilter==='all') yearBlocks.push({start:0,total:12,label:'2026'});
+  if(yearFilter==='2027'||yearFilter==='all') yearBlocks.push({start:14,total:26,label:'2027'});
 
   let tbody='';
   let totUSD=0,totPesos=0,totUniP=0,totUniU=0,totGastos=0,totFP=0,totFU=0;
@@ -2891,21 +2908,19 @@ function updateDynamicTitles(){
     h2.innerHTML=parts.join(' ')+' <em>'+last+'</em>';
   }
   // Section titles from DASHBOARD sheet
-  setT('secIngresosTotales',1,2,'Ingresos Totales','--gold');
+  // Headers were removed from sheet; use hardcoded title
+  (function(){var el=document.getElementById('secIngresosTotales');if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Ingresos <em>Generales</em>';})();
   // Override titles with client's preferred names
   (function(){
     var el=document.getElementById('secDetalleIngresos');
     if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalles de Ingresos <em>Mensuales</em>';
   })();
-  (function(){
-    var el=document.getElementById('secModulos');
-    if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Control Financiero y Balance / Modulos de <em>Negocios</em>';
-  })();
-  setT('secCuotasPesos',114,2,'Cuotas a Cobrar vs Pagar en Pesos',null);
-  setT('secCuotas',130,2,'Cuotas a Cobrar vs Pagar en Dólares',null);
-  setT('secVendedorDash',183,2,'Detalle Mensual por Vendedor / Módulo',null);
-  // Section dividers
-  setDiv('secEstadoCuentas',149,2,'Estado de Cuentas y Comisiones Vendedores');
+  setT('secModulos',124,2,'Control Financiero y Balance / Modulos de Negocios','--gold');
+  // These sections use dynamic scanning so title row positions change — use hardcoded titles
+  (function(){var el=document.getElementById('secCuotasPesos');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Pesos</em>';})();
+  (function(){var el=document.getElementById('secCuotas');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Dólares</em>';})();
+  (function(){var el=document.getElementById('secVendedorDash');if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalle Mensual por Vendedor / <em>Módulo</em>';})();
+  (function(){var el=document.getElementById('secEstadoCuentas');if(el){var h2=el.querySelector('h2');if(h2)h2.innerHTML='Estado de Cuentas y Comisiones <em>Vendedores</em>';}})();
 }
 
 function renderAll(){
@@ -3036,16 +3051,16 @@ function renderKPIs(){
   // Determine current month index and previous month for trend
   // Find last month with data as the "current" month
   function findLastDataMonth(){
-    for(let i=14;i>=3;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
+    for(let i=11;i>=0;i--){if(dashNum(i,4)!==0||dashNum(i,5)!==0)return i;}
     return -1;
   }
   let curIdx=-1,prevIdx=-1;
   if(filterMes!=='all'){
-    curIdx=3+allMeses.indexOf(filterMes);
-    prevIdx=curIdx>3?curIdx-1:-1;
+    curIdx=allMeses.indexOf(filterMes);
+    prevIdx=curIdx>0?curIdx-1:-1;
   } else {
     curIdx=findLastDataMonth();
-    prevIdx=curIdx>3?curIdx-1:-1;
+    prevIdx=curIdx>0?curIdx-1:-1;
   }
 
   var cardsRow=document.getElementById('kpiCardsRow');
@@ -3064,36 +3079,36 @@ function renderKPIs(){
     const promPesos=mesesCount>0?ganPesos/mesesCount:0;
     let gastos=0;
     let monthRows=[];
-    if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
-    else{var maxRowV=3+new Date().getMonth();for(let i=3;i<=maxRowV;i++)monthRows.push(i);}
+    if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[idx];}
+    else{var maxRowV=new Date().getMonth();for(let i=0;i<=maxRowV;i++)monthRows.push(i);}
     monthRows.forEach(r=>{gastos+=dashNum(r,9);});
 
     const allVd=allData.vendedor.filter(r=>r.Vendedor===filterVendedor);
     // Fix: use actual current month for vendor-filtered view (not global findLastDataMonth)
     if(filterMes==='all'){
-      const actualMonthIdx=new Date().getMonth(); // 0-based (0=Jan, 2=Mar)
-      curIdx=3+actualMonthIdx; // convert to dashRaw row index (3=Jan, 5=Mar)
-      prevIdx=curIdx>3?curIdx-1:-1;
+      const actualMonthIdx=new Date().getMonth(); // 0-based (0=Jan, 3=Apr)
+      curIdx=actualMonthIdx;
+      prevIdx=curIdx>0?curIdx-1:-1;
     }
     let curGanUSD=0,curGanPesos=0,prevGanUSD=0,prevGanPesos=0,curGastos=0,prevGastos=0;
-    if(curIdx>=3){
-      const curMes=allMeses[curIdx-3];
+    if(curIdx>=0){
+      const curMes=allMeses[curIdx];
       const cr=allVd.find(r=>r.Mes===curMes);
       curGanUSD=cr?(cr.Ganancia_USD||0):0;curGanPesos=cr?(cr.Ganancia_Pesos||0):0;
       curGastos=dashNum(curIdx,9);
     }
-    if(prevIdx>=2){
-      const prevMes=allMeses[prevIdx-3];
+    if(prevIdx>=0){
+      const prevMes=allMeses[prevIdx];
       const pr=allVd.find(r=>r.Mes===prevMes);
       prevGanUSD=pr?(pr.Ganancia_USD||0):0;prevGanPesos=pr?(pr.Ganancia_Pesos||0):0;
       prevGastos=dashNum(prevIdx,9);
     }
-    const tGanU=prevIdx>=3?trendBadge(curGanUSD,prevGanUSD):'';
-    const tGanP=prevIdx>=3?trendBadge(curGanPesos,prevGanPesos):'';
-    const tGas=prevIdx>=3?trendBadge(curGastos,prevGastos):'';
+    const tGanU=prevIdx>=0?trendBadge(curGanUSD,prevGanUSD):'';
+    const tGanP=prevIdx>=0?trendBadge(curGanPesos,prevGanPesos):'';
+    const tGas=prevIdx>=0?trendBadge(curGastos,prevGastos):'';
 
     const showGastos=['Inversiones','Creditos','Tecno'].includes(filterVendedor);
-    const curMesName=curIdx>=3?allMeses[curIdx-3]:'—';
+    const curMesName=curIdx>=0?allMeses[curIdx]:'—';
 
     function rkRow(label,val,trend,color,isBold){
       var s='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px';
@@ -3135,8 +3150,8 @@ function renderKPIs(){
     kpiEl.style.display='none';
     if(cardsRow)cardsRow.style.display='flex';
     let monthRows=[];
-    if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[2+idx];}
-    else{var maxRow=2+new Date().getMonth();for(let i=2;i<=maxRow;i++)monthRows.push(i);}
+    if(filterMes!=='all'){const idx=allMeses.indexOf(filterMes);if(idx>=0)monthRows=[idx];}
+    else{var maxRow=new Date().getMonth();for(let i=0;i<=maxRow;i++)monthRows.push(i);}
 
     let brutoUSD=0,brutoPesos=0,unificadoPesos=0,unificadoUSD=0,gastos=0,netoPesos=0,netoUSD=0;
     monthRows.forEach(r=>{
@@ -3147,7 +3162,7 @@ function renderKPIs(){
 
     // Trend: current month vs previous month
     let tBrutoU='',tBrutoP='',tGas='',tNetoU='',tNetoP='',tUniU='',tUniP='';
-    if(curIdx>=3&&prevIdx>=3){
+    if(curIdx>=0&&prevIdx>=0){
       tBrutoU=trendBadge(dashNum(curIdx,4),dashNum(prevIdx,4));
       tBrutoP=trendBadge(dashNum(curIdx,5),dashNum(prevIdx,5));
       tGas=trendBadge(dashNum(curIdx,9),dashNum(prevIdx,9));
@@ -3196,7 +3211,7 @@ function renderKPIs(){
       var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       var cmIdx=new Date().getMonth();
       var cmName=cmNames[cmIdx];
-      var cmRow=3+cmIdx;
+      var cmRow=cmIdx;
       var cmUniUSD=dashNum(cmRow,8);
       var cmUniPesos=dashNum(cmRow,7);
       var cmBrutoUSD=dashNum(cmRow,4);
@@ -3231,11 +3246,11 @@ function renderCurrentMonthKPIs(){
   var allMeses=mesNames;
   var curIdx=allMeses.indexOf(curMes);
   if(curIdx<0)return;
-  var rowIdx=3+curIdx;
+  var rowIdx=curIdx;
   var uniUSD=dashNum(rowIdx,8);
   var uniPesos=dashNum(rowIdx,7);
   var tUSD='',tPesos='';
-  if(curIdx>0){var prevRow=3+curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
+  if(curIdx>0){var prevRow=curIdx-1;tUSD=trendBadge(uniUSD,dashNum(prevRow,8));tPesos=trendBadge(uniPesos,dashNum(prevRow,7));}
   cmEl.innerHTML=`
     <div class="kpi-cm usd">
       <div class="cm-label">Total Unificado Dólares</div>
@@ -3581,27 +3596,89 @@ function renderModules(){
   function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
 
   // DASHBOARD MARTIN "Balance y Ganancias por Modulo de Negocio"
-  // Sociedades section (rows 128-165): 6 vendors in column pairs
-  // Martin section (rows 166-202): 4 vendors in column pairs
-  var socVendors=[
-    {name:'Osito S.r.l.',uCol:4,pCol:5,icon:'📦'},
-    {name:'Patito S.A.',uCol:9,pCol:10,icon:'🏢'},
-    {name:'Gonza',uCol:14,pCol:15,icon:'🤝'},
-    {name:'Mely',uCol:19,pCol:20,icon:'👩'},
-    {name:'Tobias',uCol:24,pCol:25,icon:'🧑'},
-    {name:'Tino',uCol:29,pCol:30,icon:'💻'}
-  ];
-  var martVendors=[
-    {name:'Tecno',uCol:4,pCol:5,icon:'📈'},
-    {name:'Inversiones',uCol:9,pCol:10,icon:'💳'},
-    {name:'Creditos',uCol:14,pCol:15,icon:'💰'},
-    {name:'Linea 314',uCol:19,pCol:20,icon:'📡'}
-  ];
-  // Balance rows for Sociedades (sB) and Martin (mB)
-  var sB={gan:158,ganUnif:159,balInv:160,resta:161,caja:163,prom:165};
-  var mB={gan:196,ganUnif:197,balInv:198,resta:199,caja:200,prom:202};
-  // Monthly data: Sociedades start=130 (2026), Martin start=168 (2026)
+  // Find section dynamically by scanning for markers
+  var socStart=-1,martStart=-1;
+  for(var si=100;si<dashRaw.length;si++){
+    if(!dashRaw[si])continue;
+    var cv=dashRaw[si][2];
+    if(typeof cv==='string'){
+      if(cv.indexOf('Balance y Ganancias')>=0) socStart=si+1; // next row is first vendor section
+      if(socStart>0&&si>socStart+30&&cv==='Tecno') martStart=si;
+      // Also detect Martin section by checking if it's a vendor name after the Sociedades balance rows
+    }
+  }
+  if(socStart<0) socStart=125;
+  if(martStart<0) martStart=163;
+
+  // Dynamic vendor names from range fetch (merged cells), fallback to hardcoded
+  var sn=window._socVendorNames||[];
+  var mn=window._martVendorNames||[];
+  var defIcons=['📦','🏢','🤝','👩','🧑','💻'];
+  var defIconsM=['📈','💳','💰','📡','🔧','🔩'];
+
+  // Sociedades: 6 vendors at offsets 0,5,10,15,20,25 in range query (cols E/F, J/K, O/P, T/U, Y/Z, AD/AE)
+  var socVendors=[];
+  var socOffsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
+  var socDefNames=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+  for(var vi=0;vi<socOffsets.length;vi++){
+    var vn=(sn[socOffsets[vi].rng]&&typeof sn[socOffsets[vi].rng]==='string')?sn[socOffsets[vi].rng].trim():socDefNames[vi];
+    socVendors.push({name:vn,uCol:socOffsets[vi].u,pCol:socOffsets[vi].p,icon:defIcons[vi]});
+  }
+
+  // Martin: vendors at same offsets
+  var martVendors=[];
+  var martOffsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
+  var martDefNames=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  for(var vi=0;vi<martOffsets.length;vi++){
+    var vn=(mn[martOffsets[vi].rng]&&typeof mn[martOffsets[vi].rng]==='string')?mn[martOffsets[vi].rng].trim():martDefNames[vi];
+    // Skip empty vendors (no name in spreadsheet and no default makes sense)
+    martVendors.push({name:vn,uCol:martOffsets[vi].u,pCol:martOffsets[vi].p,icon:defIconsM[vi]});
+  }
+
+  // Find balance rows dynamically by scanning for "Balance" marker after monthly data
+  // Sociedades: starts at socStart, monthly data at socStart+2 (after Año header), balance after Total+Año2027+...
+  var socMonthStart=socStart+2; // Año 2026 row + 1
+  var socBalStart=-1,martBalStart=-1;
+  for(var bi=socStart;bi<dashRaw.length&&bi<socStart+50;bi++){
+    if(dashRaw[bi]&&dashRaw[bi][2]==='Balance'){socBalStart=bi;break;}
+  }
+  for(var bi=martStart;bi<dashRaw.length&&bi<martStart+50;bi++){
+    if(dashRaw[bi]&&dashRaw[bi][2]==='Balance'){martBalStart=bi;break;}
+  }
+  if(socBalStart<0) socBalStart=154;
+  if(martBalStart<0) martBalStart=192;
+
+  // Balance stats: scan from Balance marker to find each label row
+  function findBalRows(base){
+    var r={gan:-1,ganUnif:-1,balInv:-1,resta:-1,caja:-1,promSoc:-1,promMart:-1};
+    for(var i=base+1;i<base+12&&i<dashRaw.length;i++){
+      if(!dashRaw[i])continue;
+      var t=dashRaw[i][2];
+      if(typeof t!=='string')continue;
+      var tl=t.toLowerCase().trim();
+      if(tl.indexOf('ganancia actual')>=0&&r.gan<0) r.gan=i;
+      else if(tl.indexOf('ganancia unificada')>=0&&r.ganUnif<0) r.ganUnif=i;
+      else if(tl.indexOf('balance inv')>=0&&r.balInv<0) r.balInv=i;
+      else if(tl.indexOf('resta cobrar')>=0&&r.resta<0) r.resta=i;
+      else if(tl.indexOf('caja actual')>=0&&r.caja<0) r.caja=i;
+      else if(tl.indexOf('promedio')>=0&&tl.indexOf('sociedad')>=0&&r.promSoc<0) r.promSoc=i;
+      else if(tl.indexOf('promedio')>=0&&tl.indexOf('martin')>=0&&r.promMart<0) r.promMart=i;
+      else if(tl.indexOf('promedio')>=0&&r.promSoc<0) r.promSoc=i;
+    }
+    return r;
+  }
+  var sBal=findBalRows(socBalStart);
+  var mBal=findBalRows(martBalStart);
+  var sB={gan:sBal.gan>=0?sBal.gan:155,ganUnif:sBal.ganUnif>=0?sBal.ganUnif:156,balInv:sBal.balInv>=0?sBal.balInv:157,resta:sBal.resta>=0?sBal.resta:158,caja:sBal.caja>=0?sBal.caja:160,prom:sBal.promSoc>=0?sBal.promSoc:161};
+  var mB={gan:mBal.gan>=0?mBal.gan:193,ganUnif:mBal.ganUnif>=0?mBal.ganUnif:194,balInv:mBal.balInv>=0?mBal.balInv:195,resta:mBal.resta>=0?mBal.resta:196,caja:mBal.caja>=0?mBal.caja:197,prom:mBal.promSoc>=0?mBal.promSoc:198};
+
+  // Monthly data start: first month row after "Año 2026"
+  var socMonStart=socStart+2; // socStart=vendor row, +1=Año2026, +2=Enero
+  var martMonStart=martStart+2;
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Read dynamic labels from dashRaw column C
+  function lbl(row,fallback){return (dashRaw[row]&&dashRaw[row][2])?String(dashRaw[row][2]).trim():fallback;}
 
   function buildCard(v,balRows,monthStart){
     if(filterVendedor!=='all'&&filterVendedor!==v.name)return;
@@ -3617,30 +3694,30 @@ function renderModules(){
     for(var mi=0;mi<12;mi++){
       var usd=dv(monthStart+mi,v.uCol),pes=dv(monthStart+mi,v.pCol);
       dtU+=usd;dtP+=pes;
-      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td class="'+(usd>0?'positive':usd<0?'negative':'')+'">'+ fmtUSD(usd)+'</td><td class="'+(pes>0?'positive':pes<0?'negative':'')+'">'+ fmtPesos(pes)+'</td></tr>';
+      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td style="color:var(--green)">'+ fmtUSD(usd)+'</td><td style="color:var(--blue)">'+ fmtPesos(pes)+'</td></tr>';
     }
-    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td>'+fmtUSD(dtU)+'</td><td>'+fmtPesos(dtP)+'</td></tr>';
+    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td></tr>';
 
-    // Helper: show USD + Pesos stacked when both exist
+    // Helper: show USD (green) + Pesos (celeste) stacked when both exist
     function statPair(label,usd,pesos,highlight){
       var sty=highlight?'border-top:1px solid var(--gold-dim);padding-top:6px;margin-top:4px':'';
       var lblSty=highlight?'color:var(--gold);font-weight:600':'';
-      var valSty=highlight?'color:var(--gold);font-weight:800':'';
       var h='<div class="module-stat" style="'+sty+'"><span class="lbl" style="'+lblSty+'">'+label+'</span>';
-      h+='<span class="val" style="'+valSty+';display:flex;flex-direction:column;align-items:flex-end;gap:2px">';
-      h+='<span class="'+(usd>=0?'positive':'negative')+'">'+fmtUSD(usd)+'</span>';
-      if(pesos) h+='<span class="'+(pesos>=0?'positive':'negative')+'" style="font-size:11px;opacity:.8">'+fmtPesos(pesos)+'</span>';
+      h+='<span class="val" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">';
+      h+='<span style="color:var(--green);font-weight:'+(highlight?'800':'600')+'">'+fmtUSD(usd)+'</span>';
+      if(pesos) h+='<span style="color:var(--blue);font-size:11px;font-weight:'+(highlight?'700':'500')+'">'+fmtPesos(pesos)+'</span>';
       h+='</span></div>';
       return h;
     }
 
+    // Dynamic labels from spreadsheet cells
     var statsHTML='';
-    statsHTML+=statPair('Ganancia 2026+2027',ganU,ganP,false);
-    statsHTML+=statPair('Ganancia Unificada',ganUnifU,ganUnifP,false);
-    statsHTML+=statPair('Balance Inversión',balInvU,balInvP,false);
-    statsHTML+=statPair('Resta Cobrar',restaU,restaP,true);
-    statsHTML+=statPair('Caja Actual',cajaU,cajaP,false);
-    statsHTML+=statPair('Promedio Inversión',promU,promP,false);
+    statsHTML+=statPair(lbl(balRows.gan,'Ganancia Actual'),ganU,ganP,false);
+    statsHTML+=statPair(lbl(balRows.ganUnif,'Ganancia Unificada'),ganUnifU,ganUnifP,false);
+    statsHTML+=statPair(lbl(balRows.balInv,'Balance Inversión'),balInvU,balInvP,false);
+    statsHTML+=statPair(lbl(balRows.resta,'Resta Cobrar'),restaU,restaP,true);
+    statsHTML+=statPair(lbl(balRows.caja,'Caja Actual'),cajaU,cajaP,false);
+    statsHTML+=statPair(lbl(balRows.prom,'Promedio Inversión'),promU,promP,false);
 
     container.innerHTML+=`
       <div class="module-card" style="display:flex;flex-direction:column">
@@ -3656,9 +3733,9 @@ function renderModules(){
   }
 
   // Sociedades
-  socVendors.forEach(function(v){buildCard(v,sB,130);});
+  socVendors.forEach(function(v){buildCard(v,sB,socMonStart);});
   // Martin
-  martVendors.forEach(function(v){buildCard(v,mB,168);});
+  martVendors.forEach(function(v){buildCard(v,mB,martMonStart);});
 }
 
 function renderModuleDetails(){

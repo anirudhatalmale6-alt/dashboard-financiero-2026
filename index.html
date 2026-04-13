@@ -1687,7 +1687,7 @@ async function loadAllData(){
         if(!rows){window._invDebug.push({vn:vn,status:'null'});return;}
         window._invDebug.push({vn:vn,status:'ok',rowCount:rows.length,sample0:rows[0],sample2:rows[2]});
         var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
-        var parseDebug=[];
+        try{
         for(var ri=0;ri<rows.length;ri++){
           var label=rows[ri]&&rows[ri][0]?String(rows[ri][0]).trim().toUpperCase():'';
           var mi=mesNames.indexOf(label);
@@ -1696,10 +1696,9 @@ async function loadAllData(){
           var num=0;
           if(typeof val==='number')num=val;
           else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
-          if(vn==='Gonza'&&mi<3) parseDebug.push({ri:ri,label:label,mi:mi,val:val,tval:typeof val,num:num,abs:Math.abs(num),rowLen:rows[ri].length});
           monthly[mi]=Math.abs(num);
         }
-        if(vn==='Gonza') window._gonzaDebug=parseDebug;
+        }catch(parseErr){window._parseError=vn+': '+parseErr.message;}
         window._vendorInvestments[vn]=monthly;
       });
     }catch(e){window._invError=e.message||String(e);}

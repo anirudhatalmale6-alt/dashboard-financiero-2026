@@ -724,7 +724,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="charts" id="secGraficosIngresos" style="grid-template-columns:1fr;margin-bottom:28px">
     <div class="chart-card full">
-      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos Mensuales</div>
+      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos y Gastos Mensuales</div>
       <div class="chart-subtitle">Ingresos vs Gastos (DASHBOARD) — 2026</div>
       <div class="chart-mode-toggle" id="chartModeToggle">
         <button class="cm-btn active" data-mode="solo" onclick="setChartMode('solo')">Solo</button>
@@ -1666,29 +1666,29 @@ async function loadAllData(){
         {name:'Tino',tab:'Tino',range:'B1:G56'},
         {name:'Linea 314',tab:'Linea 314',range:'B1:H54'},
         {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'},
-        {name:'Creditos',tab:'VENTA DE CREDITOS EN PESOS',sql:'select B, I where B is not null limit 13'},
-        {name:'Inversiones',tab:'Inversiones',sql:'select B, I where B is not null limit 13'}
+        {name:'Creditos',tab:'VENTA CREDITOS EN PESOS',sql:'select AP, AT where AP is not null limit 13'},
+        {name:'Inversiones',tab:'Inversiones',sql:'select B, I where B is not null limit 13'},
+        {name:'Tecno',tab:'VENTA TECNO EN DOLARES',sql:'select AW, BD where AW is not null limit 15'}
       ];
       var invResults=await Promise.all(invTabs.map(function(t){
         if(t.sql) return fetchSheetSQL(t.tab,t.sql).catch(function(){return null;});
         return fetchSheetRange(t.tab,t.range).catch(function(){return null;});
       }));
       window._vendorInvestments={};
+      var mesNames=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
       invResults.forEach(function(rows,idx){
         if(!rows)return;
         var vn=invTabs[idx].name;
-        var monthly=[];
-        var monthCount=0;
-        for(var ri=0;ri<rows.length&&monthCount<12;ri++){
+        var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
+        for(var ri=0;ri<rows.length;ri++){
           var label=rows[ri]&&rows[ri][0]?String(rows[ri][0]).trim().toUpperCase():'';
-          if(label==='ENERO'||label==='FEBRERO'||label==='MARZO'||label==='ABRIL'||label==='MAYO'||label==='JUNIO'||label==='JULIO'||label==='AGOSTO'||label==='SEPTIEMBRE'||label==='OCTUBRE'||label==='NOVIEMBRE'||label==='DICIEMBRE'){
-            var val=rows[ri][rows[ri].length-1];
-            var num=0;
-            if(typeof val==='number')num=val;
-            else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
-            monthly.push(Math.abs(num));
-            monthCount++;
-          }
+          var mi=mesNames.indexOf(label);
+          if(mi<0) continue;
+          var val=rows[ri][rows[ri].length-1];
+          var num=0;
+          if(typeof val==='number')num=val;
+          else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
+          monthly[mi]=Math.abs(num);
         }
         window._vendorInvestments[vn]=monthly;
       });
@@ -3399,18 +3399,34 @@ function renderModuleKPIs(){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
+  // Filter out Modulo 1 and Modulo 2 (no revenue yet)
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+
   // Sort by USD descending (ranking: most revenue first)
   cards.sort(function(a,b){return Math.abs(b.usd)-Math.abs(a.usd);});
 
-  // Render sorted cards
+  // Get investment data for current month
+  var invData=window._vendorInvestments||{};
+
+  // Render sorted cards: ganancia card + investment card below each
   cards.forEach(function(c){
-    var html='<div style="flex:1;min-width:75px;max-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
-    html+='<div style="font-size:12px;margin-bottom:4px">'+c.icon+'</div>';
-    html+='<div style="font-size:8px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
-    html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
-    if(c.pesos) html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos)+'</div>';
-    html+='</div>';
-    container.innerHTML+=html;
+    var invMonthly=invData[c.name]||[];
+    var invVal=invMonthly[cmIdx]||0;
+    var colHtml='<div style="flex:1;min-width:75px;max-width:100px;display:flex;flex-direction:column;gap:4px">';
+    // Ganancia card
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
+    colHtml+='<div style="font-size:12px;margin-bottom:4px">'+c.icon+'</div>';
+    colHtml+='<div style="font-size:8px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
+    if(c.pesos) colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos)+'</div>';
+    colHtml+='</div>';
+    // Investment card below
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px 6px;text-align:center">';
+    colHtml+='<div style="font-size:7px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:700;color:var(--rosa);line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
+    colHtml+='</div>';
+    colHtml+='</div>';
+    container.innerHTML+=colHtml;
   });
 }
 

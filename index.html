@@ -1356,6 +1356,13 @@ async function fetchSheetRange(name,range){
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
+async function fetchSheetSQL(name,query){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&tq=${encodeURIComponent(query)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
+}
 
 // Generic fetch functions for any spreadsheet by ID
 async function fetchRawSheetById(sheetId,name){
@@ -1659,10 +1666,13 @@ async function loadAllData(){
         {name:'Tino',tab:'Tino',range:'B1:G56'},
         {name:'Linea 314',tab:'Linea 314',range:'B1:H54'},
         {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'},
-        {name:'Creditos',tab:'VENTA DE CREDITOS EN PESOS',range:'B1:I15'},
-        {name:'Inversiones',tab:'Inversiones',range:'B1:I15'}
+        {name:'Creditos',tab:'VENTA DE CREDITOS EN PESOS',sql:'select B, I where B is not null limit 13'},
+        {name:'Inversiones',tab:'Inversiones',sql:'select B, I where B is not null limit 13'}
       ];
-      var invResults=await Promise.all(invTabs.map(function(t){return fetchSheetRange(t.tab,t.range).catch(function(){return null;});}));
+      var invResults=await Promise.all(invTabs.map(function(t){
+        if(t.sql) return fetchSheetSQL(t.tab,t.sql).catch(function(){return null;});
+        return fetchSheetRange(t.tab,t.range).catch(function(){return null;});
+      }));
       window._vendorInvestments={};
       invResults.forEach(function(rows,idx){
         if(!rows)return;

@@ -700,10 +700,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="it-scroll"><table class="it-table" id="ingresosTotalesTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div>
   </div>
 
-  <h2 class="section-title" id="secAcumuladoAnual"><span class="dot" style="background:var(--blue)"></span>Acumulado <em>Anual Neto</em></h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
+    <h2 class="section-title" id="secAcumuladoAnual" style="margin-bottom:0;margin-top:0"><span class="dot" style="background:var(--blue)"></span>Acumulado <em>Anual Neto</em></h2>
+    <div id="yearToggleAcum" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-year="2026" onclick="setYearFilterAcum('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-year="2027" onclick="setYearFilterAcum('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-year="all" onclick="setYearFilterAcum('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
   <div class="acum-cards" id="acumCards"></div>
 
-  <h2 class="section-title" id="secDetalleIngresos"><span class="dot" style="background:var(--gold)"></span>Detalle <em>Ingresos Mensuales</em></h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
+    <h2 class="section-title" id="secDetalleIngresos" style="margin-bottom:0;margin-top:0"><span class="dot" style="background:var(--gold)"></span>Detalle <em>Ingresos Mensuales</em></h2>
+    <div id="yearToggleDetalle" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-year="2026" onclick="setYearFilterDetalle('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-year="2027" onclick="setYearFilterDetalle('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-year="all" onclick="setYearFilterDetalle('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
   <div class="ingresos-monthly-grid" id="ingresosMensualContainer"></div>
 
   <div class="charts" id="secGraficosIngresos" style="grid-template-columns:1fr;margin-bottom:28px">
@@ -1306,6 +1320,8 @@ function toggleTheme(){
 let filterMes='all';
 let filterVendedor='all';
 let yearFilter='2026';
+let yearFilterAcum='2026';
+let yearFilterDetalle='2026';
 // URL parameter: ?vendedor=TINO locks the dashboard to that vendor
 var urlVendedor=(function(){var p=new URLSearchParams(window.location.search);return p.get('vendedor')||'';})();
 if(urlVendedor)filterVendedor=urlVendedor;
@@ -1798,37 +1814,40 @@ function renderAcumuladoCards(){
   const allMeses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const allMesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+  // Year blocks based on filter
+  var yearBlocks=[];
+  if(yearFilterAcum==='2026'||yearFilterAcum==='all') yearBlocks.push({start:0,label:'2026'});
+  if(yearFilterAcum==='2027'||yearFilterAcum==='all') yearBlocks.push({start:14,label:'2027'});
+
   let cumNeto=0, cumNeto2=0;
   const months=[];
 
-  if(filterVendedor!=='all'){
-    // Per-vendedor mode: use vendedorGains (vendor's OWN gains from GANANCIA DE LOS VENDEDORES section)
-    const vgSrc=allData.vendedorGains||[];
-    const vData=vgSrc.filter(r=>r.Vendedor===filterVendedor);
+  yearBlocks.forEach(function(blk){
     for(let i=0;i<12;i++){
-      const mesName=allMesesFull[i];
-      const row=vData.find(r=>r.Mes===mesName);
-      const netoUSD=row?(row.Ganancia_USD||0):0;
-      const netoPesos=row?(row.Ganancia_Pesos||0):0;
-      const neto1=isUSD?netoUSD:netoPesos;
-      const neto2=isUSD?netoPesos:netoUSD;
-      cumNeto+=neto1; cumNeto2+=neto2;
-      const hasData=neto1!==0||neto2!==0;
-      months.push({mes:allMeses[i],mesFull:mesName,neto:neto1,neto2,cumNeto,cumNeto2,hasData});
+      if(filterVendedor!=='all'){
+        const vgSrc=allData.vendedorGains||[];
+        const vData=vgSrc.filter(r=>r.Vendedor===filterVendedor);
+        const mesName=allMesesFull[i];
+        const row=vData.find(r=>r.Mes===mesName);
+        const netoUSD=row?(row.Ganancia_USD||0):0;
+        const netoPesos=row?(row.Ganancia_Pesos||0):0;
+        const neto1=isUSD?netoUSD:netoPesos;
+        const neto2=isUSD?netoPesos:netoUSD;
+        cumNeto+=neto1; cumNeto2+=neto2;
+        const hasData=neto1!==0||neto2!==0;
+        months.push({mes:allMeses[i]+(yearFilterAcum==='all'?' '+blk.label.slice(2):''),mesFull:mesName,neto:neto1,neto2,cumNeto,cumNeto2,hasData});
+      } else {
+        const row=blk.start+i;
+        const netoUSD=dashNum(row,11);
+        const netoPesos=dashNum(row,10);
+        const neto1=isUSD?netoUSD:netoPesos;
+        const neto2=isUSD?netoPesos:netoUSD;
+        cumNeto+=neto1; cumNeto2+=neto2;
+        const hasData=neto1!==0||neto2!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
+        months.push({mes:allMeses[i]+(yearFilterAcum==='all'?' '+blk.label.slice(2):''),mesFull:allMesesFull[i],neto:neto1,neto2,cumNeto,cumNeto2,hasData});
+      }
     }
-  } else {
-    // Global mode: read from DASHBOARD MARTIN columns
-    for(let i=0;i<12;i++){
-      const row=i;
-      const netoUSD=dashNum(row,11);
-      const netoPesos=dashNum(row,10);
-      const neto1=isUSD?netoUSD:netoPesos;
-      const neto2=isUSD?netoPesos:netoUSD;
-      cumNeto+=neto1; cumNeto2+=neto2;
-      const hasData=neto1!==0||neto2!==0||(isUSD?dashNum(row,8):dashNum(row,7))!==0;
-      months.push({mes:allMeses[i],mesFull:allMesesFull[i],neto:neto1,neto2,cumNeto,cumNeto2,hasData});
-    }
-  }
+  });
 
   // Find max cumulative for progress bar
   const maxCum=Math.max(...months.map(m=>Math.abs(m.cumNeto)),1);
@@ -2591,48 +2610,57 @@ function renderDetalleIngresos(){
     return 0;
   }
 
-  meses.forEach((mes,mi)=>{
-    if(filterMes!=='all'&&mes!==filterMes)return;
-    const monthCol=4+mi; // E=4 for Enero, F=5 for Febrero, etc.
-    let totalUSD=0,totalPesos=0;
-    let hasAnyData=false;
+  // Year blocks for Detalles
+  var detYearBlocks=[];
+  if(yearFilterDetalle==='2026'||yearFilterDetalle==='all') detYearBlocks.push({colStart:4,uniRowStart:0,label:'2026'});
+  if(yearFilterDetalle==='2027'||yearFilterDetalle==='all') detYearBlocks.push({colStart:16,uniRowStart:14,label:'2027'});
 
-    const filteredVend=filterVendedor!=='all'?vendRows.filter(vr=>vr.name===filterVendedor):vendRows;
+  detYearBlocks.forEach(function(blk){
+    meses.forEach((mes,mi)=>{
+      if(filterMes!=='all'&&mes!==filterMes)return;
+      const monthCol=blk.colStart+mi;
+      let totalUSD=0,totalPesos=0;
+      let hasAnyData=false;
 
-    let tbodyHTML='';
-    filteredVend.forEach(vr=>{
-      const usd=parseVal(dashRaw[vr.usdRow]?dashRaw[vr.usdRow][monthCol]:0);
-      const pesos=parseVal(dashRaw[vr.pesosRow]?dashRaw[vr.pesosRow][monthCol]:0);
-      totalUSD+=usd;totalPesos+=pesos;
-      if(usd!==0||pesos!==0)hasAnyData=true;
-      tbodyHTML+=`<tr>
-        <td>${vr.name}</td>
-        <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
-        <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+      const filteredVend=filterVendedor!=='all'?vendRows.filter(vr=>vr.name===filterVendedor):vendRows;
+
+      let tbodyHTML='';
+      filteredVend.forEach(vr=>{
+        const usd=parseVal(dashRaw[vr.usdRow]?dashRaw[vr.usdRow][monthCol]:0);
+        const pesos=parseVal(dashRaw[vr.pesosRow]?dashRaw[vr.pesosRow][monthCol]:0);
+        totalUSD+=usd;totalPesos+=pesos;
+        if(usd!==0||pesos!==0)hasAnyData=true;
+        tbodyHTML+=`<tr>
+          <td>${vr.name}</td>
+          <td class="${usd>0?'positive':usd<0?'negative':''}">${fmtUSD(usd)}</td>
+          <td class="${pesos>0?'positive':pesos<0?'negative':''}">${fmtPesos(pesos)}</td>
+        </tr>`;
+      });
+      tbodyHTML+=`<tr class="total-row">
+        <td>TOTAL</td>
+        <td>${fmtUSD(totalUSD)}</td>
+        <td>${fmtPesos(totalPesos)}</td>
       </tr>`;
+
+      // Total Unificado from Ingresos Generales
+      const uniRow=blk.uniRowStart+mi;
+      const uniUSD=dashNum(uniRow,8);
+      const uniPesos=dashNum(uniRow,7);
+      tbodyHTML+=`<tr class="total-row uni-row">
+        <td>TOTAL UNIFICADO</td>
+        <td>${fmtUSD(uniUSD)}</td>
+        <td>${fmtPesos(uniPesos)}</td>
+      </tr>`;
+
+      var mesLabel=yearFilterDetalle==='all'?mes+' '+blk.label:mes;
+      container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
+        <div class="ing-month-title"><span class="icon">📅</span>${mesLabel}</div>
+        <table>
+          <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+          <tbody>${tbodyHTML}</tbody>
+        </table>
+      </div>`;
     });
-    tbodyHTML+=`<tr class="total-row">
-      <td>TOTAL</td>
-      <td>${fmtUSD(totalUSD)}</td>
-      <td>${fmtPesos(totalPesos)}</td>
-    </tr>`;
-
-    // Total Unificado from Ingresos Generales (rows 0-11, col 8=USD, col 7=Pesos)
-    const uniUSD=dashNum(mi,8);
-    const uniPesos=dashNum(mi,7);
-    tbodyHTML+=`<tr class="total-row uni-row">
-      <td>TOTAL UNIFICADO</td>
-      <td>${fmtUSD(uniUSD)}</td>
-      <td>${fmtPesos(uniPesos)}</td>
-    </tr>`;
-
-    container.innerHTML+=`<div class="ing-month-card${hasAnyData?'':' no-data'}">
-      <div class="ing-month-title"><span class="icon">📅</span>${mes}</div>
-      <table>
-        <thead><tr><th>Vendedor</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
-        <tbody>${tbodyHTML}</tbody>
-      </table>
-    </div>`;
   });
 }
 
@@ -4913,6 +4941,26 @@ function setYearFilter(yr){
     b.style.color=active?'#1a1b2e':'var(--text2)';
   });
   renderIngresosTotales();
+}
+function setYearFilterAcum(yr){
+  yearFilterAcum=yr;
+  document.querySelectorAll('#yearToggleAcum button').forEach(b=>{
+    var active=b.dataset.year===yr;
+    b.classList.toggle('active',active);
+    b.style.background=active?'var(--gold)':'transparent';
+    b.style.color=active?'#1a1b2e':'var(--text2)';
+  });
+  renderAcumuladoCards();
+}
+function setYearFilterDetalle(yr){
+  yearFilterDetalle=yr;
+  document.querySelectorAll('#yearToggleDetalle button').forEach(b=>{
+    var active=b.dataset.year===yr;
+    b.classList.toggle('active',active);
+    b.style.background=active?'var(--gold)':'transparent';
+    b.style.color=active?'#1a1b2e':'var(--text2)';
+  });
+  renderDetalleIngresos();
 }
 
 // Event Listeners

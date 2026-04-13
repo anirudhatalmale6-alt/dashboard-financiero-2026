@@ -13,7 +13,7 @@
 --bg:#0a0b0f;--surface:#12131a;--surface2:#1a1b25;--surface3:#22232f;
 --border:#2a2b3a;--text:#e8e6e3;--text2:#9a98a0;--text3:#5c5a65;
 --gold:#d4a853;--gold2:#f0c96b;--gold-dim:rgba(212,168,83,.12);
---green:#34d399;--red:#f87171;--blue:#60a5fa;--purple:#a78bfa;
+--green:#34d399;--red:#f87171;--blue:#60a5fa;--purple:#a78bfa;--rosa:#e88bad;
 --teal:#2dd4bf;--pink:#f472b6;--orange:#fb923c;--cyan:#22d3ee;
 }
 html{scroll-behavior:smooth}
@@ -1473,15 +1473,9 @@ function addNewModulesFromRaw(raw){
 }
 
 function enrichVendedorFromRaw(raw){
-  // Always override vendedor data from raw DASHBOARD (source of truth)
-  // USD data: gviz rows 17-28 (0-indexed), Pesos data: rows 32-43
-  // Col order: Tecno(4),Inversiones(5),Creditos(6),Osito(7),Patito(8),Gonza(9),Mely(10),Linea314(11),Tobias(12),Tino(13)
-  const vendCols=[
-    {name:'Tecno',col:4},{name:'Inversiones',col:5},{name:'Creditos',col:6},
-    {name:'Osito S.r.l.',col:7},{name:'Patito S.A.',col:8},{name:'Gonza',col:9},
-    {name:'Mely',col:10},{name:'Linea 314',col:11},{name:'Tobias',col:12},
-    {name:'Tino',col:13},{name:'Modulo 2',col:14},{name:'Modulo 1',col:15}
-  ];
+  // Dynamically find "Ganancia en Dolares" and "Ganancia en Pesos" sections
+  // Layout: rows=vendors, cols=months (col 4=Ene, col 5=Feb, ... col 15=Dic)
+  if(!raw||raw.length<50)return;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function parseVal(v){
     if(typeof v==='number')return v;
@@ -1493,19 +1487,49 @@ function enrichVendedorFromRaw(raw){
     }
     return 0;
   }
-  meses.forEach((mes,mi)=>{
-    vendCols.forEach(vc=>{
-      const usdRow=raw[17+mi];
-      const pesosRow=raw[32+mi];
-      const usd=parseVal(usdRow?usdRow[vc.col]:0);
-      const pesos=parseVal(pesosRow?pesosRow[vc.col]:0);
-      const entry=allData.vendedor.find(r=>r.Vendedor===vc.name&&r.Mes===mes);
+  // Scan for section headers
+  var usdStart=-1,pesosStart=-1;
+  for(var si=20;si<80&&si<raw.length;si++){
+    var cv=raw[si]&&raw[si][2]?String(raw[si][2]):'';
+    if(cv.indexOf('Ganancia en Dolares')>=0) usdStart=si+1;
+    if(cv.indexOf('Ganancia en Pesos')>=0){pesosStart=si+1;break;}
+  }
+  if(usdStart<0||pesosStart<0)return;
+  // Build vendor name→row mapping for both sections
+  function buildVendorMap(startRow,endRow){
+    var map={};
+    for(var ri=startRow;ri<endRow&&ri<raw.length;ri++){
+      if(!raw[ri])continue;
+      var vn=raw[ri][2]?String(raw[ri][2]).trim():'';
+      if(!vn||vn==='Total'||vn.indexOf('Ganancia')>=0||vn.indexOf('Unificado')>=0)continue;
+      map[vn]=ri;
+    }
+    return map;
+  }
+  var usdMap=buildVendorMap(usdStart,pesosStart);
+  var pesosMap=buildVendorMap(pesosStart,pesosStart+15);
+  // For each vendor in USD section, read monthly data from columns 4-15
+  Object.keys(usdMap).forEach(function(vendName){
+    var usdRowIdx=usdMap[vendName];
+    // Find matching pesos row (same vendor name)
+    var pesosRowIdx=-1;
+    Object.keys(pesosMap).forEach(function(pn){
+      if(pn===vendName)pesosRowIdx=pesosMap[pn];
+    });
+    meses.forEach(function(mes,mi){
+      var usd=parseVal(raw[usdRowIdx]?raw[usdRowIdx][4+mi]:0);
+      var pesos=pesosRowIdx>=0?parseVal(raw[pesosRowIdx]?raw[pesosRowIdx][4+mi]:0):0;
+      // Normalize vendor name for matching
+      var matchName=vendName;
+      if(vendName==='Osito S.r.l')matchName='Osito S.r.l.';
+      if(vendName==='Patito S.A')matchName='Patito S.A.';
+      var entry=allData.vendedor.find(function(r){return r.Vendedor===matchName&&r.Mes===mes;});
+      if(!entry)entry=allData.vendedor.find(function(r){return r.Vendedor===vendName&&r.Mes===mes;});
       if(entry){
-        // Always use DASHBOARD raw data as source of truth
-        if(usd!==0)entry.Ganancia_USD=usd;
-        if(pesos!==0)entry.Ganancia_Pesos=pesos;
+        entry.Ganancia_USD=usd;
+        entry.Ganancia_Pesos=pesos;
       }else if(usd||pesos){
-        allData.vendedor.push({Vendedor:vc.name,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
+        allData.vendedor.push({Vendedor:matchName,Mes:mes,Ganancia_USD:usd,Ganancia_Pesos:pesos});
       }
     });
   });
@@ -1630,6 +1654,38 @@ async function loadAllData(){
       var martHead=await fetchSheetRange('DASHBOARD MARTIN','C254:AB254');
       if(socHead&&socHead[0]) window._socVendorNames=socHead[0]; // [Osito, , , , , Patito, , , , , Gonza, ...]
       if(martHead&&martHead[0]) window._martVendorNames=martHead[0];
+    }catch(e){}
+    // Fetch monthly investment data from individual vendor tabs
+    try{
+      var invTabs=[
+        {name:'Gonza',tab:'Gonza',range:'B1:G62'},
+        {name:'Osito S.r.l.',tab:'Osito S.r.l.',range:'B60:H118'},
+        {name:'Mely',tab:'Mely',range:'B85:I149'},
+        {name:'Tobias',tab:'Tobias',range:'B1:G56'},
+        {name:'Tino',tab:'Tino',range:'B1:G56'},
+        {name:'Linea 314',tab:'Linea 314',range:'B1:H54'},
+        {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'}
+      ];
+      var invResults=await Promise.all(invTabs.map(function(t){return fetchSheetRange(t.tab,t.range).catch(function(){return null;});}));
+      window._vendorInvestments={};
+      invResults.forEach(function(rows,idx){
+        if(!rows)return;
+        var vn=invTabs[idx].name;
+        var monthly=[];
+        var monthCount=0;
+        for(var ri=0;ri<rows.length&&monthCount<12;ri++){
+          var label=rows[ri]&&rows[ri][0]?String(rows[ri][0]).trim().toUpperCase():'';
+          if(label==='ENERO'||label==='FEBRERO'||label==='MARZO'||label==='ABRIL'||label==='MAYO'||label==='JUNIO'||label==='JULIO'||label==='AGOSTO'||label==='SEPTIEMBRE'||label==='OCTUBRE'||label==='NOVIEMBRE'||label==='DICIEMBRE'){
+            var val=rows[ri][rows[ri].length-1];
+            var num=0;
+            if(typeof val==='number')num=val;
+            else if(typeof val==='string'){var neg=val.includes('-')?-1:1;var cl=val.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');num=(parseFloat(cl)||0)*neg;}
+            monthly.push(num);
+            monthCount++;
+          }
+        }
+        window._vendorInvestments[vn]=monthly;
+      });
     }catch(e){}
     // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
     try{
@@ -3803,14 +3859,16 @@ function renderModules(){
     var cajaU=dv(balRows.caja,v.uCol),cajaP=dv(balRows.caja,v.pCol);
     var promU=dv(balRows.prom,v.uCol),promP=dv(balRows.prom,v.pCol);
 
-    // Monthly detail table
-    var tbodyHTML='',dtU=0,dtP=0;
+    // Monthly detail table with investment column
+    var invData=window._vendorInvestments&&window._vendorInvestments[v.name]?window._vendorInvestments[v.name]:[];
+    var tbodyHTML='',dtU=0,dtP=0,dtInv=0;
     for(var mi=0;mi<12;mi++){
       var usd=dv(monthStart+mi,v.uCol),pes=dv(monthStart+mi,v.pCol);
-      dtU+=usd;dtP+=pes;
-      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td style="color:var(--green)">'+ fmtUSD(usd)+'</td><td style="color:var(--blue)">'+ fmtPesos(pes)+'</td></tr>';
+      var inv=invData[mi]||0;
+      dtU+=usd;dtP+=pes;dtInv+=inv;
+      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td style="color:var(--rosa)">'+(inv?fmtUSD(inv):'U$D 0')+'</td><td style="color:var(--green)">'+ fmtUSD(usd)+'</td><td style="color:var(--blue)">'+ fmtPesos(pes)+'</td></tr>';
     }
-    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td></tr>';
+    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td></tr>';
 
     // Build balance stats as a table matching the monthly table typography
     var balData=[
@@ -3836,7 +3894,7 @@ function renderModules(){
         <div class="module-stats">${statsHTML}</div>
         <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
           <table class="module-table">
-            <thead><tr><th>Mes</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+            <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
             <tbody>${tbodyHTML}</tbody>
           </table>
         </div>

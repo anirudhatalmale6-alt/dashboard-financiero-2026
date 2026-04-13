@@ -1679,6 +1679,7 @@ async function loadAllData(){
           else invResults.push(await fetchSheetRange(t.tab,t.range));
         }catch(e){invResults.push(null);}
       }
+      window._invCallCount=(window._invCallCount||0)+1;
       window._vendorInvestments={};
       window._invDebug=[];
       var mesNames=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];

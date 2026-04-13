@@ -1687,10 +1687,12 @@ async function loadAllData(){
         var vn=invTabs[ti].name;
         if(!rows){window._vendorInvestments[vn]=[0,0,0,0,0,0,0,0,0,0,0,0];continue;}
         var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
+        var seen={};
         for(var ri=0;ri<rows.length;ri++){
           if(!rows[ri]||!rows[ri][0])continue;
           var lb=String(rows[ri][0]).trim().toUpperCase();
-          if(lb in MN){
+          if(lb in MN && !(lb in seen)){
+            seen[lb]=1;
             monthly[MN[lb]]=parseInvVal(rows[ri][rows[ri].length-1]);
           }
         }

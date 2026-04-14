@@ -1735,15 +1735,39 @@ async function loadAllData(){
     try{
       window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C93:P103');
     }catch(e){window._uniGainsRows=null;}
-    // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-168 (sequential to avoid gviz rate limits)
-    // Uses fetchSheetRange (returns formatted values) since fetchRawRange skips hidden rows
+    // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-204
+    // Fetches wide range and scans by header labels (gviz skips hidden rows so exact row ranges don't work)
     try{
-      var cuCobrarUSD=await fetchSheetRange('DASHBOARD MARTIN','C120:P130');
-      var cuCobrarPesos=await fetchSheetRange('DASHBOARD MARTIN','C132:P142');
-      var cuUniPesos=await fetchSheetRange('DASHBOARD MARTIN','C144:P155');
-      var cuUniUSD=await fetchSheetRange('DASHBOARD MARTIN','C157:P168');
-      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','E316:P316');
-      window._cuotasPreFetch={cobrarUSD:cuCobrarUSD,cobrarPesos:cuCobrarPesos,uniPesos:cuUniPesos,uniUSD:cuUniUSD,restaPagar:cuRestaPagar};
+      var cuotasAll=await fetchSheetRange('DASHBOARD MARTIN','C119:P204');
+      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','C310:P320');
+      // Parse cuotas sections by header labels
+      var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};
+      var curSection=null;
+      for(var ci=0;ci<cuotasAll.length;ci++){
+        var r=cuotasAll[ci];
+        if(!r||!r[0])continue;
+        var lbl=String(r[0]).toLowerCase().trim();
+        if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')){curSection='cobrarUSD';continue;}
+        if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')){curSection='cobrarPesos';continue;}
+        if(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')){curSection='uniPesos';continue;}
+        if(lbl.includes('unificado en dolares')||lbl.includes('unifiado en dolares')){
+          if(cuSections.uniUSD.length===0){curSection='uniUSD';}else{curSection=null;}
+          continue;
+        }
+        if(lbl.includes('balance y ganancias')){curSection=null;continue;}
+        if(curSection&&cuSections[curSection])cuSections[curSection].push(r);
+      }
+      // Parse Resta Pagar from rows 310-320 (scan for "Resta Pagar" label)
+      var rpRow=null;
+      if(cuRestaPagar){
+        for(var ri=0;ri<cuRestaPagar.length;ri++){
+          if(cuRestaPagar[ri]&&cuRestaPagar[ri][0]&&String(cuRestaPagar[ri][0]).toLowerCase().includes('resta pagar')){
+            rpRow=cuRestaPagar[ri];break;
+          }
+        }
+      }
+      cuSections.restaPagar=rpRow?[rpRow]:[];
+      window._cuotasPreFetch=cuSections;
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
@@ -4067,7 +4091,7 @@ function extractCuotasData(vendorFilter,useEmpresas){
     var col=2+m; // E=col2 in range starting at C
     cobrarUSD.push(useUSDIdx>=0&&cuUSD[useUSDIdx]?pv(cuUSD[useUSDIdx][col]):0);
     cobrarPesos.push(usePesosIdx>=0&&cuPesos[usePesosIdx]?pv(cuPesos[usePesosIdx][col]):0);
-    pagarUSD.push(rp&&rp[0]?Math.abs(pv(rp[0][m])):0); // restaPagar range is E316:P316, so col=m directly
+    pagarUSD.push(rp&&rp[0]?Math.abs(pv(rp[0][2+m])):0); // restaPagar from C310:P320, col 2+m = E onwards
     pagarPesos.push(0); // No resta pagar pesos row found
   }
   // Gastos Mensuales / Sueldo Martin — keep using dashRaw for now (row scanning)

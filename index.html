@@ -2033,18 +2033,18 @@ function renderInversiones(){
   var grandTotalPesos=invNum(163,6)||invNum(187,6)||0;
 
   // PROPIEDADES & VEHICULOS (rows 164-174)
-  for(var r=164;r<=174;r++){
-    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+  for(var ir=164;ir<=174;ir++){
+    var nm=invStr(ir,3);var usd=invNum(ir,5);var pesos=invNum(ir,6);
     if(nm&&usd) properties.push({name:nm,usd,pesos:pesos||usd*cotizacion});
   }
   // CREDITOS A COBRAR (rows 175-176)
-  for(var r=175;r<=176;r++){
-    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+  for(var ir=175;ir<=176;ir++){
+    var nm=invStr(ir,3);var usd=invNum(ir,5);var pesos=invNum(ir,6);
     if(nm&&usd) credits.push({name:nm,usd,pesos:pesos||usd*cotizacion});
   }
   // CUOTAS POR COBRAR (rows 177-178)
-  for(var r=177;r<=178;r++){
-    var nm=invStr(r,3);var usd=invNum(r,5);var pesos=invNum(r,6);
+  for(var ir=177;ir<=178;ir++){
+    var nm=invStr(ir,3);var usd=invNum(ir,5);var pesos=invNum(ir,6);
     if(nm&&(usd||pesos)) cuotas.push({name:nm,usd:usd||0,pesos:pesos||0});
   }
   // INVERSIONES Y GASTOS - monthly from row 189 (lo que falta cancelar por mes)

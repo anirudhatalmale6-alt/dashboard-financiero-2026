@@ -1736,12 +1736,13 @@ async function loadAllData(){
       window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C93:P103');
     }catch(e){window._uniGainsRows=null;}
     // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-168 (sequential to avoid gviz rate limits)
+    // Uses fetchSheetRange (returns formatted values) since fetchRawRange skips hidden rows
     try{
-      var cuCobrarUSD=await fetchRawRange('DASHBOARD MARTIN','C120:P130');
-      var cuCobrarPesos=await fetchRawRange('DASHBOARD MARTIN','C132:P142');
-      var cuUniPesos=await fetchRawRange('DASHBOARD MARTIN','C144:P155');
-      var cuUniUSD=await fetchRawRange('DASHBOARD MARTIN','C157:P168');
-      var cuRestaPagar=await fetchRawRange('DASHBOARD MARTIN','E316:P316');
+      var cuCobrarUSD=await fetchSheetRange('DASHBOARD MARTIN','C120:P130');
+      var cuCobrarPesos=await fetchSheetRange('DASHBOARD MARTIN','C132:P142');
+      var cuUniPesos=await fetchSheetRange('DASHBOARD MARTIN','C144:P155');
+      var cuUniUSD=await fetchSheetRange('DASHBOARD MARTIN','C157:P168');
+      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','E316:P316');
       window._cuotasPreFetch={cobrarUSD:cuCobrarUSD,cobrarPesos:cuCobrarPesos,uniPesos:cuUniPesos,uniUSD:cuUniUSD,restaPagar:cuRestaPagar};
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
     // Try fetching tracking data (may not exist yet)

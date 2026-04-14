@@ -1379,6 +1379,13 @@ async function fetchSheetRangeById(sheetId,name,range){
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
+async function fetchRawRange(name,range){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
+}
 
 // ============================================================
 // CUOTAS PANEL CONFIGURATION
@@ -1564,36 +1571,45 @@ function enrichModulesWithPesos(raw){
 }
 
 // Enrich allData.resumen with correct totals from DASHBOARD MARTIN specific rows
+// Uses fetchRawRange to get exact rows (bypasses hidden-row index mismatch)
 // Row 70 = Ingresos USD, Row 91 = Ingresos Pesos, Row 113 = Unificado USD
 // Row 312 = Gastos, G11:G22 = Cotización Dólar
-function enrichResumenFromRaw(raw){
-  if(!raw||raw.length<312)return;
+async function enrichResumenFromRaw(){
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
-  const ingUSDRow=raw[69];    // Row 70 - Ingresos en Dolares
-  const ingPesosRow=raw[90];  // Row 91 - Ingresos en Pesos
-  const uniUSDRow=raw[112];   // Row 113 - Ingresos Unificados en Dolares
-  const gastosRow=raw[311];   // Row 312 - Gastos Inversores Intereses Mensual
-  meses.forEach((mes,mi)=>{
-    const col=4+mi; // E=4(Enero), F=5(Febrero)...P=15(Diciembre)
-    const ingUSD=pv(ingUSDRow?ingUSDRow[col]:0);
-    const ingPesos=pv(ingPesosRow?ingPesosRow[col]:0);
-    const cotiz=pv(raw[10+mi]?raw[10+mi][6]:0); // G11:G22 = cotización dólar
-    const uniUSD=pv(uniUSDRow?uniUSDRow[col]:0);
-    const uniPesos=uniUSD*cotiz; // Unificado Pesos = Unificado USD × cotización
-    const gastos=pv(gastosRow?gastosRow[col]:0);
-    const entry=allData.resumen.find(r=>r.Mes===mes);
-    if(entry){
-      entry.Ingresos_USD=ingUSD;
-      entry.Ingresos_Pesos=ingPesos;
-      entry.Cotizacion_Dolar=cotiz;
-      entry.Total_Unificado_Pesos=uniPesos;
-      entry.Total_Unificado_USD=uniUSD;
-      entry.Gastos_Fijos_USD=gastos;
-      entry.Total_Final_USD=uniUSD+gastos;
-      entry.Total_Final_Pesos=uniPesos+(gastos*cotiz);
-    }
-  });
+  try{
+    const[ingUSDRows,ingPesosRows,uniUSDRows,gastosRows,cotizRows]=await Promise.all([
+      fetchRawRange('DASHBOARD MARTIN','E70:P70'),
+      fetchRawRange('DASHBOARD MARTIN','E91:P91'),
+      fetchRawRange('DASHBOARD MARTIN','E113:P113'),
+      fetchRawRange('DASHBOARD MARTIN','E312:P312'),
+      fetchRawRange('DASHBOARD MARTIN','G11:G22')
+    ]);
+    const ingUSDRow=ingUSDRows&&ingUSDRows[0]?ingUSDRows[0]:[];
+    const ingPesosRow=ingPesosRows&&ingPesosRows[0]?ingPesosRows[0]:[];
+    const uniUSDRow=uniUSDRows&&uniUSDRows[0]?uniUSDRows[0]:[];
+    const gastosRow=gastosRows&&gastosRows[0]?gastosRows[0]:[];
+    const cotizArr=cotizRows?cotizRows.map(r=>r&&r[0]?pv(r[0]):0):[];
+    meses.forEach((mes,mi)=>{
+      const ingUSD=pv(ingUSDRow[mi]||0);
+      const ingPesos=pv(ingPesosRow[mi]||0);
+      const cotiz=cotizArr[mi]||0;
+      const uniUSD=pv(uniUSDRow[mi]||0);
+      const uniPesos=uniUSD*cotiz;
+      const gastos=pv(gastosRow[mi]||0);
+      const entry=allData.resumen.find(r=>r.Mes===mes);
+      if(entry){
+        entry.Ingresos_USD=ingUSD;
+        entry.Ingresos_Pesos=ingPesos;
+        entry.Cotizacion_Dolar=cotiz;
+        entry.Total_Unificado_Pesos=uniPesos;
+        entry.Total_Unificado_USD=uniUSD;
+        entry.Gastos_Fijos_USD=gastos;
+        entry.Total_Final_USD=uniUSD+gastos;
+        entry.Total_Final_Pesos=uniPesos+(gastos*cotiz);
+      }
+    });
+  }catch(e){console.error('enrichResumenFromRaw error:',e);}
 }
 
 // Rebuild allData.modulos entirely from DASHBOARD "GANANCIA POR MODULO DE VENTAS" table
@@ -1714,7 +1730,11 @@ async function loadAllData(){
     enrichVendedorFromRaw(dRaw);
     await buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
-    enrichResumenFromRaw(dRaw);
+    await enrichResumenFromRaw();
+    // Fetch KPI ranking data: "Cuotas a Cobrar Unificado en Dolares" rows 188-198
+    try{
+      window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C188:P198');
+    }catch(e){window._uniGainsRows=null;}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     // Build cuotas panel HTML
@@ -3411,13 +3431,17 @@ function renderModuleKPIs(){
   // Filter out Modulo 1 and Modulo 2 (no revenue yet)
   cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
 
-  // Sort by "Cuotas a Cobrar Unificado en Dolares" (Dashboard Martin rows 188-198)
+  // Sort by "Cuotas a Cobrar Unificado en Dolares" (Dashboard Martin rows 188-198, fetched via range)
   var uniGains={};
   function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
-  for(var ui=187;ui<=197;ui++){
-    var ur=dashRaw[ui];
-    if(!ur||!ur[2])continue;
-    uniGains[normName(ur[2])]=Math.abs(dv(ui,4+cmIdx));
+  var ugRows=window._uniGainsRows||[];
+  for(var ui=0;ui<ugRows.length;ui++){
+    var ur=ugRows[ui];
+    if(!ur||!ur[0])continue; // col 0 = C (vendor name)
+    // Range is C188:P198 => col 0=C(name), cols 2..13 = E..P (months Jan-Dec)
+    var ugVal=ur[2+cmIdx]; // E=col2, F=col3... offset by 2 from range start C
+    if(typeof ugVal==='number') uniGains[normName(ur[0])]=Math.abs(ugVal);
+    else if(typeof ugVal==='string'){var neg=ugVal.includes('-')?-1:1;var cl=ugVal.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniGains[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}
   }
   cards.sort(function(a,b){return(uniGains[normName(b.name)]||0)-(uniGains[normName(a.name)]||0);});
 

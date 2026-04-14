@@ -1563,32 +1563,35 @@ function enrichModulesWithPesos(raw){
   });
 }
 
-// Enrich allData.resumen with correct totals from DASHBOARD summary block (rows 2-13)
-// LS_Resumen_Mensual misses vendors whose cells have string-formatted values
+// Enrich allData.resumen with correct totals from DASHBOARD MARTIN specific rows
+// Row 70 = Ingresos USD, Row 91 = Ingresos Pesos, Row 113 = Unificado USD
+// Row 312 = Gastos, G11:G22 = Cotización Dólar
 function enrichResumenFromRaw(raw){
-  if(!raw||raw.length<14)return;
+  if(!raw||raw.length<312)return;
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){const neg=v.includes('-')?-1:1;const cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  const ingUSDRow=raw[69];    // Row 70 - Ingresos en Dolares
+  const ingPesosRow=raw[90];  // Row 91 - Ingresos en Pesos
+  const uniUSDRow=raw[112];   // Row 113 - Ingresos Unificados en Dolares
+  const gastosRow=raw[311];   // Row 312 - Gastos Inversores Intereses Mensual
   meses.forEach((mes,mi)=>{
-    const row=raw[3+mi];
-    if(!row)return;
-    const ingUSD=pv(row[4]);     // Total income USD
-    const ingPesos=pv(row[5]);   // Total income Pesos
-    const cotiz=pv(row[6]);      // Cotización Dólar
-    const uniPesos=pv(row[7]);   // Total Unificado Pesos
-    const uniUSD=pv(row[8]);     // Total Unificado USD
-    const gastos=pv(row[9]);     // Gastos Fijos USD (negative)
+    const col=4+mi; // E=4(Enero), F=5(Febrero)...P=15(Diciembre)
+    const ingUSD=pv(ingUSDRow?ingUSDRow[col]:0);
+    const ingPesos=pv(ingPesosRow?ingPesosRow[col]:0);
+    const cotiz=pv(raw[10+mi]?raw[10+mi][6]:0); // G11:G22 = cotización dólar
+    const uniUSD=pv(uniUSDRow?uniUSDRow[col]:0);
+    const uniPesos=uniUSD*cotiz; // Unificado Pesos = Unificado USD × cotización
+    const gastos=pv(gastosRow?gastosRow[col]:0);
     const entry=allData.resumen.find(r=>r.Mes===mes);
     if(entry){
-      if(ingUSD)entry.Ingresos_USD=ingUSD;
-      if(ingPesos)entry.Ingresos_Pesos=ingPesos;
-      if(cotiz)entry.Cotizacion_Dolar=cotiz;
-      if(uniPesos)entry.Total_Unificado_Pesos=uniPesos;
-      if(uniUSD)entry.Total_Unificado_USD=uniUSD;
-      if(gastos)entry.Gastos_Fijos_USD=gastos;
-      // Recalculate finals from unified + gastos
-      entry.Total_Final_USD=(entry.Total_Unificado_USD||0)+(entry.Gastos_Fijos_USD||0);
-      entry.Total_Final_Pesos=(entry.Total_Unificado_Pesos||0)+((entry.Gastos_Fijos_USD||0)*(entry.Cotizacion_Dolar||1));
+      entry.Ingresos_USD=ingUSD;
+      entry.Ingresos_Pesos=ingPesos;
+      entry.Cotizacion_Dolar=cotiz;
+      entry.Total_Unificado_Pesos=uniPesos;
+      entry.Total_Unificado_USD=uniUSD;
+      entry.Gastos_Fijos_USD=gastos;
+      entry.Total_Final_USD=uniUSD+gastos;
+      entry.Total_Final_Pesos=uniPesos+(gastos*cotiz);
     }
   });
 }
@@ -3408,8 +3411,15 @@ function renderModuleKPIs(){
   // Filter out Modulo 1 and Modulo 2 (no revenue yet)
   cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
 
-  // Sort by USD descending (ranking: most revenue first)
-  cards.sort(function(a,b){return Math.abs(b.usd)-Math.abs(a.usd);});
+  // Sort by "Cuotas a Cobrar Unificado en Dolares" (Dashboard Martin rows 188-198)
+  var uniGains={};
+  function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
+  for(var ui=187;ui<=197;ui++){
+    var ur=dashRaw[ui];
+    if(!ur||!ur[2])continue;
+    uniGains[normName(ur[2])]=Math.abs(dv(ui,4+cmIdx));
+  }
+  cards.sort(function(a,b){return(uniGains[normName(b.name)]||0)-(uniGains[normName(a.name)]||0);});
 
   // Get investment data for current month
   var invData=window._vendorInvestments||{};

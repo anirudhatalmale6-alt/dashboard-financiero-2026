@@ -1735,6 +1735,17 @@ async function loadAllData(){
     try{
       window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C93:P103');
     }catch(e){window._uniGainsRows=null;}
+    // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-168
+    try{
+      var[cuCobrarUSD,cuCobrarPesos,cuUniPesos,cuUniUSD,cuRestaPagar]=await Promise.all([
+        fetchRawRange('DASHBOARD MARTIN','C120:P130'),
+        fetchRawRange('DASHBOARD MARTIN','C132:P142'),
+        fetchRawRange('DASHBOARD MARTIN','C144:P155'),
+        fetchRawRange('DASHBOARD MARTIN','C157:P168'),
+        fetchRawRange('DASHBOARD MARTIN','E316:P316')
+      ]);
+      window._cuotasPreFetch={cobrarUSD:cuCobrarUSD,cobrarPesos:cuCobrarPesos,uniPesos:cuUniPesos,uniUSD:cuUniUSD,restaPagar:cuRestaPagar};
+    }catch(e){window._cuotasPreFetch=null;}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     // Build cuotas panel HTML
@@ -4015,127 +4026,109 @@ function renderModuleDetails(){
 }
 
 function extractCuotasData(vendorFilter,useEmpresas){
-  if(!dashRaw)return{labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],vendors:[]};
-  // Fixed section positions: SOCIEDADES at dashRaw[114], MARTIN at dashRaw[279]
-  var martinStart=279,sociedadesStart=114;
-  // Choose section: main dashboard=MARTIN, empresas=SOCIEDADES
-  var scanStart=useEmpresas?sociedadesStart:martinStart;
-  var scanEnd=useEmpresas?martinStart:dashRaw.length;
-  // Find rows by scanning for marker text within chosen section
-  let cobrarUSDHeaderRow=-1,cobrarUSDTotalRow=-1,compromisoRow=-1;
-  let cobrarPesosHeaderRow=-1,cobrarPesosTotalRow=-1,compromisoPesosRow=-1;
-  let gastosHeaderRow=-1;
-  for(let i=scanStart;i<scanEnd&&i<dashRaw.length;i++){
-    const row=dashRaw[i];
-    if(!row)continue;
-    for(let j=0;j<row.length;j++){
-      if(!row[j]||typeof row[j]!=='string')continue;
-      const v=row[j].toLowerCase();
-      if(v.includes('ingresos de cuotas en dolares')&&cobrarUSDHeaderRow<0){
-        cobrarUSDHeaderRow=i;
-        for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
-          if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarUSDTotalRow=k;break;}
-        }
-      }
-      if(v.includes('resta pagar')&&!v.includes('pesos')&&compromisoRow<0){compromisoRow=i;}
-      if(v.includes('resta pagar')&&v.includes('pesos')&&compromisoPesosRow<0){compromisoPesosRow=i;}
-      if(v.includes('gastos mensuales')&&v.includes('sueldo')&&gastosHeaderRow<0){gastosHeaderRow=i;}
-      if(v.includes('ingresos de cuotas en pesos')&&cobrarPesosHeaderRow<0){
-        cobrarPesosHeaderRow=i;
-        for(let k=i+1;k<Math.min(i+20,dashRaw.length);k++){
-          if(dashRaw[k]&&dashRaw[k][2]==='Total'){cobrarPesosTotalRow=k;break;}
-        }
-        for(let k=i+1;k<Math.min(i+30,dashRaw.length);k++){
-          if(dashRaw[k]){
-            for(let jj=0;jj<dashRaw[k].length;jj++){
-              if(dashRaw[k][jj]&&typeof dashRaw[k][jj]==='string'&&dashRaw[k][jj].toLowerCase().includes('resta pagar')){
-                compromisoPesosRow=k;break;
-              }
-            }
-          }
-          if(compromisoPesosRow>=0)break;
-        }
-      }
-    }
-  }
-  // Fixed fallback: Gastos header at dashRaw[264], Compromisos at dashRaw[155] (SOCIEDADES section)
-  if(gastosHeaderRow<0)gastosHeaderRow=264;
-  if(compromisoRow<0)compromisoRow=155;
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const labels=meses.slice();
-  function getNum(row,col){
-    if(!dashRaw[row])return 0;
-    const v=dashRaw[row][col];
-    if(typeof v==='number')return Math.round(v);
-    if(typeof v==='string'){
-      const neg=v.includes('-')?-1:1;
-      const clean=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
-      const n=parseFloat(clean);
-      return isNaN(n)?0:Math.round(n*neg);
-    }
-    return 0;
-  }
-  // Extract vendor names from cuotas section (rows between header and Total)
+  // Uses pre-fetched cuotas data from Dashboard Martin rows 119-168 (bypasses hidden-row index issue)
+  var pf=window._cuotasPreFetch;
+  var empty={labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],cotizacion:[],unifiedIncome:[],unifiedExpenses:[],deudasMensuales:[],vendors:[]};
+  if(!pf)return empty;
+  function pv(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.round(n*neg);}return 0;}
+  // Pre-fetched ranges: col 0=C(name), col 1=D, col 2=E(Jan), ... col 13=P(Dec)
+  // Last row in each block is the Total row
+  var cuUSD=pf.cobrarUSD||[];   // rows 120-130 (10 vendors + total)
+  var cuPesos=pf.cobrarPesos||[]; // rows 132-142
+  var uniP=pf.uniPesos||[];    // rows 144-155
+  var uniD=pf.uniUSD||[];      // rows 157-168
+  var rp=pf.restaPagar||[];     // row 316 (Resta Pagar USD)
+  // Build vendor list from USD block (all rows except last = Total)
   var vendorsList=[];
-  if(cobrarUSDHeaderRow>=0&&cobrarUSDTotalRow>=0){
-    for(var k=cobrarUSDHeaderRow+1;k<cobrarUSDTotalRow;k++){
-      if(dashRaw[k]&&dashRaw[k][2]&&typeof dashRaw[k][2]==='string'&&dashRaw[k][2]!=='Total'){
-        vendorsList.push({name:dashRaw[k][2],usdRow:k,pesosRow:-1});
-      }
+  for(var vi=0;vi<cuUSD.length-1;vi++){
+    if(cuUSD[vi]&&cuUSD[vi][0]&&cuUSD[vi][0]!=='Total'){
+      vendorsList.push({name:String(cuUSD[vi][0]).trim(),usdIdx:vi,pesosIdx:-1});
     }
   }
   // Map pesos rows
-  if(cobrarPesosHeaderRow>=0&&cobrarPesosTotalRow>=0){
-    for(var k=cobrarPesosHeaderRow+1;k<cobrarPesosTotalRow;k++){
-      if(dashRaw[k]&&dashRaw[k][2]&&typeof dashRaw[k][2]==='string'&&dashRaw[k][2]!=='Total'){
-        var vn=vendorsList.find(function(v){return v.name===dashRaw[k][2];});
-        if(vn)vn.pesosRow=k;
-        else vendorsList.push({name:dashRaw[k][2],usdRow:-1,pesosRow:k});
+  for(var pi=0;pi<cuPesos.length-1;pi++){
+    if(cuPesos[pi]&&cuPesos[pi][0]&&cuPesos[pi][0]!=='Total'){
+      var nm=String(cuPesos[pi][0]).trim();
+      var vn=vendorsList.find(function(v){return v.name===nm;});
+      if(vn)vn.pesosIdx=pi;
+      else vendorsList.push({name:nm,usdIdx:-1,pesosIdx:pi});
+    }
+  }
+  // Determine which row to use: vendor-filtered or total (last row in block)
+  var useUSDIdx=cuUSD.length-1;
+  var usePesosIdx=cuPesos.length-1;
+  if(vendorFilter&&vendorFilter!=='all'){
+    var vf=vendorsList.find(function(v){return v.name.toLowerCase().indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(v.name.toLowerCase())>=0;});
+    if(vf){useUSDIdx=vf.usdIdx;usePesosIdx=vf.pesosIdx;}
+  }
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var labels=meses.slice();
+  var cobrarUSD=[],pagarUSD=[],cobrarPesos=[],pagarPesos=[];
+  for(var m=0;m<12;m++){
+    var col=2+m; // E=col2 in range starting at C
+    cobrarUSD.push(useUSDIdx>=0&&cuUSD[useUSDIdx]?pv(cuUSD[useUSDIdx][col]):0);
+    cobrarPesos.push(usePesosIdx>=0&&cuPesos[usePesosIdx]?pv(cuPesos[usePesosIdx][col]):0);
+    pagarUSD.push(rp&&rp[0]?Math.abs(pv(rp[0][m])):0); // restaPagar range is E316:P316, so col=m directly
+    pagarPesos.push(0); // No resta pagar pesos row found
+  }
+  // Gastos Mensuales / Sueldo Martin — keep using dashRaw for now (row scanning)
+  var gastosPesos=[],gastosUSD=[];
+  if(dashRaw){
+    var gastosHeaderRow=-1;
+    for(var gi=200;gi<dashRaw.length;gi++){
+      if(dashRaw[gi]){
+        for(var gj=0;gj<dashRaw[gi].length;gj++){
+          if(dashRaw[gi][gj]&&typeof dashRaw[gi][gj]==='string'&&dashRaw[gi][gj].toLowerCase().includes('gastos mensuales')&&dashRaw[gi][gj].toLowerCase().includes('sueldo')){
+            gastosHeaderRow=gi;break;
+          }
+        }
+      }
+      if(gastosHeaderRow>=0)break;
+    }
+    if(gastosHeaderRow>=0){
+      for(var gm=0;gm<12;gm++){
+        var gr=dashRaw[gastosHeaderRow+1+gm];
+        gastosUSD.push(gr?Math.abs(typeof gr[3]==='number'?Math.round(gr[3]):0):0);
+        gastosPesos.push(gr?Math.abs(typeof gr[4]==='number'?Math.round(gr[4]):0):0);
+      }
+    }else{for(var gm=0;gm<12;gm++){gastosPesos.push(0);gastosUSD.push(0);}}
+  }else{for(var gm=0;gm<12;gm++){gastosPesos.push(0);gastosUSD.push(0);}}
+  // Get monthly cotizacion from allData.resumen
+  var cotizacion=[],unifiedIncome=[],unifiedExpenses=[],deudasMensuales=[];
+  for(var m=0;m<12;m++){
+    var resEntry=allData.resumen.find(function(r){return r.Mes===meses[m];});
+    var cot=(resEntry&&resEntry.Cotizacion_Dolar)?resEntry.Cotizacion_Dolar:1450;
+    cotizacion.push(cot);
+    var deuda=(invDeudasMensuales&&invDeudasMensuales[m])?Math.abs(invDeudasMensuales[m]):0;
+    deudasMensuales.push(deuda);
+    unifiedIncome.push(Math.round(cobrarUSD[m]+(cobrarPesos[m]/cot)));
+    unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)+deuda));
+  }
+  // Pre-computed unified cuotas from Dashboard Martin (rows 144-155 pesos, 157-168 USD)
+  var cobrarUniUSD=[],cobrarUniPesos=[];
+  var useUniUSDIdx=uniD.length-1; // Total row (last)
+  var useUniPesosIdx=uniP.length-1;
+  if(vendorFilter&&vendorFilter!=='all'){
+    // Find vendor in unified blocks
+    for(var ui=0;ui<uniD.length-1;ui++){
+      if(uniD[ui]&&uniD[ui][0]){
+        var un=String(uniD[ui][0]).trim().toLowerCase();
+        if(un.indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(un)>=0){useUniUSDIdx=ui;break;}
+      }
+    }
+    for(var ui=0;ui<uniP.length-1;ui++){
+      if(uniP[ui]&&uniP[ui][0]){
+        var un=String(uniP[ui][0]).trim().toLowerCase();
+        if(un.indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(un)>=0){useUniPesosIdx=ui;break;}
       }
     }
   }
-  // Determine which row to use: vendor-filtered or total
-  var useUSDRow=cobrarUSDTotalRow;
-  var usePesosRow=cobrarPesosTotalRow;
-  if(vendorFilter&&vendorFilter!=='all'){
-    var vf=vendorsList.find(function(v){return v.name.toLowerCase().indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(v.name.toLowerCase())>=0;});
-    if(vf){useUSDRow=vf.usdRow;usePesosRow=vf.pesosRow;}
+  for(var m=0;m<12;m++){
+    var col=2+m;
+    cobrarUniUSD.push(useUniUSDIdx>=0&&uniD[useUniUSDIdx]?pv(uniD[useUniUSDIdx][col]):0);
+    cobrarUniPesos.push(useUniPesosIdx>=0&&uniP[useUniPesosIdx]?pv(uniP[useUniPesosIdx][col]):0);
   }
-  // Cols: 4=Enero, 5=Feb, ..., 15=Dec (indices for 12 months of 2026)
-  const cobrarUSD=[],pagarUSD=[],cobrarPesos=[],pagarPesos=[];
-  for(let m=0;m<12;m++){
-    const col=4+m;
-    cobrarUSD.push(useUSDRow>=0?getNum(useUSDRow,col):0);
-    pagarUSD.push(compromisoRow>=0?Math.abs(getNum(compromisoRow,col)):0);
-    cobrarPesos.push(usePesosRow>=0?getNum(usePesosRow,col):0);
-    pagarPesos.push(compromisoPesosRow>=0?Math.abs(getNum(compromisoPesosRow,col)):0);
-  }
-  // Gastos Mensuales / Sueldo Martin — monthly rows after header (col 3=USD, col 4=Pesos)
-  const gastosPesos=[],gastosUSD=[];
-  if(gastosHeaderRow>=0){
-    for(let m=0;m<12;m++){
-      var gr=dashRaw[gastosHeaderRow+1+m];
-      gastosUSD.push(gr?Math.abs(typeof gr[3]==='number'?Math.round(gr[3]):0):0);
-      gastosPesos.push(gr?Math.abs(typeof gr[4]==='number'?Math.round(gr[4]):0):0);
-    }
-  }else{for(let m=0;m<12;m++){gastosPesos.push(0);gastosUSD.push(0);}}
-  // Get monthly cotizacion (dollar blue) from allData.resumen
-  const mesesFull=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const cotizacion=[];
-  const unifiedIncome=[],unifiedExpenses=[],deudasMensuales=[];
-  for(let m=0;m<12;m++){
-    var resEntry=allData.resumen.find(function(r){return r.Mes===mesesFull[m];});
-    var cot=(resEntry&&resEntry.Cotizacion_Dolar)?resEntry.Cotizacion_Dolar:1450;
-    cotizacion.push(cot);
-    // Monthly deudas y compromisos from INVERSIONES CRONOGRAMA
-    var deuda=(invDeudasMensuales&&invDeudasMensuales[m])?Math.abs(invDeudasMensuales[m]):0;
-    deudasMensuales.push(deuda);
-    // Unified income: cuotas USD + cuotas pesos converted to USD
-    unifiedIncome.push(Math.round(cobrarUSD[m]+(cobrarPesos[m]/cot)));
-    // Unified expenses: gastos a pagar USD + gastos personales pesos converted to USD + deudas y compromisos
-    unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)+deuda));
-  }
-  return{labels,cobrarUSD,pagarUSD,cobrarPesos,pagarPesos,gastosPesos,gastosUSD,cotizacion,unifiedIncome,unifiedExpenses,deudasMensuales,vendors:vendorsList};
+  return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos};
 }
 
 function renderChartCuotasUSD(){
@@ -4311,7 +4304,7 @@ function renderCuotasCardsUnif(){
   const blue=dolarBlue||1300;
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrarUnif=Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
+    const cobrarUnif=(q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
     const pagarUnif=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
     totalCobrar+=cobrarUnif;
     totalPagar+=pagarUnif;
@@ -4348,9 +4341,9 @@ function renderCuotasCardsUnif(){
 
 function renderChartCuotasUnif(){
   const q=extractCuotasData(filterVendedor);
-  const blue=dolarBlue||1300;
-  const cobrarUnif=q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue)));
-  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue)));
+  // Use pre-computed unified USD from Dashboard Martin rows 157-168
+  const cobrarUnif=q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300))));
+  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
   if(charts.cuotasUnif)charts.cuotasUnif.destroy();
   var canvas=document.getElementById('chartCuotasUnif');
   if(!canvas)return;

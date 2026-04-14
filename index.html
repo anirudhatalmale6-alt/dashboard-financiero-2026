@@ -1731,9 +1731,9 @@ async function loadAllData(){
     await buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
     await enrichResumenFromRaw();
-    // Fetch KPI ranking data: "Cuotas a Cobrar Unificado en Dolares" rows 188-198
+    // Fetch KPI ranking data: "Ganancias Unificado en Dolares" (header row 92, vendors rows 93-103)
     try{
-      window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C188:P198');
+      window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C93:P103');
     }catch(e){window._uniGainsRows=null;}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}

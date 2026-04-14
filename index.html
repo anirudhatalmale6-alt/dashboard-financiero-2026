@@ -1744,9 +1744,9 @@ async function loadAllData(){
       var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};
       var curSection=null;
       for(var ci=0;ci<cuotasAll.length;ci++){
-        var r=cuotasAll[ci];
-        if(!r||!r[0])continue;
-        var lbl=String(r[0]).toLowerCase().trim();
+        var crow=cuotasAll[ci];
+        if(!crow||!crow[0])continue;
+        var lbl=String(crow[0]).toLowerCase().trim();
         if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')){curSection='cobrarUSD';continue;}
         if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')){curSection='cobrarPesos';continue;}
         if(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')){curSection='uniPesos';continue;}
@@ -1755,7 +1755,7 @@ async function loadAllData(){
           continue;
         }
         if(lbl.includes('balance y ganancias')){curSection=null;continue;}
-        if(curSection&&cuSections[curSection])cuSections[curSection].push(r);
+        if(curSection&&cuSections[curSection])cuSections[curSection].push(crow);
       }
       // Parse Resta Pagar from rows 310-320 (scan for "Resta Pagar" label)
       var rpRow=null;

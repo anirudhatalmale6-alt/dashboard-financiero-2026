@@ -1731,9 +1731,22 @@ async function loadAllData(){
     await buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
     await enrichResumenFromRaw();
-    // Fetch KPI ranking data: "Ganancias Unificado en Dolares" (header row 92, vendors rows 93-103)
+    // Fetch KPI ranking data: "Ganancias Unificado en Dolares" (scan wide range to handle hidden rows)
     try{
-      window._uniGainsRows=await fetchRawRange('DASHBOARD MARTIN','C93:P103');
+      var ganAll=await fetchSheetRange('DASHBOARD MARTIN','C80:P115');
+      var ganRows=[];
+      var inGanSection=false;
+      for(var gi=0;gi<ganAll.length;gi++){
+        var gr=ganAll[gi];
+        if(!gr||!gr[0])continue;
+        var gl=String(gr[0]).toLowerCase().trim();
+        if(gl.includes('ganancias unificado en dolares')||gl.includes('ganancias unifiado en dolares')){inGanSection=true;continue;}
+        if(inGanSection){
+          if(gl.includes('cuotas')||gl.includes('balance')||gl.includes('total')){inGanSection=false;continue;}
+          ganRows.push(gr);
+        }
+      }
+      window._uniGainsRows=ganRows;
     }catch(e){window._uniGainsRows=null;}
     // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-204
     // Fetches wide range and scans by header labels (gviz skips hidden rows so exact row ranges don't work)
@@ -3472,7 +3485,7 @@ function renderModuleKPIs(){
   for(var ui=0;ui<ugRows.length;ui++){
     var ur=ugRows[ui];
     if(!ur||!ur[0])continue; // col 0 = C (vendor name)
-    // Range is C93:P103 => col 0=C(name), cols 2..13 = E..P (months Jan-Dec)
+    // Range is C80:P115 scanned => col 0=C(name), cols 2..13 = E..P (months Jan-Dec)
     var ugVal=ur[2+cmIdx]; // E=col2, F=col3... offset by 2 from range start C
     if(typeof ugVal==='number') uniGains[normName(ur[0])]=Math.abs(ugVal);
     else if(typeof ugVal==='string'){var neg=ugVal.includes('-')?-1:1;var cl=ugVal.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniGains[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}

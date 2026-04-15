@@ -1700,23 +1700,24 @@ async function loadAllData(){
     // Fetch monthly investment data from individual vendor tabs
     try{
       var invTabs=[
-        {name:'Gonza',tab:'Gonza',range:'B1:G62'},
-        {name:'Osito S.r.l.',tab:'Osito S.r.l.',range:'B60:H118'},
-        {name:'Mely',tab:'Mely',range:'B85:G149'},
-        {name:'Tobias',tab:'Tobias',range:'B1:G56'},
-        {name:'Tino',tab:'Tino',range:'B1:G56'},
-        {name:'Linea 314',tab:'Linea 314',range:'B1:H54'},
-        {name:'Patito S.A.',tab:'Patito S.A.',range:'B105:F158'},
-        {name:'Creditos',tab:'VENTA CREDITOS EN PESOS',sql:'select AP, AT where AP is not null limit 13'},
-        {name:'Inversiones',tab:'Inversiones',sql:'select B, I where B is not null limit 13'},
-        {name:'Tecno',tab:'VENTA TECNO EN DOLARES',sql:'select AW, BD where AW is not null limit 15'}
+        {name:'Gonza',tab:'Gonza',range:'B4:G62'},
+        {name:'Osito S.r.l.',tab:'Osito S.r.l.',range:'B66:H118'},
+        {name:'Mely',tab:'Mely',range:'B91:I149'},
+        {name:'Tobias',tab:'Tobias',range:'B4:G56'},
+        {name:'Tino',tab:'Tino',range:'B4:G56'},
+        {name:'Linea 314',tab:'Linea 314',range:'B6:H54'},
+        {name:'Patito S.A.',tab:'Patito S.A.',range:'B110:F158'},
+        {name:'Creditos',tab:'VENTA CREDITOS EN PESOS',sql:'select AP, AT where AP is not null limit 15'},
+        {name:'Inversiones',tab:'_SKIP_',skip:true},
+        {name:'Tecno',tab:'VENTA TECNO EN DOLARES',sql:'select AW, BB where AW is not null limit 15'}
       ];
       // Fetch sequentially to avoid gviz rate limiting
       var invResults=[];
       for(var ii=0;ii<invTabs.length;ii++){
         try{
           var t=invTabs[ii];
-          if(t.sql) invResults.push(await fetchSheetSQL(t.tab,t.sql));
+          if(t.skip) invResults.push(null);
+          else if(t.sql) invResults.push(await fetchSheetSQL(t.tab,t.sql));
           else invResults.push(await fetchSheetRange(t.tab,t.range));
         }catch(e){invResults.push(null);}
       }

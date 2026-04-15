@@ -1777,20 +1777,27 @@ async function loadAllData(){
       var cuotasAll=await fetchSheetRange('DASHBOARD MARTIN','C119:AB204');
       var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','C310:AB320');
       // Parse cuotas sections by header labels
+      // Sections: Cuotas a Cobrar en Dolares → cobrarUSD, en Pesos → cobrarPesos,
+      //   Unificado en Pesos → uniPesos, Unificado en Dolares → uniUSD
+      // Each section: header row, vendor rows, Total row. Include Total in data.
       var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};
       var curSection=null;
       for(var ci=0;ci<cuotasAll.length;ci++){
         var crow=cuotasAll[ci];
         if(!crow||!crow[0])continue;
         var lbl=String(crow[0]).toLowerCase().trim();
-        if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')){curSection='cobrarUSD';continue;}
-        if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')){curSection='cobrarPesos';continue;}
-        if(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')){curSection='uniPesos';continue;}
-        if(lbl.includes('unificado en dolares')||lbl.includes('unifiado en dolares')){
-          if(cuSections.uniUSD.length===0){curSection='uniUSD';}else{curSection=null;}
+        // Section headers start new sections (skip the header row itself)
+        if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarUSD';continue;}
+        if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarPesos';continue;}
+        if((lbl.includes('cuotas')&&(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')))&&!lbl.includes('total')){curSection='uniPesos';continue;}
+        if((lbl.includes('cuotas')&&(lbl.includes('unificado en dolares')||lbl.includes('unifiado en dolares')))&&!lbl.includes('total')){curSection='uniUSD';continue;}
+        // Stop at Balance section
+        if(lbl.includes('balance y ganancias')){curSection=null;continue;}
+        // "Total" rows: include in current section, then close the section
+        if(lbl.includes('total')){
+          if(curSection&&cuSections[curSection]){cuSections[curSection].push(crow);curSection=null;}
           continue;
         }
-        if(lbl.includes('balance y ganancias')){curSection=null;continue;}
         if(curSection&&cuSections[curSection])cuSections[curSection].push(crow);
       }
       // Parse Resta Pagar from rows 310-320 (scan for "Resta Pagar" label)

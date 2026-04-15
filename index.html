@@ -783,10 +783,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div id="moduleDetails" style="display:none"></div>
 
-  <h3 class="section-title" id="secCuotas">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
+    <h3 class="section-title" id="secCuotas" style="margin-bottom:0">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
+    <div id="cuotasYearToggleUSD" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-cyear="all" onclick="setCuotasYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
   <div class="cuotas-cards" id="cuotasCards"></div>
 
-  <h3 class="section-title" id="secCuotasPesos">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
+    <h3 class="section-title" id="secCuotasPesos" style="margin-bottom:0">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
+    <div id="cuotasYearTogglePesos" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-cyear="all" onclick="setCuotasYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
   <div class="charts">
@@ -802,7 +816,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <h3 class="section-title" id="secCuotasUnif"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em></h3>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
+    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em></h3>
+    <div id="cuotasYearToggleUnif" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-cyear="all" onclick="setCuotasYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
   <div class="cuotas-cards" id="cuotasCardsUnif"></div>
   <div class="charts" style="grid-template-columns:1fr">
     <div class="chart-card">
@@ -1324,6 +1345,7 @@ let filterVendedor='all';
 let yearFilter='2026';
 let yearFilterAcum='2026';
 let yearFilterDetalle='2026';
+let cuotasYearFilter='2026';
 // URL parameter: ?vendedor=TINO locks the dashboard to that vendor
 var urlVendedor=(function(){var p=new URLSearchParams(window.location.search);return p.get('vendedor')||'';})();
 if(urlVendedor)filterVendedor=urlVendedor;
@@ -3507,7 +3529,7 @@ function renderModuleKPIs(){
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos||0)+'</div>';
     var ugv=uniGains[normName(c.name)]||0;
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">Gan: '+fmtUSD(ugv)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(ugv)+'</div>';
     colHtml+='</div>';
     // Investment card below
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
@@ -4171,16 +4193,19 @@ function extractCuotasData(vendorFilter,useEmpresas){
 
 function renderChartCuotasUSD(){
   const q=extractCuotasData(filterVendedor);
+  var z=cuotasYearFilter==='2027';
+  var cUSD=z?q.cobrarUSD.map(()=>0):q.cobrarUSD;
+  var pUSD=z?q.pagarUSD.map(()=>0):q.pagarUSD;
   if(charts.cuotasUSD)charts.cuotasUSD.destroy();
   charts.cuotasUSD=new Chart(document.getElementById('chartCuotasUSD'),{
     type:'bar',
     data:{
       labels:q.labels,
       datasets:filterVendedor!=='all'?[
-        {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5}
+        {label:'Cuotas a Cobrar U$D',data:cUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]:[
-        {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
-        {label:'A Pagar U$D',data:q.pagarUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+        {label:'Cuotas a Cobrar U$D',data:cUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:'A Pagar U$D',data:pUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]
     },
     plugins:[ChartDataLabels],
@@ -4190,13 +4215,15 @@ function renderChartCuotasUSD(){
 
 function renderChartCuotasPesos(){
   const q=extractCuotasData(filterVendedor);
+  var z=cuotasYearFilter==='2027';
+  var cP=z?q.cobrarPesos.map(()=>0):q.cobrarPesos;
   if(charts.cuotasPesos)charts.cuotasPesos.destroy();
   charts.cuotasPesos=new Chart(document.getElementById('chartCuotasPesos'),{
     type:'bar',
     data:{
       labels:q.labels,
       datasets:[
-        {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6,barPercentage:.6}
+        {label:'Cuotas a Cobrar $',data:cP,backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6,barPercentage:.6}
       ]
     },
     plugins:[ChartDataLabels],
@@ -4249,14 +4276,14 @@ function renderCuotasCards(){
   const q=extractCuotasData(filterVendedor);
   const container=document.getElementById('cuotasCards');
   const isVendor=filterVendedor!=='all';
-  // Update title with vendor name if filtered
   var secTitle=document.getElementById('secCuotas');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Dólares</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Dólares</em>';}
   container.innerHTML='';
+  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrar=q.cobrarUSD[i]||0;
-    const pagar=q.pagarUSD[i]||0;
+    const cobrar=is2027?0:(q.cobrarUSD[i]||0);
+    const pagar=is2027?0:(q.pagarUSD[i]||0);
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
@@ -4296,10 +4323,11 @@ function renderCuotasCardsPesos(){
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasPesos');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Pesos</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Pesos</em>';}
+  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrar=q.cobrarPesos[i]||0;
-    const pagar=q.pagarPesos[i]||0;
+    const cobrar=is2027?0:(q.cobrarPesos[i]||0);
+    const pagar=is2027?0:(q.pagarPesos[i]||0);
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
@@ -4340,10 +4368,11 @@ function renderCuotasCardsUnif(){
   var secTitle=document.getElementById('secCuotasUnif');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
+  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrarUnif=(q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
-    const pagarUnif=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
+    const cobrarUnif=is2027?0:((q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue)));
+    const pagarUnif=is2027?0:Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
     totalCobrar+=cobrarUnif;
     totalPagar+=pagarUnif;
     const pct=cobrarUnif>0&&pagarUnif>0?Math.min(100,Math.round((cobrarUnif/(cobrarUnif+pagarUnif))*100)):cobrarUnif>0?100:0;
@@ -4379,9 +4408,9 @@ function renderCuotasCardsUnif(){
 
 function renderChartCuotasUnif(){
   const q=extractCuotasData(filterVendedor);
-  // Use pre-computed unified USD from Dashboard Martin rows 157-168
-  const cobrarUnif=q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300))));
-  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
+  var z=cuotasYearFilter==='2027';
+  const cobrarUnif=z?q.labels.map(()=>0):(q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300)))));
+  const pagarUnif=z?q.labels.map(()=>0):q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
   if(charts.cuotasUnif)charts.cuotasUnif.destroy();
   var canvas=document.getElementById('chartCuotasUnif');
   if(!canvas)return;
@@ -5188,6 +5217,21 @@ function setYearFilterDetalle(yr){
     b.style.color=active?'#1a1b2e':'var(--text2)';
   });
   renderDetalleIngresos();
+}
+function setCuotasYearFilter(yr){
+  cuotasYearFilter=yr;
+  document.querySelectorAll('[data-cyear]').forEach(b=>{
+    var active=b.dataset.cyear===yr;
+    b.classList.toggle('active',active);
+    b.style.background=active?'var(--gold)':'transparent';
+    b.style.color=active?'#1a1b2e':'var(--text2)';
+  });
+  renderCuotasCards();
+  renderCuotasCardsPesos();
+  renderCuotasCardsUnif();
+  renderChartCuotasUSD();
+  renderChartCuotasPesos();
+  renderChartCuotasUnif();
 }
 
 // Event Listeners

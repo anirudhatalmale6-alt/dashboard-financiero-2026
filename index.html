@@ -1774,8 +1774,8 @@ async function loadAllData(){
     // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-204
     // Fetches wide range and scans by header labels (gviz skips hidden rows so exact row ranges don't work)
     try{
-      var cuotasAll=await fetchSheetRange('DASHBOARD MARTIN','C119:P204');
-      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','C310:P320');
+      var cuotasAll=await fetchSheetRange('DASHBOARD MARTIN','C119:AB204');
+      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','C310:AB320');
       // Parse cuotas sections by header labels
       var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};
       var curSection=null;
@@ -4087,37 +4087,49 @@ function renderModuleDetails(){
 }
 
 function extractCuotasData(vendorFilter,useEmpresas){
-  // Uses pre-fetched cuotas data from Dashboard Martin rows 119-168 (bypasses hidden-row index issue)
+  // Uses pre-fetched cuotas data from Dashboard Martin rows 119-204
+  // Range C119:AB204: cols 0=C(name), 1=D, 2-13=E-P(2026 Jan-Dec), 14-25=Q-AB(2027 Jan-Dec)
   var pf=window._cuotasPreFetch;
-  var empty={labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],cotizacion:[],unifiedIncome:[],unifiedExpenses:[],deudasMensuales:[],vendors:[]};
+  var empty={labels:[],cobrarUSD:[],pagarUSD:[],cobrarPesos:[],pagarPesos:[],gastosPesos:[],gastosUSD:[],cotizacion:[],unifiedIncome:[],unifiedExpenses:[],deudasMensuales:[],vendors:[],cobrarUniUSD:[],cobrarUniPesos:[]};
   if(!pf)return empty;
   function pv(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.round(n*neg);}return 0;}
-  // Pre-fetched ranges: col 0=C(name), col 1=D, col 2=E(Jan), ... col 13=P(Dec)
-  // Last row in each block is the Total row
-  var cuUSD=pf.cobrarUSD||[];   // rows 120-130 (10 vendors + total)
-  var cuPesos=pf.cobrarPesos||[]; // rows 132-142
-  var uniP=pf.uniPesos||[];    // rows 144-155
-  var uniD=pf.uniUSD||[];      // rows 157-168
-  var rp=pf.restaPagar||[];     // row 316 (Resta Pagar USD)
-  // Build vendor list from USD block (all rows except last = Total)
+  // Year filter: 2026=cols 2-13, 2027=cols 14-25, all=sum both
+  var yf=cuotasYearFilter||'2026';
+  function getVal(row,m){
+    if(!row)return 0;
+    if(yf==='2026')return pv(row[2+m]);
+    if(yf==='2027')return pv(row[14+m]);
+    return pv(row[2+m])+pv(row[14+m]);
+  }
+  var cuUSD=pf.cobrarUSD||[];
+  var cuPesos=pf.cobrarPesos||[];
+  var uniP=pf.uniPesos||[];
+  var uniD=pf.uniUSD||[];
+  var rp=pf.restaPagar||[];
+  // Build vendor list from USD block
   var vendorsList=[];
-  for(var vi=0;vi<cuUSD.length-1;vi++){
-    if(cuUSD[vi]&&cuUSD[vi][0]&&cuUSD[vi][0]!=='Total'){
-      vendorsList.push({name:String(cuUSD[vi][0]).trim(),usdIdx:vi,pesosIdx:-1});
+  for(var vi=0;vi<cuUSD.length;vi++){
+    if(cuUSD[vi]&&cuUSD[vi][0]){
+      var ln=String(cuUSD[vi][0]).trim();
+      if(ln!=='Total'&&!ln.toLowerCase().includes('total'))vendorsList.push({name:ln,usdIdx:vi,pesosIdx:-1});
     }
   }
-  // Map pesos rows
-  for(var pi=0;pi<cuPesos.length-1;pi++){
-    if(cuPesos[pi]&&cuPesos[pi][0]&&cuPesos[pi][0]!=='Total'){
+  for(var pi=0;pi<cuPesos.length;pi++){
+    if(cuPesos[pi]&&cuPesos[pi][0]){
       var nm=String(cuPesos[pi][0]).trim();
+      if(nm==='Total'||nm.toLowerCase().includes('total'))continue;
       var vn=vendorsList.find(function(v){return v.name===nm;});
       if(vn)vn.pesosIdx=pi;
       else vendorsList.push({name:nm,usdIdx:-1,pesosIdx:pi});
     }
   }
-  // Determine which row to use: vendor-filtered or total (last row in block)
-  var useUSDIdx=cuUSD.length-1;
-  var usePesosIdx=cuPesos.length-1;
+  // Determine which row: vendor-filtered or total (last row)
+  var useUSDIdx=-1,usePesosIdx=-1;
+  // Find Total row index
+  for(var ti=cuUSD.length-1;ti>=0;ti--){if(cuUSD[ti]&&cuUSD[ti][0]&&String(cuUSD[ti][0]).trim().toLowerCase().includes('total')){useUSDIdx=ti;break;}}
+  for(var ti=cuPesos.length-1;ti>=0;ti--){if(cuPesos[ti]&&cuPesos[ti][0]&&String(cuPesos[ti][0]).trim().toLowerCase().includes('total')){usePesosIdx=ti;break;}}
+  if(useUSDIdx<0)useUSDIdx=cuUSD.length-1;
+  if(usePesosIdx<0)usePesosIdx=cuPesos.length-1;
   if(vendorFilter&&vendorFilter!=='all'){
     var vf=vendorsList.find(function(v){return v.name.toLowerCase().indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(v.name.toLowerCase())>=0;});
     if(vf){useUSDIdx=vf.usdIdx;usePesosIdx=vf.pesosIdx;}
@@ -4126,13 +4138,12 @@ function extractCuotasData(vendorFilter,useEmpresas){
   var labels=meses.slice();
   var cobrarUSD=[],pagarUSD=[],cobrarPesos=[],pagarPesos=[];
   for(var m=0;m<12;m++){
-    var col=2+m; // E=col2 in range starting at C
-    cobrarUSD.push(useUSDIdx>=0&&cuUSD[useUSDIdx]?pv(cuUSD[useUSDIdx][col]):0);
-    cobrarPesos.push(usePesosIdx>=0&&cuPesos[usePesosIdx]?pv(cuPesos[usePesosIdx][col]):0);
-    pagarUSD.push(rp&&rp[0]?Math.abs(pv(rp[0][2+m])):0); // restaPagar from C310:P320, col 2+m = E onwards
-    pagarPesos.push(0); // No resta pagar pesos row found
+    cobrarUSD.push(useUSDIdx>=0?getVal(cuUSD[useUSDIdx],m):0);
+    cobrarPesos.push(usePesosIdx>=0?getVal(cuPesos[usePesosIdx],m):0);
+    pagarUSD.push(rp&&rp[0]?Math.abs(getVal(rp[0],m)):0);
+    pagarPesos.push(0);
   }
-  // Gastos Mensuales / Sueldo Martin — keep using dashRaw for now (row scanning)
+  // Gastos Mensuales / Sueldo Martin
   var gastosPesos=[],gastosUSD=[];
   if(dashRaw){
     var gastosHeaderRow=-1;
@@ -4154,7 +4165,6 @@ function extractCuotasData(vendorFilter,useEmpresas){
       }
     }else{for(var gm=0;gm<12;gm++){gastosPesos.push(0);gastosUSD.push(0);}}
   }else{for(var gm=0;gm<12;gm++){gastosPesos.push(0);gastosUSD.push(0);}}
-  // Get monthly cotizacion from allData.resumen
   var cotizacion=[],unifiedIncome=[],unifiedExpenses=[],deudasMensuales=[];
   for(var m=0;m<12;m++){
     var resEntry=allData.resumen.find(function(r){return r.Mes===meses[m];});
@@ -4165,19 +4175,21 @@ function extractCuotasData(vendorFilter,useEmpresas){
     unifiedIncome.push(Math.round(cobrarUSD[m]+(cobrarPesos[m]/cot)));
     unifiedExpenses.push(Math.round(pagarUSD[m]+(gastosPesos[m]/cot)+deuda));
   }
-  // Pre-computed unified cuotas from Dashboard Martin (rows 144-155 pesos, 157-168 USD)
+  // Pre-computed unified cuotas
   var cobrarUniUSD=[],cobrarUniPesos=[];
-  var useUniUSDIdx=uniD.length-1; // Total row (last)
-  var useUniPesosIdx=uniP.length-1;
+  var useUniUSDIdx=-1,useUniPesosIdx=-1;
+  for(var ti=uniD.length-1;ti>=0;ti--){if(uniD[ti]&&uniD[ti][0]&&String(uniD[ti][0]).trim().toLowerCase().includes('total')){useUniUSDIdx=ti;break;}}
+  for(var ti=uniP.length-1;ti>=0;ti--){if(uniP[ti]&&uniP[ti][0]&&String(uniP[ti][0]).trim().toLowerCase().includes('total')){useUniPesosIdx=ti;break;}}
+  if(useUniUSDIdx<0)useUniUSDIdx=uniD.length-1;
+  if(useUniPesosIdx<0)useUniPesosIdx=uniP.length-1;
   if(vendorFilter&&vendorFilter!=='all'){
-    // Find vendor in unified blocks
-    for(var ui=0;ui<uniD.length-1;ui++){
+    for(var ui=0;ui<uniD.length;ui++){
       if(uniD[ui]&&uniD[ui][0]){
         var un=String(uniD[ui][0]).trim().toLowerCase();
         if(un.indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(un)>=0){useUniUSDIdx=ui;break;}
       }
     }
-    for(var ui=0;ui<uniP.length-1;ui++){
+    for(var ui=0;ui<uniP.length;ui++){
       if(uniP[ui]&&uniP[ui][0]){
         var un=String(uniP[ui][0]).trim().toLowerCase();
         if(un.indexOf(vendorFilter.toLowerCase())>=0||vendorFilter.toLowerCase().indexOf(un)>=0){useUniPesosIdx=ui;break;}
@@ -4185,18 +4197,16 @@ function extractCuotasData(vendorFilter,useEmpresas){
     }
   }
   for(var m=0;m<12;m++){
-    var col=2+m;
-    cobrarUniUSD.push(useUniUSDIdx>=0&&uniD[useUniUSDIdx]?pv(uniD[useUniUSDIdx][col]):0);
-    cobrarUniPesos.push(useUniPesosIdx>=0&&uniP[useUniPesosIdx]?pv(uniP[useUniPesosIdx][col]):0);
+    cobrarUniUSD.push(useUniUSDIdx>=0?getVal(uniD[useUniUSDIdx],m):0);
+    cobrarUniPesos.push(useUniPesosIdx>=0?getVal(uniP[useUniPesosIdx],m):0);
   }
   return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos};
 }
 
 function renderChartCuotasUSD(){
   const q=extractCuotasData(filterVendedor);
-  var z=cuotasYearFilter==='2027';
-  var cUSD=z?q.cobrarUSD.map(()=>0):q.cobrarUSD;
-  var pUSD=z?q.pagarUSD.map(()=>0):q.pagarUSD;
+  var cUSD=q.cobrarUSD;
+  var pUSD=q.pagarUSD;
   if(charts.cuotasUSD)charts.cuotasUSD.destroy();
   charts.cuotasUSD=new Chart(document.getElementById('chartCuotasUSD'),{
     type:'bar',
@@ -4216,8 +4226,7 @@ function renderChartCuotasUSD(){
 
 function renderChartCuotasPesos(){
   const q=extractCuotasData(filterVendedor);
-  var z=cuotasYearFilter==='2027';
-  var cP=z?q.cobrarPesos.map(()=>0):q.cobrarPesos;
+  var cP=q.cobrarPesos;
   if(charts.cuotasPesos)charts.cuotasPesos.destroy();
   charts.cuotasPesos=new Chart(document.getElementById('chartCuotasPesos'),{
     type:'bar',
@@ -4280,11 +4289,10 @@ function renderCuotasCards(){
   var secTitle=document.getElementById('secCuotas');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Dólares</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Dólares</em>';}
   container.innerHTML='';
-  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrar=is2027?0:(q.cobrarUSD[i]||0);
-    const pagar=is2027?0:(q.pagarUSD[i]||0);
+    const cobrar=q.cobrarUSD[i]||0;
+    const pagar=q.pagarUSD[i]||0;
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
@@ -4324,11 +4332,10 @@ function renderCuotasCardsPesos(){
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasPesos');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Pesos</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Pesos</em>';}
-  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrar=is2027?0:(q.cobrarPesos[i]||0);
-    const pagar=is2027?0:(q.pagarPesos[i]||0);
+    const cobrar=q.cobrarPesos[i]||0;
+    const pagar=q.pagarPesos[i]||0;
     totalCobrar+=cobrar;
     totalPagar+=pagar;
     const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
@@ -4369,11 +4376,10 @@ function renderCuotasCardsUnif(){
   var secTitle=document.getElementById('secCuotasUnif');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
-  var is2027=cuotasYearFilter==='2027';
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{
-    const cobrarUnif=is2027?0:((q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue)));
-    const pagarUnif=is2027?0:Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
+    const cobrarUnif=(q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
+    const pagarUnif=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
     totalCobrar+=cobrarUnif;
     totalPagar+=pagarUnif;
     const pct=cobrarUnif>0&&pagarUnif>0?Math.min(100,Math.round((cobrarUnif/(cobrarUnif+pagarUnif))*100)):cobrarUnif>0?100:0;
@@ -4409,9 +4415,8 @@ function renderCuotasCardsUnif(){
 
 function renderChartCuotasUnif(){
   const q=extractCuotasData(filterVendedor);
-  var z=cuotasYearFilter==='2027';
-  const cobrarUnif=z?q.labels.map(()=>0):(q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300)))));
-  const pagarUnif=z?q.labels.map(()=>0):q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
+  const cobrarUnif=q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300))));
+  const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
   if(charts.cuotasUnif)charts.cuotasUnif.destroy();
   var canvas=document.getElementById('chartCuotasUnif');
   if(!canvas)return;

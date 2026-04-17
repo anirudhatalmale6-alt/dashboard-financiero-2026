@@ -1789,24 +1789,7 @@ async function loadAllData(){
         if(isGroup1)balGroup1Done=true;
       }
     }catch(e){}
-    // Extract cuotas a cobrar unificadas en dolares per vendor (current month)
-    try{
-      window._vendorCuotasCobrar={};
-      var pf=window._cuotasPreFetch;
-      if(pf&&pf.uniUSD){
-        var cmIdx2=new Date().getMonth(); // 0=Jan
-        pf.uniUSD.forEach(function(row){
-          if(!row||!row[0])return;
-          var name=String(row[0]).trim();
-          if(name.toLowerCase().indexOf('total')>=0)return;
-          var v=row[2+cmIdx2];
-          var val=0;
-          if(typeof v==='number')val=Math.round(v);
-          else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
-          window._vendorCuotasCobrar[name]=val;
-        });
-      }
-    }catch(e){}
+    // (cuotas a cobrar extraction moved below, after cuotasPreFetch is populated)
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
@@ -1870,6 +1853,21 @@ async function loadAllData(){
       }
       cuSections.restaPagar=rpRow?[rpRow]:[];
       window._cuotasPreFetch=cuSections;
+      // Extract cuotas a cobrar unificadas en dolares per vendor (current month)
+      window._vendorCuotasCobrar={};
+      if(cuSections.uniUSD){
+        var cmIdx2=new Date().getMonth();
+        cuSections.uniUSD.forEach(function(row){
+          if(!row||!row[0])return;
+          var name=String(row[0]).trim();
+          if(name.toLowerCase().indexOf('total')>=0)return;
+          var v=row[2+cmIdx2];
+          var val=0;
+          if(typeof v==='number')val=Math.round(v);
+          else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
+          window._vendorCuotasCobrar[name]=val;
+        });
+      }
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}

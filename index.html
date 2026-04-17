@@ -1753,12 +1753,14 @@ async function loadAllData(){
         invDeudasMensuales=deudasRange[0].map(function(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var n=v.replace(/[^0-9\-]/g,'');return parseInt(n)||0;}return 0;});
       }
     }catch(e){invDeudasMensuales=null;}
-    // Extract Balance Actual de Inversión from dashRaw
+    // Extract Balance Actual de Inversión from dashRaw (read label from sheet)
     try{
       window._vendorBalances={};
+      window._balanceLabel='';
       var socDef2=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
       var martDef2=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
       var balOffsets=[4,9,14,19,24,29];
+      var balGroup1Done=false;
       for(var bi=0;bi<dashRaw.length;bi++){
         var br=dashRaw[bi];
         if(!br)continue;
@@ -1767,9 +1769,15 @@ async function loadAllData(){
           if(br[bc]&&typeof br[bc]==='string'&&br[bc].indexOf('Balance Actual')>=0){found=true;break;}
         }
         if(!found)continue;
-        // Determine which vendor group by checking nearby context
-        // Group 1 (Sociedades) appears first, Group 2 (Martin) appears later
-        var isGroup1=!window._balGroup1Done;
+        // Read label from sheet (first occurrence)
+        if(!window._balanceLabel){
+          for(var lc=0;lc<br.length;lc++){
+            if(br[lc]&&typeof br[lc]==='string'&&br[lc].indexOf('Balance')>=0){
+              window._balanceLabel=String(br[lc]).trim();break;
+            }
+          }
+        }
+        var isGroup1=!balGroup1Done;
         var names=isGroup1?socDef2:martDef2;
         balOffsets.forEach(function(col,idx){
           var v=br[col];
@@ -1778,7 +1786,25 @@ async function loadAllData(){
           else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
           window._vendorBalances[names[idx]]=val;
         });
-        if(isGroup1)window._balGroup1Done=true;
+        if(isGroup1)balGroup1Done=true;
+      }
+    }catch(e){}
+    // Extract cuotas a cobrar unificadas en dolares per vendor (current month)
+    try{
+      window._vendorCuotasCobrar={};
+      var pf=window._cuotasPreFetch;
+      if(pf&&pf.uniUSD){
+        var cmIdx2=new Date().getMonth(); // 0=Jan
+        pf.uniUSD.forEach(function(row){
+          if(!row||!row[0])return;
+          var name=String(row[0]).trim();
+          if(name.toLowerCase().indexOf('total')>=0)return;
+          var v=row[2+cmIdx2];
+          var val=0;
+          if(typeof v==='number')val=Math.round(v);
+          else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
+          window._vendorCuotasCobrar[name]=val;
+        });
       }
     }catch(e){}
     addNewModulesFromRaw(dRaw);
@@ -3574,16 +3600,27 @@ function renderModuleKPIs(){
     colHtml+='</div>';
     // Investment card below
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--rosa);line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
-    // Balance card below investment
+    // Balance Actual de Inversión card
     var balData=window._vendorBalances||{};
     var balVal=balData[c.name]||0;
     var balColor=balVal>=0?'var(--purple)':'var(--red)';
+    var balLabel=window._balanceLabel||'Balance Actual de Inversión';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Balance</div>';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
+    colHtml+='</div>';
+    // A COBRAR card (cuotas a cobrar unificadas en dolares)
+    var cobrarData=window._vendorCuotasCobrar||{};
+    var cobrarKey=normName(c.name);
+    var cobrarVal=0;
+    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;

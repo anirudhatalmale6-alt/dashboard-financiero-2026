@@ -4060,17 +4060,20 @@ function renderModules(){
 
   // Balance stats: scan from Balance marker to find each label row
   function findBalRows(base){
-    var r={gan:-1,ganUnif:-1,balInv:-1,resta:-1,caja:-1,promSoc:-1,promMart:-1};
-    for(var i=base+1;i<base+12&&i<dashRaw.length;i++){
+    var r={ganAnio:-1,ganUnif:-1,ganActual:-1,ganActualUnif:-1,recupero:-1,resta:-1,caja:-1,promSoc:-1,promMart:-1};
+    for(var i=base+1;i<base+15&&i<dashRaw.length;i++){
       if(!dashRaw[i])continue;
       var t=dashRaw[i][2];
       if(typeof t!=='string')continue;
       var tl=t.toLowerCase().trim();
-      if(tl.indexOf('ganancia actual')>=0&&r.gan<0) r.gan=i;
+      if(tl.indexOf('ganancia')>=0&&tl.indexOf('año')>=0&&r.ganAnio<0) r.ganAnio=i;
+      else if(tl.indexOf('ganancia actual')>=0&&tl.indexOf('unificada')>=0&&r.ganActualUnif<0) r.ganActualUnif=i;
+      else if(tl.indexOf('ganancia actual')>=0&&r.ganActual<0) r.ganActual=i;
       else if(tl.indexOf('ganancia unificada')>=0&&r.ganUnif<0) r.ganUnif=i;
-      else if(tl.indexOf('balance inv')>=0&&r.balInv<0) r.balInv=i;
+      else if(tl.indexOf('recupero')>=0&&r.recupero<0) r.recupero=i;
       else if(tl.indexOf('resta cobrar')>=0&&r.resta<0) r.resta=i;
-      else if(tl.indexOf('caja actual')>=0&&r.caja<0) r.caja=i;
+      else if(tl.indexOf('caja actual')>=0&&tl.indexOf('caja')>=0&&r.caja<0) r.caja=i;
+      else if(tl.indexOf('caja')>=0&&tl.indexOf('actual')>=0&&r.caja<0) r.caja=i;
       else if(tl.indexOf('promedio')>=0&&tl.indexOf('sociedad')>=0&&r.promSoc<0) r.promSoc=i;
       else if(tl.indexOf('promedio')>=0&&tl.indexOf('martin')>=0&&r.promMart<0) r.promMart=i;
       else if(tl.indexOf('promedio')>=0&&r.promSoc<0) r.promSoc=i;
@@ -4079,8 +4082,8 @@ function renderModules(){
   }
   var sBal=findBalRows(socBalStart);
   var mBal=findBalRows(martBalStart);
-  var sB={gan:sBal.gan>=0?sBal.gan:155,ganUnif:sBal.ganUnif>=0?sBal.ganUnif:156,balInv:sBal.balInv>=0?sBal.balInv:157,resta:sBal.resta>=0?sBal.resta:158,caja:sBal.caja>=0?sBal.caja:160,prom:sBal.promSoc>=0?sBal.promSoc:161};
-  var mB={gan:mBal.gan>=0?mBal.gan:193,ganUnif:mBal.ganUnif>=0?mBal.ganUnif:194,balInv:mBal.balInv>=0?mBal.balInv:195,resta:mBal.resta>=0?mBal.resta:196,caja:mBal.caja>=0?mBal.caja:197,prom:mBal.promSoc>=0?mBal.promSoc:198};
+  var sB={ganActualUnif:sBal.ganActualUnif>=0?sBal.ganActualUnif:-1,ganAnio:sBal.ganAnio>=0?sBal.ganAnio:(sBal.ganActual>=0?sBal.ganActual:156),ganUnif:sBal.ganUnif>=0?sBal.ganUnif:157,recupero:sBal.recupero>=0?sBal.recupero:-1,resta:sBal.resta>=0?sBal.resta:161,caja:sBal.caja>=0?sBal.caja:162,prom:sBal.promMart>=0?sBal.promMart:(sBal.promSoc>=0?sBal.promSoc:164)};
+  var mB={ganActualUnif:mBal.ganActualUnif>=0?mBal.ganActualUnif:-1,ganAnio:mBal.ganAnio>=0?mBal.ganAnio:(mBal.ganActual>=0?mBal.ganActual:196),ganUnif:mBal.ganUnif>=0?mBal.ganUnif:197,recupero:mBal.recupero>=0?mBal.recupero:-1,resta:mBal.resta>=0?mBal.resta:199,caja:mBal.caja>=0?mBal.caja:200,prom:mBal.promMart>=0?mBal.promMart:(mBal.promSoc>=0?mBal.promSoc:201)};
 
   // Monthly data start: first month row after "Año 2026"
   var socMonStart=socStart+2; // socStart=vendor row, +1=Año2026, +2=Enero
@@ -4090,43 +4093,56 @@ function renderModules(){
   // Read dynamic labels from dashRaw column C
   function lbl(row,fallback){return (dashRaw[row]&&dashRaw[row][2])?String(dashRaw[row][2]).trim():fallback;}
 
+  // Get per-month cotización for unificada calculation
+  var monthCotiz=[];
+  var mesNames2=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  for(var ci=0;ci<12;ci++){
+    var entry=allData&&allData.resumen?allData.resumen.find(function(r){return r.Mes===mesNames2[ci];}):null;
+    monthCotiz.push(entry&&entry.Cotizacion_Dolar?entry.Cotizacion_Dolar:1450);
+  }
+
   function buildCard(v,balRows,monthStart){
     if(filterVendedor!=='all'&&filterVendedor!==v.name)return;
-    var ganU=dv(balRows.gan,v.uCol),ganP=dv(balRows.gan,v.pCol);
-    var ganUnifU=dv(balRows.ganUnif,v.uCol),ganUnifP=dv(balRows.ganUnif,v.pCol);
-    var balInvU=dv(balRows.balInv,v.uCol),balInvP=dv(balRows.balInv,v.pCol);
-    var restaU=dv(balRows.resta,v.uCol),restaP=dv(balRows.resta,v.pCol);
-    var cajaU=dv(balRows.caja,v.uCol),cajaP=dv(balRows.caja,v.pCol);
-    var promU=dv(balRows.prom,v.uCol),promP=dv(balRows.prom,v.pCol);
+    // Extract all balance KPI values
+    var ganActualUnifU=balRows.ganActualUnif>=0?dv(balRows.ganActualUnif,v.uCol):0;
+    var ganAnioU=dv(balRows.ganAnio,v.uCol),ganAnioP=dv(balRows.ganAnio,v.pCol);
+    var ganUnifU=dv(balRows.ganUnif,v.uCol);
+    var restaU=dv(balRows.resta,v.uCol);
+    var promU=dv(balRows.prom,v.uCol);
+    var cajaU=dv(balRows.caja,v.uCol);
+    var recuperoU=balRows.recupero>=0?dv(balRows.recupero,v.uCol):0;
 
-    // Monthly detail table with investment column
+    // Balance stats table with client-requested order
+    var balData=[
+      {lbl:balRows.ganActualUnif>=0?lbl(balRows.ganActualUnif,'Ganancia Actual Unif'):'Ganancia Actual Unif',val:ganActualUnifU,color:'var(--gold)',hi:true},
+      {lbl:lbl(balRows.ganAnio,'Ganancia 2026'),val:ganAnioU,color:'var(--green)',hi:false},
+      {lbl:lbl(balRows.ganUnif,'Ganancia Unificada U$D'),val:ganUnifU,color:'var(--gold)',hi:false},
+      {lbl:balRows.resta>=0?lbl(balRows.resta,'Cuotas a Cobrar Unif'):'Cuotas a Cobrar Unif',val:restaU,color:'var(--cyan)',hi:false},
+      {lbl:lbl(balRows.prom,'Promedio Inversión Mensual'),val:promU,color:'var(--rosa)',hi:false},
+      {lbl:balRows.caja>=0?lbl(balRows.caja,'Caja Actual'):'Caja Actual',val:cajaU,color:'var(--blue)',hi:false},
+      {lbl:balRows.recupero>=0?lbl(balRows.recupero,'Recupero de Inversión'):'Recupero de Inversión',val:recuperoU,color:'var(--purple)',hi:false}
+    ];
+    var statsHTML='<table class="module-table" style="margin-bottom:0"><thead><tr><th style="text-align:left"></th><th>U$D</th></tr></thead><tbody>';
+    balData.forEach(function(d){
+      var cls=d.hi?' class="total-row"':'';
+      var valColor=d.val<0?'var(--red)':d.color;
+      statsHTML+='<tr'+cls+'><td style="text-align:left;color:var(--text2);font-size:11px">'+d.lbl+'</td>';
+      statsHTML+='<td style="color:'+valColor+'">'+fmtUSD(d.val)+'</td></tr>';
+    });
+    statsHTML+='</tbody></table>';
+
+    // Monthly detail table with investment + ganancia USD + ganancia $ + ganancia unificada U$D
     var invData=window._vendorInvestments&&window._vendorInvestments[v.name]?window._vendorInvestments[v.name]:[];
-    var tbodyHTML='',dtU=0,dtP=0,dtInv=0;
+    var tbodyHTML='',dtU=0,dtP=0,dtInv=0,dtUnif=0;
     for(var mi=0;mi<12;mi++){
       var usd=dv(monthStart+mi,v.uCol),pes=dv(monthStart+mi,v.pCol);
       var inv=invData[mi]||0;
-      dtU+=usd;dtP+=pes;dtInv+=inv;
-      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td style="color:var(--rosa)">'+(inv?fmtUSD(inv):'U$D 0')+'</td><td style="color:var(--green)">'+ fmtUSD(usd)+'</td><td style="color:var(--blue)">'+ fmtPesos(pes)+'</td></tr>';
+      var unif=usd+(pes/monthCotiz[mi]);
+      unif=Math.round(unif*100)/100;
+      dtU+=usd;dtP+=pes;dtInv+=inv;dtUnif+=unif;
+      tbodyHTML+='<tr><td>'+meses[mi]+'</td><td style="color:var(--rosa)">'+(inv?fmtUSD(inv):'U$D 0')+'</td><td style="color:var(--green)">'+fmtUSD(usd)+'</td><td style="color:var(--blue)">'+fmtPesos(pes)+'</td><td style="color:var(--gold)">'+fmtUSD(Math.round(unif))+'</td></tr>';
     }
-    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td></tr>';
-
-    // Build balance stats as a table matching the monthly table typography
-    var balData=[
-      {lbl:lbl(balRows.gan,'Ganancia Actual'),u:ganU,p:ganP,hi:false},
-      {lbl:lbl(balRows.ganUnif,'Ganancia Unificada'),u:ganUnifU,p:ganUnifP,hi:false},
-      {lbl:lbl(balRows.balInv,'Balance Inversión'),u:balInvU,p:balInvP,hi:false},
-      {lbl:lbl(balRows.resta,'Resta Cobrar'),u:restaU,p:restaP,hi:true},
-      {lbl:lbl(balRows.caja,'Caja Actual'),u:cajaU,p:cajaP,hi:false},
-      {lbl:lbl(balRows.prom,'Promedio Inversión'),u:promU,p:promP,hi:false}
-    ];
-    var statsHTML='<table class="module-table" style="margin-bottom:0"><thead><tr><th style="text-align:left"></th><th>U$D</th><th>$</th></tr></thead><tbody>';
-    balData.forEach(function(d){
-      var cls=d.hi?' class="total-row"':'';
-      statsHTML+='<tr'+cls+'><td style="text-align:left;color:var(--text2);font-size:11px">'+d.lbl+'</td>';
-      statsHTML+='<td style="color:var(--green)">'+fmtUSD(d.u)+'</td>';
-      statsHTML+='<td style="color:var(--blue)">'+(d.p?fmtPesos(d.p):'$0')+'</td></tr>';
-    });
-    statsHTML+='</tbody></table>';
+    tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td><td style="color:var(--gold)">'+fmtUSD(Math.round(dtUnif))+'</td></tr>';
 
     container.innerHTML+=`
       <div class="module-card" style="display:flex;flex-direction:column">
@@ -4134,7 +4150,7 @@ function renderModules(){
         <div class="module-stats">${statsHTML}</div>
         <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
           <table class="module-table">
-            <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th></tr></thead>
+            <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th><th style="color:var(--gold)">Unif U$D</th></tr></thead>
             <tbody>${tbodyHTML}</tbody>
           </table>
         </div>

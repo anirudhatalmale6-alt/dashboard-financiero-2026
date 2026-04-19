@@ -4163,11 +4163,11 @@ function renderModules(){
     tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td><td style="color:var(--gold)">'+fmtUSD(Math.round(dtUnif))+'</td></tr>';
 
     container.innerHTML+=`
-      <div class="module-card" style="display:flex;flex-direction:column">
-        <div class="module-name"><span class="icon">${v.icon}</span>${v.name}</div>
+      <div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
+        <div class="module-name" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">${v.icon}</span>${v.name}</div>
         <div style="margin:0">${kpiHTML}</div>
         <div style="padding:0">
-          <table class="module-table" style="margin-top:0">
+          <table class="module-table" style="margin-top:0;border-radius:0">
             <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th><th style="color:var(--gold)">Unif U$D</th></tr></thead>
             <tbody>${tbodyHTML}</tbody>
           </table>

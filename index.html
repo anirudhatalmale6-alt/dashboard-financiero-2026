@@ -602,7 +602,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </select>
 </div>
 <div class="app">
-<aside class="sidebar">
+<aside class="sidebar collapsed">
   <div class="logo">
     <div class="logo-icon">A</div>
     <div><h1>Admin 2026</h1><span>Panel Financiero</span></div>
@@ -4115,35 +4115,40 @@ function renderModules(){
 
     function vc(val,color){return val<0?'var(--red)':color;}
 
-    // 6 Mini KPIs in 3x2 grid (prototype design)
-    var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">';
+    // 6 Mini KPIs in 3x2 grid (prototype design) — using explicit borders for reliable dividers
+    var kc='padding:12px 10px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)';
+    var kcL=kc+';border-right:1px solid rgba(255,255,255,.12)'; // left/middle cells get right border
+    var kcR=kc; // rightmost cell no right border
+    var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr">';
     // Row 1: Ganancia Actual Unif | Ganancia 2026 (USD/Pesos/Unif) | Cuotas a Cobrar (USD/Pesos/Unif)
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    kpiHTML+='<div style="'+kcL+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Ganancia Actual Unif</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(ganActualUnifU,'var(--gold)')+'">'+fmtUSD(ganActualUnifU)+'</div></div>';
 
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    kpiHTML+='<div style="'+kcL+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Ganancia 2026</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(ganAnioU,'var(--green)')+'">'+fmtUSD(ganAnioU)+'</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:'+vc(ganAnioP,'var(--blue)')+';margin-top:3px">'+fmtPesos(ganAnioP)+'</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:'+vc(ganUnifU,'var(--gold)')+';margin-top:3px">'+fmtUSD(ganUnifU)+'</div></div>';
 
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    kpiHTML+='<div style="'+kcR+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Cuotas a Cobrar</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(restaU,'var(--cyan)')+'">'+fmtUSD(restaU)+'</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:'+vc(restaP,'var(--blue)')+';margin-top:3px">'+fmtPesos(restaP)+'</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:'+vc(Math.round(restaUnifCalc),'var(--gold)')+';margin-top:3px">'+fmtUSD(Math.round(restaUnifCalc))+'</div></div>';
 
     // Row 2: Promedio Inversión Mensual | Caja | Recupero de Inversión
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    var kc2='padding:12px 10px;text-align:center';
+    var kc2L=kc2+';border-right:1px solid rgba(255,255,255,.12)';
+    kpiHTML+='<div style="'+kc2L+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Promedio Inversión Mensual</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(promU,'var(--rosa)')+'">'+fmtUSD(promU)+'</div></div>';
 
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    kpiHTML+='<div style="'+kc2L+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Caja</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(cajaU,'var(--blue)')+'">'+fmtUSD(cajaU)+'</div></div>';
 
-    kpiHTML+='<div style="background:var(--surface);padding:12px 10px;text-align:center">';
+    kpiHTML+='<div style="'+kc2+'">';
     kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2">Recupero de Inversión</div>';
     kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:'+vc(recuperoU,'var(--purple)')+'">'+fmtUSD(recuperoU)+'</div></div>';
 

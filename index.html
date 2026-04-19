@@ -640,6 +640,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
+    <a onclick="document.getElementById('secBalInvPat').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Balance Inversiones</a>
+    <a onclick="document.getElementById('secCronoInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cronograma Inversiones</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
     <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
@@ -739,6 +741,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
   <div class="modules" id="modules"></div>
+
+  <h3 class="section-title" id="secBalInvPat"><span class="dot" style="background:var(--cyan)"></span>Balance de Inversiones y <em>Patrimonios</em></h3>
+  <div id="balInvPatSection"></div>
+
+  <h3 class="section-title" id="secCronoInv"><span class="dot" style="background:var(--green)"></span>Cronograma de <em>Inversiones</em> — Detalle</h3>
+  <div id="cronoInvSection"></div>
 
   <h3 class="section-title" id="secRanking">Ranking de <em>Ingresos</em> / Módulos de <em>Negocios</em></h3>
   <div class="rankings" id="rankings" style="grid-template-columns:1fr 1fr 1fr">
@@ -1878,6 +1886,18 @@ async function loadAllData(){
         });
       }
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
+    // Fetch Balance de Inversiones y Patrimonios tab
+    try{
+      var bipData=await fetchSheetRange('Balance de inversiones y Patrimonios','B1:E30');
+      window._balInvPatData=bipData||[];
+    }catch(e){window._balInvPatData=[];}
+    // Fetch Cronograma de Inversiones tab
+    try{
+      var ciData=await fetchSheetRange('Cronograma de Inversiones','C5:AS30');
+      var ciSummary=await fetchSheetRange('Cronograma de Inversiones','AU3:AW10');
+      window._cronoInvData=ciData||[];
+      window._cronoInvSummary=ciSummary||[];
+    }catch(e){window._cronoInvData=[];window._cronoInvSummary=[];}
     // Try fetching tracking data (may not exist yet)
     try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
     // Build cuotas panel HTML
@@ -3197,6 +3217,179 @@ function updateDynamicTitles(){
   (function(){var el=document.getElementById('secEstadoCuentas');if(el){var h2=el.querySelector('h2');if(h2)h2.innerHTML='Estado de Cuentas y Comisiones <em>Vendedores</em>';}})();
 }
 
+// ═══ Balance de Inversiones y Patrimonios ═══
+function renderBalInvPat(){
+  var el=document.getElementById('balInvPatSection');
+  if(!el)return;
+  var rows=window._balInvPatData||[];
+  if(!rows.length){el.innerHTML='<div style="color:var(--text2);padding:20px">Cargando datos...</div>';return;}
+
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}return 0;}
+  function fv(v){return v<0?'-U$D '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'U$D '+Math.round(v).toLocaleString('es-AR');}
+  function fp(v){return v<0?'-$ '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'$ '+Math.round(v).toLocaleString('es-AR');}
+
+  // Parse categories from data
+  var categories=[],curCat=null;
+  var totalUSD=0,totalPesos=0,cotiz=1410;
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];if(!r)continue;
+    var label=r[0]?String(r[0]).trim():'';
+    var valUSD=r[2]?pv(String(r[2])):0;
+    var valPesos=r[3]?pv(String(r[3])):0;
+    if(!label)continue;
+    var ll=label.toLowerCase();
+    if(ll.indexOf('balance de inversiones')>=0)continue; // title row
+    if(ll.indexOf('cotización')>=0||ll.indexOf('cotizacion')>=0){cotiz=r[1]?pv(String(r[1])):1410;continue;}
+    if(ll==='totales'||ll==='total'){totalUSD=valUSD;totalPesos=valPesos;continue;}
+    if(ll==='inversión'||ll==='resta cobrar'||ll==='caja actual')continue; // footer summary rows
+    // Category headers: all uppercase or known patterns
+    if(label===label.toUpperCase()&&label.length>3&&!valUSD){
+      curCat={title:label,items:[],color:'var(--gold)'};
+      if(ll.indexOf('propiedad')>=0)curCat.color='var(--gold)';
+      else if(ll.indexOf('vehículo')>=0||ll.indexOf('vehiculo')>=0)curCat.color='var(--blue)';
+      else if(ll.indexOf('inversiones')>=0&&ll.indexOf('gasto')<0)curCat.color='var(--green)';
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('cobrar')>=0&&ll.indexOf('venta')>=0)curCat.color='var(--cyan)';
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('cobrar')>=0&&ll.indexOf('inversor')>=0)curCat.color='var(--purple)';
+      else if(ll.indexOf('gasto')>=0||ll.indexOf('pagar')>=0)curCat.color='var(--red)';
+      else if(ll.indexOf('dinero')>=0||ll.indexOf('caja')>=0)curCat.color='var(--green)';
+      categories.push(curCat);
+      continue;
+    }
+    if(curCat){curCat.items.push({name:label,usd:valUSD,pesos:valPesos});}
+  }
+
+  // Build HTML
+  var html='';
+  // KPI cards at top
+  html+='<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">';
+  html+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
+  html+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total Patrimonio U$D</div>';
+  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--gold)">'+fv(totalUSD)+'</div></div>';
+  if(totalPesos){
+    html+='<div style="background:var(--surface);border:2px solid var(--blue);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
+    html+='<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total en Pesos</div>';
+    html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--blue)">'+fp(totalPesos)+'</div></div>';
+  }
+  html+='<div style="background:var(--surface);border:2px solid var(--text2);border-radius:12px;padding:14px 28px;text-align:center;min-width:140px">';
+  html+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Cotización Dólar</div>';
+  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--text)">$'+Math.round(cotiz).toLocaleString('es-AR')+'</div></div>';
+  html+='</div>';
+
+  // Categories table
+  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">';
+  categories.forEach(function(cat){
+    if(!cat.items.length)return;
+    html+='<div style="border-bottom:1px solid var(--border)">';
+    html+='<div style="padding:12px 20px;background:rgba(255,255,255,.03);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:'+cat.color+'">'+cat.title+'</div>';
+    cat.items.forEach(function(item){
+      var valHtml='';
+      if(item.usd){var vc=item.usd<0?'var(--red)':cat.color;valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+vc+'">'+fv(item.usd)+'</span>';}
+      if(item.pesos){valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:var(--blue);margin-left:16px">'+fp(item.pesos)+'</span>';}
+      html+='<div style="padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.05)">';
+      html+='<span style="color:var(--text);font-size:13px">'+item.name+'</span>';
+      html+='<div>'+valHtml+'</div></div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ═══ Cronograma de Inversiones (detalle por cliente) ═══
+function renderCronoInv(){
+  var el=document.getElementById('cronoInvSection');
+  if(!el)return;
+  var rows=window._cronoInvData||[];
+  var summary=window._cronoInvSummary||[];
+  if(!rows.length){el.innerHTML='<div style="color:var(--text2);padding:20px">Cargando datos...</div>';return;}
+
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}return 0;}
+  function fv(v){if(!v)return'-';return v<0?'-U$D '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'U$D '+Math.round(v).toLocaleString('es-AR');}
+
+  // Parse summary KPIs
+  var summaryKPIs={};
+  for(var si=0;si<summary.length;si++){
+    if(!summary[si]||!summary[si][0])continue;
+    var lbl=String(summary[si][0]).trim();
+    var val=summary[si][2]?pv(String(summary[si][2])):0;
+    if(lbl.toLowerCase().indexOf('costos')>=0)summaryKPIs.costos=val;
+    else if(lbl.toLowerCase().indexOf('cuotas cobradas')>=0)summaryKPIs.cobradas=val;
+    else if(lbl.toLowerCase().indexOf('balance')>=0)summaryKPIs.balance=val;
+    else if(lbl.toLowerCase().indexOf('cuotas a cobrar')>=0)summaryKPIs.aCobrar=val;
+  }
+
+  // Parse client rows — skip header row and checkbox rows (TRUE/FALSE)
+  // Data rows have client name in col 0 (C), description in col 1 (D), etc.
+  var clients=[];
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];if(!r)continue;
+    var name=r[0]?String(r[0]).trim():'';
+    if(!name)continue;
+    var nl=name.toLowerCase();
+    // Skip headers, labels, checkbox rows
+    if(nl==='clientes'||nl==='ganancias'||nl==='true'||nl==='false')continue;
+    if(name==='TRUE'||name==='FALSE')continue;
+    // This is a client row
+    var desc=r[1]?String(r[1]).trim():'';
+    var fecha=r[2]?String(r[2]).trim():'';
+    var invAmt=r[3]?pv(String(r[3])):0;
+    var cuotas=r[6]?pv(String(r[6])):0;
+    var montoCuota=r[7]?pv(String(r[7])):0;
+    var pagado=r[8]?pv(String(r[8])):0;
+    var restante=r[9]?pv(String(r[9])):0;
+    // Summary cols (AO-AS = offset 38-42 from C5)
+    var totalInv=r[39]?pv(String(r[39])):0;
+    var totalRest=r[40]?pv(String(r[40])):0;
+    var ganancia=r[41]?pv(String(r[41])):0;
+    var estado=r[42]?String(r[42]).trim():'';
+    if(!desc&&!cuotas&&!estado)continue; // empty placeholder row
+    clients.push({name:name,desc:desc,fecha:fecha,inv:invAmt,cuotas:Math.round(cuotas),montoCuota:montoCuota,pagado:pagado,restante:restante,totalInv:totalInv,totalRest:totalRest,ganancia:ganancia,estado:estado});
+  }
+
+  var html='';
+  // Summary KPIs
+  var kpis=[
+    {label:'Costos de Inversiones',val:summaryKPIs.costos||0,color:'var(--red)'},
+    {label:'Cuotas Cobradas',val:summaryKPIs.cobradas||0,color:'var(--green)'},
+    {label:'Balance en Dólares',val:summaryKPIs.balance||0,color:'var(--gold)'}
+  ];
+  html+='<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">';
+  kpis.forEach(function(k){
+    var vc=k.val<0?'var(--red)':k.color;
+    html+='<div style="background:var(--surface);border:2px solid '+k.color+';border-radius:12px;padding:14px 24px;text-align:center;min-width:160px">';
+    html+='<div style="font-size:10px;font-weight:700;color:'+k.color+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+k.label+'</div>';
+    html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+vc+'">'+fv(k.val)+'</div></div>';
+  });
+  html+='</div>';
+
+  // Clients table
+  if(clients.length){
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto">';
+    html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html+='<thead><tr style="background:rgba(255,255,255,.04)">';
+    var cols=['Cliente','Descripción','Fecha','Cuotas','Cuota Mensual','Restante','Inversión Total','Ganancia','Estado'];
+    cols.forEach(function(c){html+='<th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap">'+c+'</th>';});
+    html+='</tr></thead><tbody>';
+    clients.forEach(function(c){
+      var estadoColor=c.estado.toLowerCase()==='vigente'?'var(--green)':'var(--text2)';
+      var ganColor=c.ganancia<0?'var(--red)':'var(--green)';
+      html+='<tr style="border-bottom:1px solid rgba(255,255,255,.05)">';
+      html+='<td style="padding:10px;color:var(--text);font-weight:600;white-space:nowrap">'+c.name+'</td>';
+      html+='<td style="padding:10px;color:var(--text2);max-width:250px;overflow:hidden;text-overflow:ellipsis" title="'+c.desc+'">'+c.desc+'</td>';
+      html+='<td style="padding:10px;color:var(--text2);white-space:nowrap">'+c.fecha+'</td>';
+      html+='<td style="padding:10px;text-align:center;color:var(--cyan);font-family:\'IBM Plex Mono\',monospace;font-weight:700">'+(c.cuotas||'-')+'</td>';
+      html+='<td style="padding:10px;color:var(--gold);font-family:\'IBM Plex Mono\',monospace;font-weight:600">'+fv(c.montoCuota)+'</td>';
+      html+='<td style="padding:10px;color:var(--cyan);font-family:\'IBM Plex Mono\',monospace;font-weight:600">'+fv(c.restante)+'</td>';
+      html+='<td style="padding:10px;color:var(--rosa);font-family:\'IBM Plex Mono\',monospace;font-weight:600">'+fv(c.totalInv)+'</td>';
+      html+='<td style="padding:10px;color:'+ganColor+';font-family:\'IBM Plex Mono\',monospace;font-weight:700">'+fv(c.ganancia)+'</td>';
+      html+='<td style="padding:10px"><span style="background:'+estadoColor+';color:var(--bg);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase">'+(c.estado||'-')+'</span></td>';
+      html+='</tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+  el.innerHTML=html;
+}
+
 function renderAll(){
   const isFiltered=filterVendedor!=='all';
   updateDynamicTitles();
@@ -3252,6 +3445,7 @@ function renderAll(){
   renderChartAcumVend();
   renderVendedorDetail();
   renderEstadoCuentas();
+  if(!isFiltered){renderBalInvPat();renderCronoInv();}
   buildCuotasPanels();
   renderAllCuotasPanels();
   renderSidebarStats();

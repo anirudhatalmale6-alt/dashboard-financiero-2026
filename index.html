@@ -3590,10 +3590,20 @@ function renderModuleKPIs(){
   // Get investment data for current month
   var invData=window._vendorInvestments||{};
 
-  // Render sorted cards: ganancia card + investment card below each
+  // Render sorted cards: ganancia card + investment card below each + accumulate totals
+  var totUSD=0,totPesos=0,totUni=0,totInv=0,totBal=0,totCobrar=0;
   cards.forEach(function(c){
     var invMonthly=invData[c.name]||[];
     var invVal=invMonthly[cmIdx]||0;
+    var balData=window._vendorBalances||{};
+    var balVal=balData[c.name]||0;
+    var cobrarData=window._vendorCuotasCobrar||{};
+    var cobrarKey=normName(c.name);
+    var cobrarVal=0;
+    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    var ugv=uniGains[normName(c.name)]||0;
+    // Accumulate totals
+    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totBal+=balVal;totCobrar+=cobrarVal;
     var colHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
     // Ganancia card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
@@ -3601,7 +3611,6 @@ function renderModuleKPIs(){
     colHtml+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos||0)+'</div>';
-    var ugv=uniGains[normName(c.name)]||0;
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(ugv)+'</div>';
     colHtml+='</div>';
     // Investment card below
@@ -3609,20 +3618,14 @@ function renderModuleKPIs(){
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--rosa);line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
-    // Balance Actual de Inversión card
-    var balData=window._vendorBalances||{};
-    var balVal=balData[c.name]||0;
+    // Recupero de Inversión card
     var balColor=balVal>=0?'var(--purple)':'var(--red)';
-    var balLabel=window._balanceLabel||'Balance Actual de Inversión';
+    var balLabel=window._balanceLabel||'Recupero de Inversión';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
     colHtml+='</div>';
-    // A COBRAR card (cuotas a cobrar unificadas en dolares)
-    var cobrarData=window._vendorCuotasCobrar||{};
-    var cobrarKey=normName(c.name);
-    var cobrarVal=0;
-    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    // A COBRAR card
     var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
@@ -3631,6 +3634,32 @@ function renderModuleKPIs(){
     colHtml+='</div>';
     container.innerHTML+=colHtml;
   });
+  // TOTAL column (11th)
+  var balLabel=window._balanceLabel||'Recupero de Inversión';
+  var tColHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
+  tColHtml+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:10px;padding:8px 6px;text-align:center">';
+  tColHtml+='<div style="font-size:14px;margin-bottom:4px">📊</div>';
+  tColHtml+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">TOTAL</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(totUSD)+'</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(totPesos)+'</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(totUni)+'</div>';
+  tColHtml+='</div>';
+  tColHtml+='<div style="background:var(--surface);border:2px solid var(--rosa);border-radius:10px;padding:6px 6px;text-align:center">';
+  tColHtml+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--rosa);line-height:1.3">'+fmtUSD(totInv)+'</div>';
+  tColHtml+='</div>';
+  var totBalColor=totBal>=0?'var(--purple)':'var(--red)';
+  tColHtml+='<div style="background:var(--surface);border:2px solid var(--purple);border-radius:10px;padding:6px 6px;text-align:center">';
+  tColHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+totBalColor+';line-height:1.3">'+fmtUSD(totBal)+'</div>';
+  tColHtml+='</div>';
+  var totCobrarColor=totCobrar>=0?'var(--cyan)':'var(--red)';
+  tColHtml+='<div style="background:var(--surface);border:2px solid var(--cyan);border-radius:10px;padding:6px 6px;text-align:center">';
+  tColHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+  tColHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+totCobrarColor+';line-height:1.3">'+fmtUSD(totCobrar)+'</div>';
+  tColHtml+='</div>';
+  tColHtml+='</div>';
+  container.innerHTML+=tColHtml;
 }
 
 function renderCurrentMonthKPIs(){

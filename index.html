@@ -188,7 +188,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Module Cards */
 .modules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
-.sidebar.collapsed~.main .modules{grid-template-columns:repeat(4,1fr)}
+.sidebar.collapsed~.main .modules{grid-template-columns:repeat(3,1fr)}
 .module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:.3s}
 .module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .module-name{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -1689,12 +1689,19 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
-    // Fetch vendor header rows for Balance section (merged cells not returned in full-sheet fetch)
+    // Fetch vendor header rows for Balance section dynamically (rows shift as client edits sheet)
     try{
-      var socHead=await fetchSheetRange('DASHBOARD MARTIN','C206:AB206');
-      var martHead=await fetchSheetRange('DASHBOARD MARTIN','C254:AB254');
-      if(socHead&&socHead[0]) window._socVendorNames=socHead[0]; // [Osito, , , , , Patito, , , , , Gonza, ...]
-      if(martHead&&martHead[0]) window._martVendorNames=martHead[0];
+      var balRange=await fetchSheetRange('DASHBOARD MARTIN','C200:AB290');
+      if(balRange){
+        var foundSoc=false;
+        for(var bri=0;bri<balRange.length;bri++){
+          var br0=balRange[bri]&&balRange[bri][0];
+          if(!br0||typeof br0!=='string')continue;
+          var brl=br0.trim().toLowerCase();
+          if(brl.indexOf('osito')>=0&&!foundSoc){window._socVendorNames=balRange[bri];foundSoc=true;}
+          if(brl==='tecno'){window._martVendorNames=balRange[bri];break;}
+        }
+      }
     }catch(e){}
     // Fetch monthly investment data from individual vendor tabs
     try{

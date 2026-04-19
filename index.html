@@ -1888,13 +1888,13 @@ async function loadAllData(){
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
     // Fetch Balance de Inversiones y Patrimonios tab
     try{
-      var bipData=await fetchSheetRange('Balance de inversiones y Patrimonios','B1:E30');
+      var bipData=await fetchSheetRange('Balance de inversiones y Patrimonios','B1:E50');
       window._balInvPatData=bipData||[];
     }catch(e){window._balInvPatData=[];}
     // Fetch Cronograma de Inversiones tab
     try{
       var ciData=await fetchSheetRange('Cronograma de Inversiones','C5:AS30');
-      var ciSummary=await fetchSheetRange('Cronograma de Inversiones','AU3:AW10');
+      var ciSummary=await fetchSheetRange('Cronograma de Inversiones','AU3:AW20');
       window._cronoInvData=ciData||[];
       window._cronoInvSummary=ciSummary||[];
     }catch(e){window._cronoInvData=[];window._cronoInvSummary=[];}
@@ -3306,16 +3306,18 @@ function renderCronoInv(){
   function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}return 0;}
   function fv(v){if(!v)return'-';return v<0?'-U$D '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'U$D '+Math.round(v).toLocaleString('es-AR');}
 
-  // Parse summary KPIs
+  // Parse summary KPIs — value may be in col 1 or col 2 depending on gviz row alignment
   var summaryKPIs={};
   for(var si=0;si<summary.length;si++){
     if(!summary[si]||!summary[si][0])continue;
     var lbl=String(summary[si][0]).trim();
-    var val=summary[si][2]?pv(String(summary[si][2])):0;
-    if(lbl.toLowerCase().indexOf('costos')>=0)summaryKPIs.costos=val;
-    else if(lbl.toLowerCase().indexOf('cuotas cobradas')>=0)summaryKPIs.cobradas=val;
-    else if(lbl.toLowerCase().indexOf('balance')>=0)summaryKPIs.balance=val;
-    else if(lbl.toLowerCase().indexOf('cuotas a cobrar')>=0)summaryKPIs.aCobrar=val;
+    var rawVal=summary[si][2]||summary[si][1]||'';
+    var val=rawVal?pv(String(rawVal)):0;
+    var ll=lbl.toLowerCase();
+    if(ll.indexOf('costos')>=0)summaryKPIs.costos=val;
+    else if(ll.indexOf('cuotas cobradas')>=0)summaryKPIs.cobradas=val;
+    else if(ll.indexOf('balance')>=0&&ll.indexOf('dolares')>=0)summaryKPIs.balance=val;
+    else if(ll.indexOf('cuotas a cobrar')>=0)summaryKPIs.aCobrar=val;
   }
 
   // Parse client rows — skip header row and checkbox rows (TRUE/FALSE)
@@ -3351,7 +3353,8 @@ function renderCronoInv(){
   var kpis=[
     {label:'Costos de Inversiones',val:summaryKPIs.costos||0,color:'var(--red)'},
     {label:'Cuotas Cobradas',val:summaryKPIs.cobradas||0,color:'var(--green)'},
-    {label:'Balance en Dólares',val:summaryKPIs.balance||0,color:'var(--gold)'}
+    {label:'Balance en Dólares',val:summaryKPIs.balance||0,color:'var(--gold)'},
+    {label:'Cuotas a Cobrar',val:summaryKPIs.aCobrar||0,color:'var(--cyan)'}
   ];
   html+='<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">';
   kpis.forEach(function(k){

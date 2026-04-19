@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prototipo Tarjetas - Balance y Ganancias</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1023;--surface:#1a1b2e;--border:#2a2b3d;
+  --text:#e2e8f0;--text2:#94a3b8;
+  --gold:#d4a853;--gold2:#f0c96b;--green:#4ade80;--blue:#60a5fa;
+  --purple:#a78bfa;--rosa:#f472b6;--cyan:#22d3ee;--red:#ef4444;
+  --orange:#fb923c;--teal:#2dd4bf;--pink:#f472b6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:30px}
+h1{font-size:22px;font-weight:800;margin-bottom:8px;color:var(--gold)}
+.subtitle{color:var(--text2);font-size:13px;margin-bottom:30px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:20px}
+.vendor-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.vendor-header{padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.vendor-header .icon{font-size:22px}
+.vendor-header .name{font-size:16px;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);margin:0}
+.kpi-cell{background:var(--surface);padding:12px 10px;text-align:center}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;line-height:1.2}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;line-height:1.2}
+.kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;margin-top:3px;line-height:1.2}
+.month-table{width:100%;border-collapse:collapse;font-size:11px}
+.month-table thead{background:rgba(255,255,255,.03)}
+.month-table th{padding:8px 6px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;text-align:right;border-bottom:1px solid var(--border)}
+.month-table th:first-child{text-align:left}
+.month-table td{padding:6px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:500;border-bottom:1px solid rgba(255,255,255,.03)}
+.month-table td:first-child{text-align:left;font-family:'Inter',sans-serif;color:var(--text2);font-weight:600}
+.month-table .total-row{background:rgba(212,168,83,.08);border-top:2px solid var(--gold)}
+.month-table .total-row td{font-weight:700;padding:8px 6px}
+.neg{color:var(--red)!important}
+</style>
+</head>
+<body>
+<h1>Prototipo: Tarjetas con Mini KPIs</h1>
+<p class="subtitle">Diseño alternativo con 6 KPIs + detalle mensual con 4 columnas. Cargando datos...</p>
+<div class="cards-grid" id="cardsContainer"></div>
+
+<script>
+var SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
+
+function fmtUSD(v){if(!v&&v!==0)return'U$D 0';var neg=v<0;v=Math.abs(Math.round(v));var s=v.toLocaleString('es-AR');return(neg?'-':'')+' U$D '+s;}
+function fmtPesos(v){if(!v&&v!==0)return'$ 0';var neg=v<0;v=Math.abs(Math.round(v));var s=v.toLocaleString('es-AR');return(neg?'-':'')+'$ '+s;}
+
+async function fetchRawSheet(tab){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tq=select%20*&sheet='+encodeURIComponent(tab);
+  var resp=await fetch(url);
+  var text=await resp.text();
+  var start=text.indexOf('{'),end=text.lastIndexOf('}')+1;
+  var data=JSON.parse(text.substring(start,end));
+  return data.table.rows.map(function(r){
+    return r.c?r.c.map(function(c){return c?c.v:null;}):[];
+  });
+}
+
+async function init(){
+  var raw=await fetchRawSheet('DASHBOARD MARTIN');
+  var container=document.getElementById('cardsContainer');
+
+  // Find section markers
+  var socStart=-1,martStart=-1;
+  for(var i=100;i<raw.length;i++){
+    if(!raw[i])continue;
+    var cv=raw[i][2];
+    if(typeof cv==='string'){
+      if(cv.indexOf('Balance y Ganancias')>=0) socStart=i+1;
+      if(socStart>0&&i>socStart+30&&cv==='Tecno') martStart=i;
+    }
+  }
+  if(socStart<0) socStart=125;
+  if(martStart<0) martStart=163;
+
+  // Find Balance markers
+  var socBalStart=-1,martBalStart=-1;
+  for(var i=socStart;i<raw.length&&i<socStart+50;i++){
+    if(raw[i]&&raw[i][2]==='Balance'){socBalStart=i;break;}
+  }
+  for(var i=martStart;i<raw.length&&i<martStart+50;i++){
+    if(raw[i]&&raw[i][2]==='Balance'){martBalStart=i;break;}
+  }
+
+  function dv(row,col){if(!raw[row])return 0;var v=raw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  function lbl(row,fb){return(raw[row]&&raw[row][2])?String(raw[row][2]).trim():fb;}
+
+  // Scan balance rows
+  function findBal(base){
+    var r={ganAnio:-1,ganUnif:-1,ganActualUnif:-1,recupero:-1,resta:-1,caja:-1,prom:-1};
+    for(var i=base+1;i<base+15&&i<raw.length;i++){
+      if(!raw[i])continue;var t=raw[i][2];if(typeof t!=='string')continue;
+      var tl=t.toLowerCase().trim();
+      if(tl.indexOf('ganancia')>=0&&tl.indexOf('año')>=0&&r.ganAnio<0) r.ganAnio=i;
+      else if(tl.indexOf('ganancia actual')>=0&&tl.indexOf('unificada')>=0&&r.ganActualUnif<0) r.ganActualUnif=i;
+      else if(tl.indexOf('ganancia unificada')>=0&&r.ganUnif<0) r.ganUnif=i;
+      else if(tl.indexOf('recupero')>=0&&r.recupero<0) r.recupero=i;
+      else if(tl.indexOf('resta cobrar')>=0&&r.resta<0) r.resta=i;
+      else if(tl.indexOf('caja')>=0&&r.caja<0) r.caja=i;
+      else if(tl.indexOf('promedio')>=0&&r.prom<0) r.prom=i;
+    }
+    return r;
+  }
+
+  // Get cotización from LS_Resumen
+  var cotiz=1450;
+  try{
+    var resRaw=await fetchRawSheet('LS_Resumen');
+    for(var i=0;i<resRaw.length;i++){
+      if(resRaw[i]&&resRaw[i][0]==='Abril'&&resRaw[i][5]){cotiz=resRaw[i][5];break;}
+    }
+  }catch(e){}
+
+  var socOffsets=[{u:4,p:5},{u:9,p:10},{u:14,p:15},{u:19,p:20},{u:24,p:25},{u:29,p:30}];
+  var socNames=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+  var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
+  var martNames=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  var sBal=findBal(socBalStart);
+  var mBal=findBal(martBalStart);
+
+  function buildProtoCard(name,icon,uCol,pCol,balRows,monthStart){
+    var ganActualUnif=balRows.ganActualUnif>=0?dv(balRows.ganActualUnif,uCol):0;
+    var ganAnioU=balRows.ganAnio>=0?dv(balRows.ganAnio,uCol):0;
+    var ganAnioP=balRows.ganAnio>=0?dv(balRows.ganAnio,pCol):0;
+    var ganUnifU=balRows.ganUnif>=0?dv(balRows.ganUnif,uCol):0;
+    // Cuotas a cobrar: USD, Pesos, and Unificada
+    var restaU=balRows.resta>=0?dv(balRows.resta,uCol):0;
+    var restaP=balRows.resta>=0?dv(balRows.resta,pCol):0;
+    var restaUnif=restaU+(restaP/cotiz);
+    var promU=balRows.prom>=0?dv(balRows.prom,uCol):0;
+    var cajaU=balRows.caja>=0?dv(balRows.caja,uCol):0;
+    var recuperoU=balRows.recupero>=0?dv(balRows.recupero,uCol):0;
+
+    function vc(v,color){return v<0?'var(--red)':color;}
+
+    var html='<div class="vendor-card">';
+    html+='<div class="vendor-header"><span class="icon">'+icon+'</span><span class="name">'+name+'</span></div>';
+
+    // 6 Mini KPIs in 3x2 grid
+    html+='<div class="kpi-grid">';
+    // Row 1: Ganancia Actual Unif | Ganancia 2026 (USD/Pesos/Unif) | Cuotas a Cobrar (USD/Pesos/Unif)
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--gold)">Ganancia Actual Unif</div>';
+    html+='<div class="kpi-value" style="color:'+vc(ganActualUnif,'var(--gold)')+'">'+fmtUSD(ganActualUnif)+'</div></div>';
+
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--green)">Ganancia 2026</div>';
+    html+='<div class="kpi-value" style="color:'+vc(ganAnioU,'var(--green)')+'">'+fmtUSD(ganAnioU)+'</div>';
+    html+='<div class="kpi-sub" style="color:'+vc(ganAnioP,'var(--blue)')+'">'+fmtPesos(ganAnioP)+'</div>';
+    html+='<div class="kpi-sub" style="color:'+vc(ganUnifU,'var(--gold)')+'">'+fmtUSD(ganUnifU)+'</div></div>';
+
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--cyan)">Cuotas a Cobrar</div>';
+    html+='<div class="kpi-value" style="color:'+vc(restaU,'var(--cyan)')+'">'+fmtUSD(restaU)+'</div>';
+    html+='<div class="kpi-sub" style="color:'+vc(restaP,'var(--blue)')+'">'+fmtPesos(restaP)+'</div>';
+    html+='<div class="kpi-sub" style="color:'+vc(Math.round(restaUnif),'var(--gold)')+'">'+fmtUSD(Math.round(restaUnif))+'</div></div>';
+
+    // Row 2: Promedio Inversión Mensual | Caja | Recupero de Inversión
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--rosa)">Promedio Inversión Mensual</div>';
+    html+='<div class="kpi-value" style="color:'+vc(promU,'var(--rosa)')+'">'+fmtUSD(promU)+'</div></div>';
+
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--blue)">Caja</div>';
+    html+='<div class="kpi-value" style="color:'+vc(cajaU,'var(--blue)')+'">'+fmtUSD(cajaU)+'</div></div>';
+
+    html+='<div class="kpi-cell"><div class="kpi-label" style="color:var(--purple)">Recupero de Inversión</div>';
+    html+='<div class="kpi-value" style="color:'+vc(recuperoU,'var(--purple)')+'">'+fmtUSD(recuperoU)+'</div></div>';
+
+    html+='</div>'; // end kpi-grid
+
+    // Monthly detail table with 4 columns
+    html+='<div style="padding:0"><table class="month-table"><thead><tr>';
+    html+='<th style="text-align:left">Mes</th><th style="color:var(--rosa)">Inversión</th><th style="color:var(--green)">Ganancia U$D</th><th style="color:var(--blue)">Ganancia $</th><th style="color:var(--gold)">Unif U$D</th>';
+    html+='</tr></thead><tbody>';
+
+    var dtInv=0,dtU=0,dtP=0,dtUnif=0;
+    for(var mi=0;mi<12;mi++){
+      var usd=dv(monthStart+mi,uCol);
+      var pes=dv(monthStart+mi,pCol);
+      var inv=0; // investment data not available in prototype
+      var unif=Math.round(usd+(pes/cotiz));
+      dtU+=usd;dtP+=pes;dtInv+=inv;dtUnif+=unif;
+      html+='<tr><td>'+meses[mi]+'</td>';
+      html+='<td style="color:var(--rosa)">'+(inv?fmtUSD(inv):'U$D 0')+'</td>';
+      html+='<td style="color:var(--green)">'+fmtUSD(usd)+'</td>';
+      html+='<td style="color:var(--blue)">'+fmtPesos(pes)+'</td>';
+      html+='<td style="color:var(--gold)">'+fmtUSD(unif)+'</td></tr>';
+    }
+    html+='<tr class="total-row"><td>TOTAL</td>';
+    html+='<td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td>';
+    html+='<td style="color:var(--green)">'+fmtUSD(dtU)+'</td>';
+    html+='<td style="color:var(--blue)">'+fmtPesos(dtP)+'</td>';
+    html+='<td style="color:var(--gold)">'+fmtUSD(dtUnif)+'</td></tr>';
+    html+='</tbody></table></div>';
+    html+='</div>';
+    return html;
+  }
+
+  var allHTML='';
+  // Sociedades
+  for(var i=0;i<socOffsets.length;i++){
+    allHTML+=buildProtoCard(socNames[i],socIcons[i],socOffsets[i].u,socOffsets[i].p,sBal,socStart+2);
+  }
+  // Martin
+  for(var i=0;i<socOffsets.length;i++){
+    allHTML+=buildProtoCard(martNames[i],martIcons[i],socOffsets[i].u,socOffsets[i].p,mBal,martStart+2);
+  }
+  container.innerHTML=allHTML;
+  document.querySelector('.subtitle').textContent='Diseño alternativo con 6 KPIs + detalle mensual con 4 columnas';
+}
+
+init().catch(function(e){console.error(e);document.querySelector('.subtitle').textContent='Error: '+e.message;});
+</script>
+</body>
+</html>

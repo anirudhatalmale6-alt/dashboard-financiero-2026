@@ -636,7 +636,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('kpiCardsRow').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Resumen Ingresos</a>
     <a onclick="document.getElementById('secIngresosTotales').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Ingresos Totales</a>
     <a onclick="document.getElementById('secDetalleIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Detalle Ingresos</a>
-
+    <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual Neto</a>
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
@@ -702,8 +702,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="it-scroll"><table class="it-table" id="ingresosTotalesTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div>
   </div>
 
-  <div id="secAcumuladoAnual" style="display:none"></div>
-  <div id="acumCards" style="display:none"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
+    <h2 class="section-title" id="secAcumuladoAnual" style="margin-bottom:0;margin-top:0"><span class="dot" style="background:var(--blue)"></span>Acumulado <em>Anual Neto</em></h2>
+    <div id="yearToggleAcum" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-year="2026" onclick="setYearFilterAcum('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-year="2027" onclick="setYearFilterAcum('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-year="all" onclick="setYearFilterAcum('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
+  <div class="acum-cards" id="acumCards"></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
     <h2 class="section-title" id="secDetalleIngresos" style="margin-bottom:0;margin-top:0"><span class="dot" style="background:var(--gold)"></span>Detalle <em>Ingresos Mensuales</em></h2>

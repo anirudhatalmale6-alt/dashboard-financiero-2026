@@ -1770,22 +1770,20 @@ async function loadAllData(){
           balSections.push(bi);
         }
       }
-      // For each Balance section, find the first row below it that has numeric data at offset columns
+      // For each Balance section, find "Recupero de Inversión" row (or similar) below it
       balSections.forEach(function(secIdx,secNum){
         var names=secNum===0?socDef2:martDef2;
         for(var ri=secIdx+1;ri<secIdx+10&&ri<dashRaw.length;ri++){
           var row=dashRaw[ri];
           if(!row)continue;
-          // Check if this row has at least one numeric value at the expected offsets
-          var hasData=false;
-          for(var oi=0;oi<balOffsets.length;oi++){
-            var v=row[balOffsets[oi]];
-            if(typeof v==='number'||(typeof v==='string'&&v.replace(/[^\d]/g,'').length>0)){hasData=true;break;}
-          }
-          if(!hasData)continue;
+          var lbl=row[2];
+          if(!lbl||typeof lbl!=='string')continue;
+          var lblLow=lbl.trim().toLowerCase();
+          // Look for "Recupero" row specifically
+          if(lblLow.indexOf('recupero')<0)continue;
           // Read label from col 2
-          if(!window._balanceLabel&&row[2]&&typeof row[2]==='string'){
-            window._balanceLabel=String(row[2]).trim();
+          if(!window._balanceLabel){
+            window._balanceLabel=String(lbl).trim();
           }
           // Extract values
           balOffsets.forEach(function(col,idx){

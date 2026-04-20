@@ -4211,6 +4211,28 @@ function renderModules(){
     monthCotiz.push(entry&&entry.Cotizacion_Dolar?entry.Cotizacion_Dolar:1450);
   }
 
+  // Build per-vendor monthly cuotas lookup from "Cuotas a Cobrar en Dolares" section
+  var cuotasMap={};
+  var cuotasScanStart=-1;
+  for(var qi=80;qi<dashRaw.length&&qi<200;qi++){
+    if(!dashRaw[qi])continue;
+    var qc=dashRaw[qi][2];
+    if(typeof qc==='string'&&qc.indexOf('Cuotas a Cobrar en Dolares')>=0&&qc.indexOf('Unif')<0){cuotasScanStart=qi+1;break;}
+  }
+  if(cuotasScanStart>0){
+    for(var qi=cuotasScanStart;qi<cuotasScanStart+15&&qi<dashRaw.length;qi++){
+      if(!dashRaw[qi])continue;
+      var qn=dashRaw[qi][2];
+      if(typeof qn==='string'&&qn.indexOf('Total')>=0)break;
+      if(typeof qn==='string'){
+        var vn=qn.trim();
+        var mVals=[];
+        for(var qmi=0;qmi<12;qmi++){mVals.push(dv(qi,4+qmi));}
+        cuotasMap[vn.toLowerCase()]=mVals;
+      }
+    }
+  }
+
   function buildCard(v,balRows,monthStart){
     if(filterVendedor!=='all'&&filterVendedor!==v.name)return;
     // Extract all balance KPI values
@@ -4230,13 +4252,12 @@ function renderModules(){
     var invData=window._vendorInvestments&&window._vendorInvestments[v.name]?window._vendorInvestments[v.name]:[];
     var invMesActual=invData[curMi]||0;
 
-    // Cuotas a cobrar mensual: approximate from monthly cuotas data if available
-    // Use resta cobrar divided by remaining months as monthly estimate, or show current month from cuotas
+    // Cuotas a cobrar mensual: read from "Cuotas a Cobrar en Dolares" section
     var cuotasMensual=0;
-    // Try to get from cuotas section data (rows 119+ in dashRaw)
-    // For simplicity, show current month gain as proxy or calculate from total/remaining months
-    var mesesRestantes=12-curMi;
-    if(restaU>0&&mesesRestantes>0)cuotasMensual=Math.round(restaU/mesesRestantes);
+    var vnLower=v.name.toLowerCase().replace(/\.+$/,'');
+    for(var qk in cuotasMap){
+      if(qk.indexOf(vnLower)>=0||vnLower.indexOf(qk)>=0){cuotasMensual=cuotasMap[qk][curMi]||0;break;}
+    }
 
     function vc(val,color){return val<0?'var(--red)':color;}
 

@@ -647,12 +647,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
     <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Inversiones</a>
     <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Control de Cuotas</a>
-    <a onclick="document.getElementById('secDashEmpresas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Dashboard Empresas</a>
-    <a onclick="document.getElementById('secDashVendedores').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Dashboard Vendedores</a>
-    <a onclick="document.getElementById('secVendedorDash').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--teal)"></span>Detalle Vendedores</a>
-    <a onclick="document.getElementById('secVendedorDetail').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Ganancias Vendedores</a>
-    <a onclick="document.getElementById('secEstadoCuentas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--orange)"></span>Estado de Cuentas</a>
-    <a onclick="document.getElementById('secSociedadEmpresa').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Sociedad / Empresa</a>
   </nav>
 
   <div class="sidebar-stats" id="sidebarStats"></div>
@@ -871,94 +865,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
   </div>
 
-  <div class="section-divider" id="secDashEmpresas">
-    <h2>Dashboard <em>Empresas</em></h2>
-    <div class="divider-sub">Cuotas a cobrar y pagar — Sociedades / Empresas</div>
-  </div>
-
-  <h3 class="section-title" id="secEmpCuotasUSD">Cuotas Empresas — <em>Cobrar vs Pagar en Dólares</em></h3>
-  <div class="cuotas-cards" id="empCuotasCardsUSD"></div>
-  <div class="charts">
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Cuotas Empresas en U$D</div>
-      <div class="chart-subtitle">Cobro de cuotas vs Compromisos de pago mensual — Sociedades</div>
-      <div class="chart-container"><canvas id="chartEmpCuotasUSD"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Cuotas Empresas en Pesos</div>
-      <div class="chart-subtitle">Cobro de cuotas en pesos por mes — Sociedades</div>
-      <div class="chart-container"><canvas id="chartEmpCuotasPesos"></canvas></div>
-    </div>
-  </div>
-
-  <h3 class="section-title" id="secEmpCuotasPesos">Cuotas Empresas — <em>Cobrar vs Pagar en Pesos</em></h3>
-  <div class="cuotas-cards" id="empCuotasCardsPesos"></div>
-
-  <h3 class="section-title" id="secEmpCuotasUnif"><span class="dot" style="background:var(--gold)"></span>Cuotas Empresas — <em>Cobrar Unificadas en Dólares</em></h3>
-  <div class="cuotas-cards" id="empCuotasCardsUnif"></div>
-  <div class="charts" style="grid-template-columns:1fr">
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Cuotas Unificadas Empresas en U$D</div>
-      <div class="chart-subtitle">Cuotas en Pesos convertidas a dólares (blue) + Cuotas en U$D — Sociedades</div>
-      <div class="chart-container"><canvas id="chartEmpCuotasUnif"></canvas></div>
-    </div>
-  </div>
-
-  <div class="section-divider" id="secDashVendedores">
-    <h2>Dashboard <em>Vendedores</em></h2>
-    <div class="divider-sub">Reportes detallados por vendedor y módulo</div>
-  </div>
-
-  <h3 class="section-title" id="secVendedorDash">Detalle Mensual por <em>Vendedor / Módulo</em> (Dashboard)</h3>
-  <div id="vendedorKpis" style="margin-bottom:20px;display:none"></div>
-  <div id="vendedorDashContainer"></div>
-
-  <div class="charts" id="secVendedorCharts" style="margin-top:28px;grid-template-columns:1fr">
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ganancias por Vendedor</div>
-      <div class="chart-subtitle">Comparación mensual — sección vendedores</div>
-      <div class="chart-container" style="height:280px"><canvas id="chartVendedores2"></canvas></div>
-    </div>
-  </div>
-
-  <h3 class="section-title" id="secVendedorDetail">Acumulado Ganancias Vendedores / Modulos de <em>Negocios</em></h3>
-  <div id="vendedorDetailContainer"></div>
-
-  <div class="charts" id="secAcumVendChart" style="margin-top:28px;grid-template-columns:1fr">
-    <div class="chart-card">
-      <div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Acumulado Anual Neto</div>
-      <div class="chart-subtitle">Evolución acumulada por vendedor/módulo</div>
-      <div class="chart-container tall"><canvas id="chartAcumVend"></canvas></div>
-    </div>
-  </div>
-
-  <!-- OSITO Balance Panel (vendor-specific) -->
-  <div id="ositoBalanceSection" style="display:none">
-    <div class="section-divider" id="secOsitoBalance">
-      <h2>Balance General Sociedad / Empresa <em>OSITO S.r.l.</em></h2>
-      <div class="divider-sub">Mapa financiero completo — inversiones, caja, ingresos y ganancias</div>
-    </div>
-    <div id="ositoBalanceContainer"></div>
-    <div id="ositoSeparator" style="display:none;margin:40px 0;padding:30px 0;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);text-align:center">
-      <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">Dashboard <em style="color:var(--gold)">Osito S.r.l.</em></h2>
-      <div style="font-size:12px;color:var(--text2);letter-spacing:1px;text-transform:uppercase">Panel exclusivo de vendedor — solo tu información</div>
-    </div>
-  </div>
-
-  <div class="section-divider" id="secEstadoCuentas">
-    <h2>Estado de Cuentas y <em>Comisiones Vendedores</em></h2>
-    <div class="divider-sub">Saldos, comisiones y estado de cada vendedor/módulo</div>
-  </div>
-  <div id="estadoCuentasContainer" class="ec-grid"></div>
-
-  <!-- DASHBOARD SOCIEDAD / EMPRESA -->
-  <div id="secSociedadEmpresa" style="display:none">
-    <div style="margin:60px 0 0;padding:40px 0;border-top:3px solid var(--gold);border-bottom:3px solid var(--gold);text-align:center">
-      <h2 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:800;color:var(--text);margin:0;letter-spacing:-1px">Dashboard Sociedad / <em style="color:var(--gold);font-style:normal">Empresa</em></h2>
-      <div style="font-size:13px;color:var(--text3);margin-top:6px;letter-spacing:1px;text-transform:uppercase">Panel consolidado de la sociedad</div>
-    </div>
-    <div id="sociedadEmpresaContainer"></div>
-  </div>
 
 </main>
 </div>

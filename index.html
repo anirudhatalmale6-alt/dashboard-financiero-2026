@@ -807,7 +807,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
-    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em></h3>
+    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares Vs Gastos Operativos y Compromisos de Pagos</em></h3>
     <div id="cuotasYearToggleUnif" style="display:flex;gap:6px">
       <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
@@ -4514,11 +4514,8 @@ function renderChartCuotasUSD(){
     type:'bar',
     data:{
       labels:q.labels,
-      datasets:filterVendedor!=='all'?[
-        {label:'Cuotas a Cobrar U$D',data:cUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5}
-      ]:[
-        {label:'Cuotas a Cobrar U$D',data:cUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.5},
-        {label:'A Pagar U$D',data:pUSD,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
+      datasets:[
+        {label:'Cuotas a Cobrar U$D',data:cUSD,backgroundColor:'rgba(52,211,153,.7)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.6}
       ]
     },
     plugins:[ChartDataLabels],
@@ -4648,7 +4645,7 @@ function renderCuotasCardsUnif(){
   container.innerHTML='';
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasUnif');
-  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares</em>'+(vLabel||'');}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares Vs Gastos Operativos y Compromisos de Pagos</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
   let totalCobrar=0,totalPagar=0;
   q.labels.forEach((mes,i)=>{

@@ -774,7 +774,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="moduleDetails" style="display:none"></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
-    <h3 class="section-title" id="secCuotas" style="margin-bottom:0">Cuotas a <em>Cobrar vs Pagar en Dólares</em></h3>
+    <h3 class="section-title" id="secCuotas" style="margin-bottom:0">Cuotas a <em>Cobrar en Dólares</em></h3>
     <div id="cuotasYearToggleUSD" style="display:flex;gap:6px">
       <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
@@ -784,7 +784,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="cuotas-cards" id="cuotasCards"></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
-    <h3 class="section-title" id="secCuotasPesos" style="margin-bottom:0">Cuotas a <em>Cobrar vs Pagar en Pesos</em></h3>
+    <h3 class="section-title" id="secCuotasPesos" style="margin-bottom:0">Cuotas a <em>Cobrar en Pesos</em></h3>
     <div id="cuotasYearTogglePesos" style="display:flex;gap:6px">
       <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
@@ -3117,8 +3117,8 @@ function updateDynamicTitles(){
     el.innerHTML='<span class="dot" style="background:var(--gold)"></span>'+parts.join(' ')+' <em>'+last+'</em>';
   })();
   // These sections use dynamic scanning so title row positions change — use hardcoded titles
-  (function(){var el=document.getElementById('secCuotasPesos');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Pesos</em>';})();
-  (function(){var el=document.getElementById('secCuotas');if(el)el.innerHTML='Cuotas a Cobrar vs Pagar en <em>Dólares</em>';})();
+  (function(){var el=document.getElementById('secCuotasPesos');if(el)el.innerHTML='Cuotas a <em>Cobrar en Pesos</em>';})();
+  (function(){var el=document.getElementById('secCuotas');if(el)el.innerHTML='Cuotas a <em>Cobrar en Dólares</em>';})();
   (function(){var el=document.getElementById('secVendedorDash');if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalle Mensual por Vendedor / <em>Módulo</em>';})();
   (function(){var el=document.getElementById('secEstadoCuentas');if(el){var h2=el.querySelector('h2');if(h2)h2.innerHTML='Estado de Cuentas y Comisiones <em>Vendedores</em>';}})();
 }
@@ -4589,41 +4589,27 @@ function renderCuotasCards(){
   const container=document.getElementById('cuotasCards');
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotas');
-  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Dólares</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Dólares</em>';}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar en Dólares</em>'+(vLabel||'');}
   container.innerHTML='';
-  let totalCobrar=0,totalPagar=0;
+  let totalCobrar=0;
   q.labels.forEach((mes,i)=>{
     const cobrar=q.cobrarUSD[i]||0;
-    const pagar=q.pagarUSD[i]||0;
     totalCobrar+=cobrar;
-    totalPagar+=pagar;
-    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
-    const pagarHTML=isVendor?'':`
-        <span class="lbl">A Pagar</span>
-        <div class="pagar">${pagar>0?'-':''}${fmtUSD(pagar)}</div>`;
     container.innerHTML+=`
       <div class="cuota-card">
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar</span>
         <div class="cobrar">${fmtUSD(cobrar)}</div>
-        ${pagarHTML}
-        <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
-        ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
+        <div class="cuota-bar"><div class="cuota-fill" style="width:100%"></div></div>
       </div>`;
   });
   // Accumulated card (double width)
-  const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
-  const totalPagarHTML=isVendor?'':`
-      <span class="lbl">Total A Pagar</span>
-      <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>`;
   container.innerHTML+=`
     <div class="cuota-card acum">
       <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtUSD(totalCobrar)}</div>
-      ${totalPagarHTML}
-      <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
-      ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
+      <div class="cuota-bar"><div class="cuota-fill" style="width:100%"></div></div>
     </div>`;
 }
 
@@ -4633,39 +4619,25 @@ function renderCuotasCardsPesos(){
   container.innerHTML='';
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasPesos');
-  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML=isVendor?'Cuotas a <em>Cobrar en Pesos</em>'+vLabel:'Cuotas a <em>Cobrar vs Pagar en Pesos</em>';}
-  let totalCobrar=0,totalPagar=0;
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='Cuotas a <em>Cobrar en Pesos</em>'+(vLabel||'');}
+  let totalCobrar=0;
   q.labels.forEach((mes,i)=>{
     const cobrar=q.cobrarPesos[i]||0;
-    const pagar=q.pagarPesos[i]||0;
     totalCobrar+=cobrar;
-    totalPagar+=pagar;
-    const pct=cobrar>0&&pagar>0?Math.min(100,Math.round((cobrar/(cobrar+pagar))*100)):cobrar>0?100:0;
-    const pagarHTML=isVendor?'':`
-        <span class="lbl">A Pagar</span>
-        <div class="pagar">${pagar>0?'-':''}${fmtPesos(pagar)}</div>`;
     container.innerHTML+=`
       <div class="cuota-card">
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar</span>
         <div class="cobrar">${fmtPesos(cobrar)}</div>
-        ${pagarHTML}
-        <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
-        ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
+        <div class="cuota-bar"><div class="cuota-fill" style="width:100%"></div></div>
       </div>`;
   });
-  const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
-  const totalPagarHTML=isVendor?'':`
-      <span class="lbl">Total A Pagar</span>
-      <div class="pagar">${totalPagar>0?'-':''}${fmtPesos(totalPagar)}</div>`;
   container.innerHTML+=`
     <div class="cuota-card acum">
       <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar</span>
       <div class="cobrar">${fmtPesos(totalCobrar)}</div>
-      ${totalPagarHTML}
-      <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
-      ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
+      <div class="cuota-bar"><div class="cuota-fill" style="width:100%"></div></div>
     </div>`;
 }
 

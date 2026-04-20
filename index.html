@@ -640,12 +640,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
-    <a onclick="document.getElementById('secBalInvPat').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Balance Inversiones</a>
-    <a onclick="document.getElementById('secCronoInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cronograma Inversiones</a>
+    <a onclick="document.getElementById('secGastosOp').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos Operativos</a>
+    <a onclick="document.getElementById('secCompromisos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Compromisos de Pagos</a>
+    <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Inversiones</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
     <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
-    <a onclick="document.getElementById('secInversiones').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Inversiones</a>
+    <a onclick="document.getElementById('secGastosOp').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
     <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Control de Cuotas</a>
   </nav>
 
@@ -838,21 +839,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div id="panelSections"></div>
 
-  <h3 class="section-title" id="secInversiones">Cronograma de <em>Inversiones</em></h3>
+  <!-- Card 1: GASTOS OPERATIVOS DE LA EMPRESA -->
+  <h3 class="section-title" id="secGastosOp">Gastos Operativos de la <em>Empresa</em></h3>
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">
+    <div id="gastosYearToggle" style="display:flex;gap:6px">
+      <button class="cm-btn active" data-gyear="2026" onclick="setGastosYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
+      <button class="cm-btn" data-gyear="2027" onclick="setGastosYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
+      <button class="cm-btn" data-gyear="all" onclick="setGastosYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
+    </div>
+  </div>
+  <div class="cuotas-cards" id="gastosOpCards"></div>
+
+  <!-- Card 2: COMPROMISOS DE PAGOS -->
+  <h3 class="section-title" id="secCompromisos">Compromisos de <em>Pagos</em></h3>
+  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Inversores / Inversiones / Gastos Operativos)</div>
+  <div class="cuotas-cards" id="compromisosCards"></div>
+
+  <!-- Card 3: INVERSIONES -->
+  <h3 class="section-title" id="secInvBalance">Inversiones</h3>
+  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Inversores / Inversiones / Gastos Operativos)</div>
+  <div id="invBalanceCards"></div>
+
   <div class="inv-section" id="invSection">
-    <div class="inv-header" id="invHeader"></div>
-    <div class="inv-cats" id="invCats"></div>
-    <div class="inv-summary" id="invSummary"></div>
-    <h3 class="section-title" id="secCronoInv"><span class="dot" style="background:var(--green)"></span>Cronograma de <em>Inversiones</em> — Detalle</h3>
-    <div id="cronoInvSection"></div>
     <h3 class="section-title" id="secBalanceGeneral">Ingreso de <em>Capital</em> vs Gastos e Inversiones</h3>
     <div class="chart-card full" id="balanceGeneralCard">
       <div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Balance General — Entradas vs Salidas</div>
       <div class="chart-subtitle">Ingresos y gastos unificados en dólares — clickeá la leyenda para ver detalle por moneda</div>
       <div class="chart-container tall"><canvas id="chartBalanceGeneral"></canvas></div>
     </div>
-    <h3 class="section-title" id="secBalInvPat"><span class="dot" style="background:var(--cyan)"></span>Balance de Inversiones y <em>Patrimonios</em></h3>
-    <div id="balInvPatSection"></div>
     <div class="chart-card full" style="margin-top:16px">
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Flujo de Capital</div>
       <div class="chart-subtitle">Cómo se construye tu patrimonio — activos que suman vs compromisos que restan</div>
@@ -1887,7 +1901,7 @@ function populateFilters(){
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
-      'secInversiones','invSection',
+      'secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection',
       'secDashVendedores',
       'secAcumuladoAnual','acumCards'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
@@ -2028,6 +2042,195 @@ function renderAcumuladoCards(){
   });
 }
 
+// ═══ GASTOS OPERATIVOS / COMPROMISOS / INVERSIONES ═══
+var gastosYearFilter='2026';
+function setGastosYearFilter(yr){
+  gastosYearFilter=yr;
+  document.querySelectorAll('#gastosYearToggle .cm-btn').forEach(function(b){
+    if(b.getAttribute('data-gyear')===yr){b.classList.add('active');b.style.background='var(--gold)';b.style.color='#1a1b2e';}
+    else{b.classList.remove('active');b.style.background='transparent';b.style.color='var(--text2)';}
+  });
+  renderGastosOpCards();
+  renderCompromisosCards();
+}
+
+function extractGastosData(){
+  // Scan invRaw for "Gastos Mensuales en Dolares" header
+  if(!invRaw||invRaw.length<50)return null;
+  var headerIdx=-1;
+  for(var i=140;i<invRaw.length;i++){
+    if(!invRaw[i])continue;
+    var v=invRaw[i][1];
+    if(typeof v==='string'&&v.indexOf('Gastos Mensuales')>=0){headerIdx=i;break;}
+  }
+  if(headerIdx<0)return null;
+  // Data rows: headerIdx+2 = Gastos Inversiones, +3 = Compromisos, +4 = Resta Pagar
+  function pv(raw){
+    if(typeof raw==='number')return raw;
+    if(typeof raw==='string'){var neg=raw.indexOf('-')>=0?-1:1;var cl=raw.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}
+    return 0;
+  }
+  var meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  // 2026: cols D-O (idx 3-14), 2027: cols P-AA (idx 15-26), Total: AB (idx 27)
+  var gastosInv=[],compromisos=[],restaPagar=[];
+  var riGastos=headerIdx+2,riComp=headerIdx+3,riResta=headerIdx+4;
+  for(var mi=0;mi<12;mi++){
+    gastosInv.push({m26:pv(invRaw[riGastos]?invRaw[riGastos][3+mi]:0),m27:pv(invRaw[riGastos]?invRaw[riGastos][15+mi]:0)});
+    compromisos.push({m26:pv(invRaw[riComp]?invRaw[riComp][3+mi]:0),m27:pv(invRaw[riComp]?invRaw[riComp][15+mi]:0)});
+    restaPagar.push({m26:pv(invRaw[riResta]?invRaw[riResta][3+mi]:0),m27:pv(invRaw[riResta]?invRaw[riResta][15+mi]:0)});
+  }
+  var totalGastos={m26:pv(invRaw[riGastos]?invRaw[riGastos][27]:0),m27:0};
+  var totalComp={m26:pv(invRaw[riComp]?invRaw[riComp][27]:0),m27:0};
+  var totalResta={m26:pv(invRaw[riResta]?invRaw[riResta][27]:0),m27:0};
+  // Sum 2027 totals manually
+  for(var mi=0;mi<12;mi++){totalGastos.m27+=gastosInv[mi].m27;totalComp.m27+=compromisos[mi].m27;totalResta.m27+=restaPagar[mi].m27;}
+  return{meses:meses,gastosInv:gastosInv,compromisos:compromisos,restaPagar:restaPagar,totalGastos:totalGastos,totalComp:totalComp,totalResta:totalResta,
+    labelGastos:invRaw[riGastos]?String(invRaw[riGastos][1]||'Gastos Inversiones'):'Gastos Inversiones',
+    labelComp:invRaw[riComp]?String(invRaw[riComp][1]||'Compromisos de Cuotas'):'Compromisos de Cuotas',
+    labelResta:invRaw[riResta]?String(invRaw[riResta][1]||'Resta Pagar'):'Resta Pagar'};
+}
+
+function renderGastosOpCards(){
+  var container=document.getElementById('gastosOpCards');
+  if(!container)return;
+  var d=extractGastosData();
+  if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">Cargando datos...</div>';return;}
+  var yr=gastosYearFilter;
+  container.innerHTML='';
+  var meses26=['Ene 26','Feb 26','Mar 26','Abr 26','May 26','Jun 26','Jul 26','Ago 26','Sep 26','Oct 26','Nov 26','Dic 26'];
+  var meses27=['Ene 27','Feb 27','Mar 27','Abr 27','May 27','Jun 27','Jul 27','Ago 27','Sep 27','Oct 27','Nov 27','Dic 27'];
+  var months=[];
+  if(yr==='2026'||yr==='all')for(var i=0;i<12;i++)months.push({label:meses26[i],gi:d.gastosInv[i].m26,co:d.compromisos[i].m26,rp:d.restaPagar[i].m26});
+  if(yr==='2027'||yr==='all')for(var i=0;i<12;i++)months.push({label:meses27[i],gi:d.gastosInv[i].m27,co:d.compromisos[i].m27,rp:d.restaPagar[i].m27});
+  var totalGI=0,totalCO=0,totalRP=0;
+  months.forEach(function(m){
+    var total=Math.abs(m.gi)+Math.abs(m.co);
+    totalGI+=m.gi;totalCO+=m.co;totalRP+=m.rp;
+    container.innerHTML+='<div class="cuota-card">'
+      +'<div class="mes">'+m.label+'</div>'
+      +'<span class="lbl" style="color:var(--rosa)">Gastos Inversiones</span>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--rosa);margin-bottom:6px">'+fmtUSD(Math.abs(m.gi))+'</div>'
+      +'<span class="lbl" style="color:var(--cyan)">Compromisos Cuotas</span>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:6px">'+fmtUSD(Math.abs(m.co))+'</div>'
+      +'<div class="cuota-bar"><div class="cuota-fill" style="width:100%;background:linear-gradient(90deg,var(--rosa),var(--cyan))"></div></div>'
+      +'<div style="font-size:10px;font-weight:700;color:var(--red);margin-top:4px">Total: '+fmtUSD(total)+'</div>'
+      +'</div>';
+  });
+  // Accumulated card
+  container.innerHTML+='<div class="cuota-card acum">'
+    +'<div class="mes">Acumulado'+(yr==='all'?' 26+27':' '+yr)+'</div>'
+    +'<span class="lbl" style="color:var(--rosa)">Gastos Inversiones</span>'
+    +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--rosa);margin-bottom:6px">'+fmtUSD(Math.abs(totalGI))+'</div>'
+    +'<span class="lbl" style="color:var(--cyan)">Compromisos Cuotas</span>'
+    +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:6px">'+fmtUSD(Math.abs(totalCO))+'</div>'
+    +'<div class="cuota-bar"><div class="cuota-fill" style="width:100%;background:linear-gradient(90deg,var(--rosa),var(--cyan))"></div></div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--red);margin-top:4px">Total: '+fmtUSD(Math.abs(totalGI)+Math.abs(totalCO))+'</div>'
+    +'</div>';
+}
+
+function renderCompromisosCards(){
+  var container=document.getElementById('compromisosCards');
+  if(!container)return;
+  var d=extractGastosData();
+  if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">Cargando datos...</div>';return;}
+  var yr=gastosYearFilter;
+  container.innerHTML='';
+  var meses26=['Ene 26','Feb 26','Mar 26','Abr 26','May 26','Jun 26','Jul 26','Ago 26','Sep 26','Oct 26','Nov 26','Dic 26'];
+  var meses27=['Ene 27','Feb 27','Mar 27','Abr 27','May 27','Jun 27','Jul 27','Ago 27','Sep 27','Oct 27','Nov 27','Dic 27'];
+  var months=[];
+  if(yr==='2026'||yr==='all')for(var i=0;i<12;i++)months.push({label:meses26[i],rp:d.restaPagar[i].m26});
+  if(yr==='2027'||yr==='all')for(var i=0;i<12;i++)months.push({label:meses27[i],rp:d.restaPagar[i].m27});
+  var totalRP=0;
+  months.forEach(function(m){
+    totalRP+=m.rp;
+    var absV=Math.abs(m.rp);
+    container.innerHTML+='<div class="cuota-card">'
+      +'<div class="mes">'+m.label+'</div>'
+      +'<span class="lbl">Resta Pagar</span>'
+      +'<div class="pagar">'+(absV>0?'-':'')+fmtUSD(absV)+'</div>'
+      +'<div class="cuota-bar"><div class="cuota-fill" style="width:100%;background:var(--red)"></div></div>'
+      +'</div>';
+  });
+  container.innerHTML+='<div class="cuota-card acum">'
+    +'<div class="mes">Acumulado'+(yr==='all'?' 26+27':' '+yr)+'</div>'
+    +'<span class="lbl">Total Resta Pagar</span>'
+    +'<div class="pagar">'+(Math.abs(totalRP)>0?'-':'')+fmtUSD(Math.abs(totalRP))+'</div>'
+    +'<div class="cuota-bar"><div class="cuota-fill" style="width:100%;background:var(--red)"></div></div>'
+    +'</div>';
+}
+
+function renderInvBalanceCards(){
+  var el=document.getElementById('invBalanceCards');
+  if(!el)return;
+  var rows=window._balInvPatData||[];
+  if(!rows.length){el.innerHTML='<div style="color:var(--text2);padding:20px">Cargando datos...</div>';return;}
+
+  function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}return 0;}
+  function fv(v){return v<0?'-U$D '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'U$D '+Math.round(v).toLocaleString('es-AR');}
+  function fp(v){return v<0?'-$ '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'$ '+Math.round(v).toLocaleString('es-AR');}
+
+  var categories=[],curCat=null;
+  var totalUSD=0,totalPesos=0,cotiz=1410;
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];if(!r)continue;
+    var label=r[0]?String(r[0]).trim():'';
+    var valUSD=r[2]?pv(String(r[2])):0;
+    var valPesos=r[3]?pv(String(r[3])):0;
+    if(!label)continue;
+    var ll=label.toLowerCase();
+    if(ll.indexOf('balance de inversiones')>=0)continue;
+    if(ll.indexOf('cotización')>=0||ll.indexOf('cotizacion')>=0){cotiz=r[1]?pv(String(r[1])):1410;continue;}
+    if(ll==='totales'||ll==='total'){totalUSD=valUSD;totalPesos=valPesos;continue;}
+    if(ll==='inversión'||ll==='resta cobrar'||ll==='caja actual')continue;
+    if(label===label.toUpperCase()&&label.length>3&&!valUSD){
+      curCat={title:label,items:[],color:'var(--gold)'};
+      if(ll.indexOf('propiedad')>=0)curCat.color='var(--gold)';
+      else if(ll.indexOf('vehículo')>=0||ll.indexOf('vehiculo')>=0)curCat.color='var(--blue)';
+      else if(ll.indexOf('inversiones')>=0)curCat.color='var(--green)';
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('venta')>=0)curCat.color='var(--cyan)';
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('inversor')>=0)curCat.color='var(--purple)';
+      categories.push(curCat);
+      continue;
+    }
+    if(curCat){curCat.items.push({name:label,usd:valUSD,pesos:valPesos});}
+  }
+
+  var html='';
+  // KPI cards
+  html+='<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">';
+  html+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
+  html+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total Patrimonio U$D</div>';
+  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--gold)">'+fv(totalUSD)+'</div></div>';
+  if(totalPesos){
+    html+='<div style="background:var(--surface);border:2px solid var(--blue);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
+    html+='<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total en Pesos</div>';
+    html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--blue)">'+fp(totalPesos)+'</div></div>';
+  }
+  html+='<div style="background:var(--surface);border:2px solid var(--text2);border-radius:12px;padding:14px 28px;text-align:center;min-width:140px">';
+  html+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Cotización Dólar</div>';
+  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--text)">$'+Math.round(cotiz).toLocaleString('es-AR')+'</div></div>';
+  html+='</div>';
+
+  // Categories table
+  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">';
+  categories.forEach(function(cat){
+    if(!cat.items.length)return;
+    html+='<div style="border-bottom:1px solid var(--border)">';
+    html+='<div style="padding:12px 20px;background:rgba(255,255,255,.03);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:'+cat.color+'">'+cat.title+'</div>';
+    cat.items.forEach(function(item){
+      var valHtml='';
+      if(item.usd){var vc=item.usd<0?'var(--red)':cat.color;valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+vc+'">'+fv(item.usd)+'</span>';}
+      if(item.pesos){valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:var(--blue);margin-left:16px">'+fp(item.pesos)+'</span>';}
+      html+='<div style="padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.05)">';
+      html+='<span style="color:var(--text);font-size:13px">'+item.name+'</span>';
+      html+='<div>'+valHtml+'</div></div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
 function invNum(row,col){
   if(!invRaw||!invRaw[row])return 0;
   const v=invRaw[row][col];
@@ -2052,6 +2255,7 @@ function renderInversiones(){
   const headerEl=document.getElementById('invHeader');
   const catsEl=document.getElementById('invCats');
   const summaryEl=document.getElementById('invSummary');
+  if(!headerEl||!catsEl||!summaryEl)return;
 
   // Fixed row positions in INVERSIONES CRONOGRAMA sheet (invRaw indices)
   // Header: invRaw[161], Cotizacion: [162], Totales: [163]
@@ -3319,7 +3523,7 @@ function renderAll(){
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
   var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
-  var invOnlyIds=['secInversiones','invSection'];
+  var invOnlyIds=['secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection'];
   invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
   // Hide Acumulado Anual (general) when filtering by vendor — vendors have their own acumulado section
   var acumOnlyIds=['secAcumuladoAnual','acumCards'];
@@ -3347,6 +3551,9 @@ function renderAll(){
   renderChartEmpCuotasPesos();
   renderChartEmpCuotasUnif();
   if(!isFiltered){
+    renderGastosOpCards();
+    renderCompromisosCards();
+    renderInvBalanceCards();
     renderChartBalanceGeneral();
     renderInversiones();
     renderEvolucion();
@@ -3356,7 +3563,6 @@ function renderAll(){
   renderChartAcumVend();
   renderVendedorDetail();
   renderEstadoCuentas();
-  if(!isFiltered){renderBalInvPat();renderCronoInv();}
   buildCuotasPanels();
   renderAllCuotasPanels();
   renderSidebarStats();
@@ -5403,7 +5609,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secInversiones','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Financiero — Propuesta 2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06070b;--sidebar:#0c0d14;--card:#0f1019;--card2:#141520;--border:#1a1b2e;
+  --text:#e4e4ef;--text2:#7a7a95;--text3:#4a4a60;
+  --gold:#d4a853;--gold2:#f0c96b;--green:#34d399;--blue:#60a5fa;--purple:#a78bfa;
+  --red:#f87171;--cyan:#22d3ee;--pink:#f472b6;--orange:#fb923c;--teal:#2dd4bf;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:220px;background:var(--sidebar);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:10}
+.sidebar .logo{padding:0 20px 24px;font-size:18px;font-weight:800;letter-spacing:-0.5px}
+.sidebar .logo em{color:var(--gold);font-style:normal}
+.sidebar .nav-group{margin-bottom:20px}
+.sidebar .nav-label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:0 20px;margin-bottom:8px;font-weight:600}
+.sidebar .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.sidebar .nav-item:hover{background:rgba(212,168,83,.06);color:var(--text)}
+.sidebar .nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(212,168,83,.08)}
+.sidebar .nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Main */
+.main{margin-left:220px;flex:1;padding:28px 32px 60px;min-width:0}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.topbar h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.topbar h1 em{color:var(--gold);font-style:normal}
+.topbar .badge{background:linear-gradient(135deg,var(--gold),var(--orange));color:#06070b;font-size:10px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:.5px}
+
+/* Stat cards - gradient style */
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.g1::before{background:linear-gradient(90deg,var(--gold),var(--orange))}
+.stat-card.g2::before{background:linear-gradient(90deg,var(--green),var(--teal))}
+.stat-card.g3::before{background:linear-gradient(90deg,var(--blue),var(--purple))}
+.stat-card.g4::before{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.stat-card.g5::before{background:linear-gradient(90deg,var(--pink),var(--red))}
+.stat-card .s-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:600;margin-bottom:10px}
+.stat-card .s-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;margin-bottom:4px}
+.stat-card .s-sub{font-size:10px;color:var(--text3)}
+.stat-card .s-trend{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:6px}
+.stat-card .s-trend.up{background:rgba(52,211,153,.15);color:var(--green)}
+.stat-card .s-trend.down{background:rgba(248,113,113,.15);color:var(--red)}
+
+/* Section */
+.section{margin-bottom:28px}
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sec-head .sec-dot{width:8px;height:8px;border-radius:50%}
+.sec-head h2{font-size:16px;font-weight:700}
+.sec-head h2 em{color:var(--gold);font-style:normal}
+
+/* Two-col layout */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-full{display:grid;grid-template-columns:1fr;gap:16px}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;overflow:hidden}
+.card .card-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.card .card-sub{font-size:10px;color:var(--text3);margin-bottom:14px}
+
+/* Vendor strips */
+.vendor-strip{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:border-color .2s}
+.vendor-strip:hover{border-color:var(--gold)}
+.vendor-strip .vs-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.vendor-strip .vs-name{flex:1;font-size:13px;font-weight:600}
+.vendor-strip .vs-metrics{display:flex;gap:20px}
+.vendor-strip .vs-metric{text-align:right}
+.vendor-strip .vs-metric .vm-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px}
+.vendor-strip .vs-metric .vm-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+
+/* Sparkline area */
+.spark-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.spark-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.spark-card .sp-name{font-size:11px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.spark-card .sp-name .dot{width:5px;height:5px;border-radius:50%}
+.spark-card .sp-val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;margin-bottom:8px}
+.spark-card canvas{width:100%!important;height:40px!important}
+
+/* Table */
+.data-table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px}
+.data-table th{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-weight:600;padding:8px 10px;text-align:right;border-bottom:1px solid var(--border)}
+.data-table th:first-child{text-align:left}
+.data-table td{padding:9px 10px;text-align:right;border-bottom:1px solid rgba(26,27,46,.5);font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:11px}
+.data-table td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-weight:600}
+.data-table tr:hover td{background:rgba(212,168,83,.03)}
+.data-table .pos{color:var(--green)} .data-table .neg{color:var(--red)}
+
+/* Loading */
+.loading{text-align:center;padding:80px;color:var(--text2)}
+.loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive */
+@media(max-width:1100px){.stat-row{grid-template-columns:repeat(3,1fr)} .spark-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){
+  .sidebar{display:none} .main{margin-left:0}
+  .stat-row,.grid-2,.grid-3{grid-template-columns:1fr}
+  .spark-row{grid-template-columns:1fr 1fr}
+  .vendor-strip .vs-metrics{flex-wrap:wrap;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">Panel <em>Financiero</em></div>
+  <div class="nav-group">
+    <div class="nav-label">General</div>
+    <div class="nav-item active" onclick="scrollTo('resumen')"><span class="nav-dot" style="background:var(--gold)"></span>Resumen</div>
+    <div class="nav-item" onclick="scrollTo('ingresos')"><span class="nav-dot" style="background:var(--green)"></span>Ingresos</div>
+    <div class="nav-item" onclick="scrollTo('modulos')"><span class="nav-dot" style="background:var(--blue)"></span>Módulos</div>
+    <div class="nav-item" onclick="scrollTo('ranking')"><span class="nav-dot" style="background:var(--purple)"></span>Rankings</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Detalle</div>
+    <div class="nav-item" onclick="scrollTo('tabla')"><span class="nav-dot" style="background:var(--cyan)"></span>Tabla Mensual</div>
+    <div class="nav-item" onclick="scrollTo('acumulado')"><span class="nav-dot" style="background:var(--orange)"></span>Acumulado</div>
+    <div class="nav-item" onclick="scrollTo('balance')"><span class="nav-dot" style="background:var(--teal)"></span>Balance</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1>Dashboard <em>Financiero</em></h1>
+    <span class="badge">PROPUESTA 2 — ANALYTICS HUB</span>
+  </div>
+
+  <div class="loading" id="loadingMsg">
+    <div class="spinner"></div>
+    Cargando datos...
+  </div>
+
+  <div id="dashboard" style="display:none">
+    <!-- Stats row -->
+    <div class="stat-row" id="statRow"></div>
+
+    <!-- Sparklines per vendor -->
+    <div id="resumen"></div>
+    <div class="spark-row" id="sparkRow"></div>
+
+    <!-- Charts row -->
+    <div id="ingresos"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--gold)"></span><h2>Ingresos y <em>Gastos</em></h2></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Ingresos vs Gastos Mensuales</div>
+          <div class="card-sub">Unificado en U$D por mes</div>
+          <div style="height:240px"><canvas id="chartIngresos"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Composición de Ingresos</div>
+          <div class="card-sub">Participación por módulo de negocio</div>
+          <div style="height:240px;display:flex;align-items:center;justify-content:center"><canvas id="chartPie"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vendor strips -->
+    <div id="modulos"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--blue)"></span><h2>Módulos de <em>Negocio</em></h2></div>
+      <div id="vendorStrips"></div>
+    </div>
+
+    <!-- Rankings -->
+    <div id="ranking"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--purple)"></span><h2>Rankings de <em>Ingresos</em></h2></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Top Vendedores — U$D Acumulado</div>
+          <div class="card-sub">Ranking por ganancia acumulada en dólares</div>
+          <div style="height:260px"><canvas id="chartRankBar"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ganancia por Módulo — Mensual</div>
+          <div class="card-sub">Comparación mensual por vendedor / módulo</div>
+          <div style="height:260px"><canvas id="chartVendMonth"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income table -->
+    <div id="tabla"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--cyan)"></span><h2>Tabla <em>Mensual</em></h2></div>
+      <div class="card" style="padding:0;overflow:auto">
+        <table class="data-table" id="incomeTable" style="min-width:700px"></table>
+      </div>
+    </div>
+
+    <!-- Accumulated -->
+    <div id="acumulado"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--orange)"></span><h2>Acumulado <em>Anual</em></h2></div>
+      <div class="grid-full">
+        <div class="card">
+          <div class="card-title">Ganancia Acumulada por Módulo</div>
+          <div class="card-sub">Evolución acumulada neta en U$D</div>
+          <div style="height:300px"><canvas id="chartAcum"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Balance -->
+    <div id="balance"></div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-dot" style="background:var(--teal)"></span><h2>Balance <em>General</em></h2></div>
+      <div class="grid-full">
+        <div class="card">
+          <div class="card-title">Ingreso de Capital vs Gastos e Inversiones</div>
+          <div class="card-sub">Flujo mensual unificado en U$D</div>
+          <div style="height:280px"><canvas id="chartBalance"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function scrollTo(id){
+  var el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  event.currentTarget.classList.add('active');
+}
+
+const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MON_SHORT=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const COLORS={'Osito S.r.l.':'#d4a853','Patito S.A.':'#60a5fa','Gonza':'#34d399','Mely':'#f87171','Tobias':'#a78bfa','Tino':'#2dd4bf','Modulo 1':'#fb923c','Modulo 2':'#22d3ee','Tecno':'#e879f9','Inversiones':'#f472b6','Creditos':'#facc15','Linea 314':'#38bdf8'};
+const VENDOR_GROUPS=[
+  {totalR:59,invR:60,restaR:61,cajaR:62,vendors:[
+    {name:'Osito S.r.l.',uc:4,pc:5},{name:'Patito S.A.',uc:9,pc:10},{name:'Gonza',uc:14,pc:15}
+  ]},
+  {totalR:76,invR:77,restaR:78,cajaR:79,vendors:[
+    {name:'Mely',uc:4,pc:5},{name:'Modulo 2',uc:9,pc:10},{name:'Tobias',uc:14,pc:15}
+  ]},
+  {totalR:93,invR:94,restaR:95,cajaR:96,vendors:[
+    {name:'Tecno',uc:4,pc:5},{name:'Inversiones',uc:9,pc:10},{name:'Creditos',uc:14,pc:15}
+  ]},
+  {totalR:110,invR:111,restaR:112,cajaR:113,vendors:[
+    {name:'Tino',uc:4,pc:5},{name:'Linea 314',uc:9,pc:10},{name:'Modulo 1',uc:14,pc:15}
+  ]}
+];
+
+function pv(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+function fmt(n){if(typeof n!=='number'||isNaN(n))return'-';var s=Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(n<0?'-':'')+s;}
+
+async function fetchRaw(name){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(name)+'&headers=0';
+  var r=await fetch(url);var t=await r.text();
+  var j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(function(row){return row.c.map(function(cell){return cell?cell.v:null;});});
+}
+async function fetchRawRange(name,range){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(name)+'&range='+encodeURIComponent(range)+'&headers=0';
+  var r=await fetch(url);var t=await r.text();
+  var j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
+  return j.table.rows.map(function(row){return row.c.map(function(cell){return cell?cell.v:null;});});
+}
+
+async function init(){
+  try{
+    var results=await Promise.all([
+      fetchRaw('DASHBOARD MARTIN'),
+      fetchRawRange('DASHBOARD MARTIN','E70:P70'),
+      fetchRawRange('DASHBOARD MARTIN','E91:P91'),
+      fetchRawRange('DASHBOARD MARTIN','E113:P113'),
+      fetchRawRange('DASHBOARD MARTIN','E312:P312'),
+      fetchRawRange('DASHBOARD MARTIN','G11:G22')
+    ]);
+    var raw=results[0];
+    var ingUSD=results[1]&&results[1][0]?results[1][0]:[];
+    var ingPesos=results[2]&&results[2][0]?results[2][0]:[];
+    var uniUSD=results[3]&&results[3][0]?results[3][0]:[];
+    var gastos=results[4]&&results[4][0]?results[4][0]:[];
+    var cotiz=results[5]?results[5].map(function(r){return r&&r[0]?pv(r[0]):0;}):[];
+
+    var monthly=[];
+    var totalIngUSD=0,totalUniUSD=0,totalGastos=0;
+    for(var mi=0;mi<12;mi++){
+      var iu=pv(ingUSD[mi]||0),ip=pv(ingPesos[mi]||0),uu=pv(uniUSD[mi]||0),g=pv(gastos[mi]||0),c=cotiz[mi]||0;
+      monthly.push({mes:MONTHS[mi],short:MON_SHORT[mi],ingUSD:iu,ingPesos:ip,uniUSD:uu,gastos:g,cotiz:c,neto:uu+g});
+      if(uu!==0){totalIngUSD+=iu;totalUniUSD+=uu;totalGastos+=g;}
+    }
+
+    var modules=[];
+    VENDOR_GROUPS.forEach(function(grp){
+      grp.vendors.forEach(function(v){
+        var monthStart=grp.totalR-12;
+        var ganMonths=[];var totalU=0,totalP=0;
+        for(var mi=0;mi<12;mi++){
+          var gu=pv(raw[monthStart+mi]?raw[monthStart+mi][v.uc]:0);
+          var gp=pv(raw[monthStart+mi]?raw[monthStart+mi][v.pc]:0);
+          ganMonths.push({usd:gu,pesos:gp});totalU+=gu;totalP+=gp;
+        }
+        var invU=pv(raw[grp.invR]?raw[grp.invR][v.uc]:0);
+        var restaU=pv(raw[grp.restaR]?raw[grp.restaR][v.uc]:0);
+        var cajaU=pv(raw[grp.cajaR]?raw[grp.cajaR][v.uc]:0);
+        modules.push({name:v.name,months:ganMonths,totalUSD:totalU,totalPesos:totalP,invUSD:invU,restaUSD:restaU,cajaUSD:cajaU,color:COLORS[v.name]||'#888'});
+      });
+    });
+
+    var curMonth=0;
+    for(var ci=11;ci>=0;ci--){if(monthly[ci].uniUSD!==0){curMonth=ci;break;}}
+
+    document.getElementById('loadingMsg').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+
+    // === STAT CARDS ===
+    var curM=monthly[curMonth];
+    var prevM=curMonth>0?monthly[curMonth-1]:null;
+    var pctChange=prevM&&prevM.uniUSD?((curM.uniUSD-prevM.uniUSD)/Math.abs(prevM.uniUSD)*100):0;
+    var trendClass=pctChange>=0?'up':'down';
+    var trendSign=pctChange>=0?'+':'';
+    var h='';
+    h+='<div class="stat-card g1"><div class="s-label">Ingresos '+curM.short+'</div><div class="s-value" style="color:var(--gold)">U$D '+fmt(curM.uniUSD)+'</div><div class="s-sub">Unificado en dólares</div>'+(prevM?'<span class="s-trend '+trendClass+'">'+trendSign+pctChange.toFixed(1)+'% vs '+prevM.short+'</span>':'')+'</div>';
+    h+='<div class="stat-card g2"><div class="s-label">Acumulado Anual</div><div class="s-value" style="color:var(--green)">U$D '+fmt(totalUniUSD)+'</div><div class="s-sub">Total unificado 2026</div></div>';
+    h+='<div class="stat-card g3"><div class="s-label">Gastos Totales</div><div class="s-value" style="color:var(--blue)">U$D '+fmt(Math.abs(totalGastos))+'</div><div class="s-sub">Gastos fijos acumulados</div></div>';
+    h+='<div class="stat-card g4"><div class="s-label">Neto Anual</div><div class="s-value" style="color:var(--cyan)">U$D '+fmt(totalUniUSD+totalGastos)+'</div><div class="s-sub">Ingresos - Gastos</div></div>';
+    h+='<div class="stat-card g5"><div class="s-label">Cotización</div><div class="s-value" style="color:var(--pink)">$ '+fmt(curM.cotiz)+'</div><div class="s-sub">Dólar '+curM.short+'</div></div>';
+    document.getElementById('statRow').innerHTML=h;
+
+    // === SPARKLINES (top 8 modules) ===
+    var topMods=modules.slice().sort(function(a,b){return b.totalUSD-a.totalUSD;}).slice(0,8);
+    var sparkHTML='';
+    topMods.forEach(function(m,idx){
+      sparkHTML+='<div class="spark-card"><div class="sp-name"><span class="dot" style="background:'+m.color+'"></span>'+m.name+'</div><div class="sp-val" style="color:'+m.color+'">U$D '+fmt(m.totalUSD)+'</div><canvas id="spark'+idx+'"></canvas></div>';
+    });
+    document.getElementById('sparkRow').innerHTML=sparkHTML;
+    // Render sparklines
+    topMods.forEach(function(m,idx){
+      var canvas=document.getElementById('spark'+idx);
+      if(!canvas)return;
+      var data=[];
+      for(var si=0;si<=curMonth;si++)data.push(m.months[si]?m.months[si].usd:0);
+      new Chart(canvas,{
+        type:'line',
+        data:{labels:MON_SHORT.slice(0,curMonth+1),datasets:[{data:data,borderColor:m.color,backgroundColor:m.color+'20',borderWidth:1.5,pointRadius:0,fill:true,tension:.4}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
+      });
+    });
+
+    // === CHARTS ===
+    var activeLabels=[],incVals=[],gasVals=[];
+    for(var ai=0;ai<12;ai++){
+      if(monthly[ai].uniUSD!==0||monthly[ai].gastos!==0){
+        activeLabels.push(MON_SHORT[ai]);incVals.push(monthly[ai].uniUSD);gasVals.push(Math.abs(monthly[ai].gastos));
+      }
+    }
+    new Chart(document.getElementById('chartIngresos'),{
+      type:'bar',data:{labels:activeLabels,datasets:[
+        {label:'Ingresos U$D',data:incVals,backgroundColor:'rgba(212,168,83,.65)',borderRadius:8,barPercentage:.6},
+        {label:'Gastos U$D',data:gasVals,backgroundColor:'rgba(248,113,113,.45)',borderRadius:8,barPercentage:.6}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7a95',font:{size:10}}}},scales:{x:{ticks:{color:'#7a7a95',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#4a4a60',font:{size:9},callback:function(v){return fmt(v);}},grid:{color:'rgba(255,255,255,.03)'}}}}
+    });
+
+    var pieMods=modules.filter(function(m){return m.totalUSD>0;}).sort(function(a,b){return b.totalUSD-a.totalUSD;});
+    new Chart(document.getElementById('chartPie'),{
+      type:'doughnut',
+      data:{labels:pieMods.map(function(m){return m.name;}),datasets:[{data:pieMods.map(function(m){return m.totalUSD;}),backgroundColor:pieMods.map(function(m){return m.color;}),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'right',labels:{color:'#7a7a95',font:{size:9},padding:6,usePointStyle:true,pointStyle:'circle'}}}}
+    });
+
+    // === VENDOR STRIPS ===
+    var sortedMods=modules.slice().sort(function(a,b){return b.totalUSD-a.totalUSD;});
+    var vsHTML='';
+    sortedMods.forEach(function(m){
+      var curGan=m.months[curMonth]?m.months[curMonth].usd:0;
+      vsHTML+='<div class="vendor-strip">';
+      vsHTML+='<span class="vs-dot" style="background:'+m.color+'"></span>';
+      vsHTML+='<span class="vs-name">'+m.name+'</span>';
+      vsHTML+='<div class="vs-metrics">';
+      vsHTML+='<div class="vs-metric"><div class="vm-label">Acum U$D</div><div class="vm-val" style="color:var(--gold)">'+fmt(m.totalUSD)+'</div></div>';
+      vsHTML+='<div class="vs-metric"><div class="vm-label">Acum $</div><div class="vm-val">'+fmt(m.totalPesos)+'</div></div>';
+      vsHTML+='<div class="vs-metric"><div class="vm-label">Inversión</div><div class="vm-val">'+fmt(m.invUSD)+'</div></div>';
+      vsHTML+='<div class="vs-metric"><div class="vm-label">Resta Cobrar</div><div class="vm-val" style="color:var(--cyan)">'+fmt(m.restaUSD)+'</div></div>';
+      vsHTML+='<div class="vs-metric"><div class="vm-label">'+MON_SHORT[curMonth]+' U$D</div><div class="vm-val" style="color:'+(curGan>=0?'var(--green)':'var(--red)')+'">'+fmt(curGan)+'</div></div>';
+      vsHTML+='</div></div>';
+    });
+    document.getElementById('vendorStrips').innerHTML=vsHTML;
+
+    // === RANKING BAR CHART ===
+    var rankMods=modules.slice().sort(function(a,b){return b.totalUSD-a.totalUSD;}).filter(function(m){return m.totalUSD>0;});
+    new Chart(document.getElementById('chartRankBar'),{
+      type:'bar',
+      data:{labels:rankMods.map(function(m){return m.name;}),datasets:[{data:rankMods.map(function(m){return m.totalUSD;}),backgroundColor:rankMods.map(function(m){return m.color+'99';}),borderColor:rankMods.map(function(m){return m.color;}),borderWidth:1,borderRadius:8,barPercentage:.5}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a4a60',font:{size:9},callback:function(v){return fmt(v);}},grid:{color:'rgba(255,255,255,.03)'}},y:{ticks:{color:'#7a7a95',font:{size:10}},grid:{display:false}}}}
+    });
+
+    // === VENDOR MONTHLY CHART (stacked) ===
+    var vmLabels=[];
+    for(var vi=0;vi<=curMonth;vi++)vmLabels.push(MON_SHORT[vi]);
+    var vmDatasets=[];
+    modules.forEach(function(m){
+      var hasData=false;
+      var data=[];
+      for(var vi=0;vi<=curMonth;vi++){var v=m.months[vi]?m.months[vi].usd:0;data.push(v);if(v)hasData=true;}
+      if(hasData)vmDatasets.push({label:m.name,data:data,backgroundColor:m.color+'66',borderColor:m.color,borderWidth:1,borderRadius:4});
+    });
+    new Chart(document.getElementById('chartVendMonth'),{
+      type:'bar',
+      data:{labels:vmLabels,datasets:vmDatasets},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7a95',font:{size:9},usePointStyle:true,pointStyle:'circle',padding:6}}},scales:{x:{stacked:true,ticks:{color:'#7a7a95',font:{size:9}},grid:{display:false}},y:{stacked:true,ticks:{color:'#4a4a60',font:{size:9},callback:function(v){return fmt(v);}},grid:{color:'rgba(255,255,255,.03)'}}}}
+    });
+
+    // === INCOME TABLE ===
+    var tHTML='<thead><tr><th style="padding:12px">Mes</th><th>Ing. U$D</th><th>Ing. $</th><th>Unificado U$D</th><th>Gastos</th><th>Neto</th><th>Cotiz.</th></tr></thead><tbody>';
+    var totIU=0,totIP=0,totUU=0,totG=0,totN=0;
+    for(var ti=0;ti<12;ti++){
+      var mm=monthly[ti];
+      if(mm.uniUSD===0&&mm.gastos===0)continue;
+      var nc=mm.neto>=0?'pos':'neg';
+      tHTML+='<tr><td style="padding:12px">'+mm.mes+'</td><td>'+fmt(mm.ingUSD)+'</td><td>'+fmt(mm.ingPesos)+'</td><td style="color:var(--gold)">'+fmt(mm.uniUSD)+'</td><td class="neg">'+fmt(Math.abs(mm.gastos))+'</td><td class="'+nc+'">'+fmt(mm.neto)+'</td><td>'+fmt(mm.cotiz)+'</td></tr>';
+      totIU+=mm.ingUSD;totIP+=mm.ingPesos;totUU+=mm.uniUSD;totG+=Math.abs(mm.gastos);totN+=mm.neto;
+    }
+    tHTML+='<tr style="font-weight:800;border-top:2px solid var(--border)"><td style="padding:12px">TOTAL</td><td>'+fmt(totIU)+'</td><td>'+fmt(totIP)+'</td><td style="color:var(--gold)">'+fmt(totUU)+'</td><td class="neg">'+fmt(totG)+'</td><td class="'+(totN>=0?'pos':'neg')+'">'+fmt(totN)+'</td><td>-</td></tr>';
+    tHTML+='</tbody>';
+    document.getElementById('incomeTable').innerHTML=tHTML;
+
+    // === ACCUMULATED CHART ===
+    var acumDS=[];
+    modules.forEach(function(m){
+      var acum=[];var sum=0;var hasData=false;
+      for(var ai=0;ai<=curMonth;ai++){sum+=m.months[ai]?m.months[ai].usd:0;acum.push(sum);if(sum)hasData=true;}
+      if(hasData)acumDS.push({label:m.name,data:acum,borderColor:m.color,backgroundColor:'transparent',borderWidth:2,pointRadius:2,pointBackgroundColor:m.color,tension:.35});
+    });
+    new Chart(document.getElementById('chartAcum'),{
+      type:'line',data:{labels:MON_SHORT.slice(0,curMonth+1),datasets:acumDS},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7a95',font:{size:9},usePointStyle:true,pointStyle:'circle',padding:6}}},scales:{x:{ticks:{color:'#7a7a95',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},y:{ticks:{color:'#4a4a60',font:{size:9},callback:function(v){return fmt(v);}},grid:{color:'rgba(255,255,255,.03)'}}}}
+    });
+
+    // === BALANCE CHART ===
+    var bL=[],bI=[],bG=[],bN=[];
+    for(var bi=0;bi<12;bi++){
+      if(monthly[bi].uniUSD!==0||monthly[bi].gastos!==0){
+        bL.push(MON_SHORT[bi]);bI.push(monthly[bi].uniUSD);bG.push(monthly[bi].gastos);bN.push(monthly[bi].neto);
+      }
+    }
+    new Chart(document.getElementById('chartBalance'),{
+      type:'bar',
+      data:{labels:bL,datasets:[
+        {label:'Ingresos',data:bI,backgroundColor:'rgba(52,211,153,.55)',borderRadius:8,barPercentage:.5},
+        {label:'Gastos',data:bG,backgroundColor:'rgba(248,113,113,.45)',borderRadius:8,barPercentage:.5},
+        {type:'line',label:'Neto',data:bN,borderColor:'var(--gold)',backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:'var(--gold)',tension:.3}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7a95',font:{size:10}}}},scales:{x:{ticks:{color:'#7a7a95'},grid:{display:false}},y:{ticks:{color:'#4a4a60',font:{size:9},callback:function(v){return fmt(v);}},grid:{color:'rgba(255,255,255,.03)'}}}}
+    });
+
+  }catch(e){
+    console.error(e);
+    document.getElementById('loadingMsg').innerHTML='<div style="color:var(--red)">Error: '+e.message+'</div>';
+  }
+}
+init();
+</script>
+</body>
+</html>

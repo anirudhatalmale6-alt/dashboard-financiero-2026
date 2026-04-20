@@ -2150,38 +2150,38 @@ function renderCompromisosCards(){
   var yr=gastosYearFilter;
   var mShort=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  // KPI
-  var totRP26=0,totRP27=0;
-  for(var i=0;i<12;i++){totRP26+=d.restaPagar[i].m26;totRP27+=d.restaPagar[i].m27;}
-  var totRP=yr==='2026'?totRP26:yr==='2027'?totRP27:totRP26+totRP27;
+  // Build per-item cards — each line item gets its own card with monthly detail
+  var items=[
+    {label:d.labelGastos,icon:'📉',color:'var(--rosa)',data:d.gastosInv},
+    {label:d.labelComp,icon:'📋',color:'var(--cyan)',data:d.compromisos},
+    {label:d.labelResta,icon:'💰',color:'var(--red)',data:d.restaPagar}
+  ];
 
-  var kpiHTML='<div style="padding:14px 20px;text-align:center;border-bottom:1px solid var(--border)">';
-  kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total Compromisos de Pagos</div>';
-  kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--red)">'+fmtUSD(Math.abs(totRP))+'</div></div>';
-
-  // Detail table with all 3 line items per month
-  var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:var(--rosa)">Gastos Inversiones</th><th style="color:var(--cyan)">Compromisos Cuotas</th><th style="color:var(--red)">Resta Pagar</th></tr></thead><tbody>';
-  function addRows(suffix,key){
-    var dtGI=0,dtCO=0,dtRP=0;
-    for(var i=0;i<12;i++){
-      var gi=d.gastosInv[i][key],co=d.compromisos[i][key],rp=d.restaPagar[i][key];
-      dtGI+=gi;dtCO+=co;dtRP+=rp;
-      tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:var(--rosa)">'+fmtUSD(Math.abs(gi))+'</td><td style="color:var(--cyan)">'+fmtUSD(Math.abs(co))+'</td><td style="color:var(--red)">'+fmtUSD(Math.abs(rp))+'</td></tr>';
+  var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">';
+  items.forEach(function(item){
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+item.color+'">Monto</th></tr></thead><tbody>';
+    var total=0;
+    function addRows(suffix,key){
+      for(var i=0;i<12;i++){
+        var v=item.data[i][key];
+        total+=v;
+        tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+item.color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
+      }
     }
-    return{gi:dtGI,co:dtCO,rp:dtRP};
-  }
-  var t26,t27;
-  if(yr==='2026'||yr==='all')t26=addRows('26','m26');
-  if(yr==='2027'||yr==='all')t27=addRows('27','m27');
-  var fGI=Math.abs((t26?t26.gi:0)+(t27?t27.gi:0)),fCO=Math.abs((t26?t26.co:0)+(t27?t27.co:0)),fRP=Math.abs((t26?t26.rp:0)+(t27?t27.rp:0));
-  tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(fGI)+'</td><td style="color:var(--cyan)">'+fmtUSD(fCO)+'</td><td style="color:var(--red)">'+fmtUSD(fRP)+'</td></tr>';
-  tbl+='</tbody></table>';
+    if(yr==='2026'||yr==='all')addRows('26','m26');
+    if(yr==='2027'||yr==='all')addRows('27','m27');
+    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+item.color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
+    tbl+='</tbody></table>';
 
-  container.innerHTML='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
-    +'<div class="module-name" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">📋</span>Compromisos de Pagos</div>'
-    +kpiHTML
-    +'<div style="padding:0">'+tbl+'</div>'
-    +'</div>';
+    html+='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+item.icon+'</span>'+item.label+'</div>'
+      +'<div style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:18px;font-weight:700;color:'+item.color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
+      +'<div style="padding:0">'+tbl+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
 }
 
 function renderInvBalanceCards(){
@@ -2220,35 +2220,33 @@ function renderInvBalanceCards(){
     if(curCat){curCat.items.push({name:label,usd:valUSD,pesos:valPesos});}
   }
 
-  var html='';
-  // KPI cards
-  html+='<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">';
-  html+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
-  html+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total Patrimonio U$D</div>';
-  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--gold)">'+fv(totalUSD)+'</div></div>';
-  if(totalPesos){
-    html+='<div style="background:var(--surface);border:2px solid var(--blue);border-radius:12px;padding:14px 28px;text-align:center;min-width:180px">';
-    html+='<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total en Pesos</div>';
-    html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--blue)">'+fp(totalPesos)+'</div></div>';
+  // Format USD with clean typography
+  function fvClean(v){
+    var abs=Math.abs(Math.round(v));
+    var formatted=abs.toLocaleString('en-US');
+    return (v<0?'-':'')+'U$D '+formatted;
   }
-  html+='<div style="background:var(--surface);border:2px solid var(--text2);border-radius:12px;padding:14px 28px;text-align:center;min-width:140px">';
-  html+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Cotización Dólar</div>';
-  html+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;font-weight:700;color:var(--text)">$'+Math.round(cotiz).toLocaleString('es-AR')+'</div></div>';
-  html+='</div>';
 
-  // Categories table
-  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">';
+  var html='<div style="max-width:560px;margin:0 auto">';
+  // Total KPI
+  html+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:14px;padding:18px 24px;text-align:center;margin-bottom:20px">';
+  html+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total Patrimonio</div>';
+  html+='<div style="font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.5px">'+fvClean(totalUSD)+'</div></div>';
+
+  // Categories
   categories.forEach(function(cat){
     if(!cat.items.length)return;
-    html+='<div style="border-bottom:1px solid var(--border)">';
-    html+='<div style="padding:12px 20px;background:rgba(255,255,255,.03);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:'+cat.color+'">'+cat.title+'</div>';
+    var catTotal=cat.items.reduce(function(s,it){return s+it.usd;},0);
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px">';
+    html+='<div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)">';
+    html+='<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:'+cat.color+'">'+cat.title+'</span>';
+    html+='<span style="font-size:12px;font-weight:700;color:'+cat.color+'">'+fvClean(catTotal)+'</span></div>';
     cat.items.forEach(function(item){
-      var valHtml='';
-      if(item.usd){var vc=item.usd<0?'var(--red)':cat.color;valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+vc+'">'+fv(item.usd)+'</span>';}
-      if(item.pesos){valHtml+='<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:var(--blue);margin-left:16px">'+fp(item.pesos)+'</span>';}
-      html+='<div style="padding:10px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.05)">';
-      html+='<span style="color:var(--text);font-size:13px">'+item.name+'</span>';
-      html+='<div>'+valHtml+'</div></div>';
+      if(!item.usd)return;
+      var vc=item.usd<0?'var(--red)':cat.color;
+      html+='<div style="padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.04)">';
+      html+='<span style="color:var(--text);font-size:12px">'+item.name+'</span>';
+      html+='<span style="font-size:12px;font-weight:700;color:'+vc+'">'+fvClean(item.usd)+'</span></div>';
     });
     html+='</div>';
   });

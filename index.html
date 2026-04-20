@@ -4513,13 +4513,13 @@ function renderModules(){
 
     function vc(val,color){return val<0?'var(--red)':color;}
 
-    // KPI helper: builds one KPI block with title + sub-values
+    // KPI helper: builds one KPI block with title + sub-values (Detalles de Ingresos style)
     function kpiBlock(title,items){
-      var h='<div style="font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;line-height:1.2">'+title+'</div>';
+      var h='<div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+title+'</div>';
       items.forEach(function(it){
-        h+='<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px">';
-        h+='<span style="font-size:8px;font-weight:600;color:'+it.color+';min-width:48px">'+it.label+'</span>';
-        h+='<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+vc(it.val,it.color)+'">'+it.fmt(it.val)+'</span>';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">';
+        h+='<span style="font-size:9px;font-weight:400;color:var(--text3)">'+it.label+'</span>';
+        h+='<span style="font-size:11px;font-weight:700;color:'+vc(it.val,it.color)+'">'+it.fmt(it.val)+'</span>';
         h+='</div>';
       });
       return h;

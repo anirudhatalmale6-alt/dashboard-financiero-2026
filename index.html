@@ -742,12 +742,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
   <div class="modules" id="modules"></div>
 
-  <h3 class="section-title" id="secBalInvPat"><span class="dot" style="background:var(--cyan)"></span>Balance de Inversiones y <em>Patrimonios</em></h3>
-  <div id="balInvPatSection"></div>
-
-  <h3 class="section-title" id="secCronoInv"><span class="dot" style="background:var(--green)"></span>Cronograma de <em>Inversiones</em> — Detalle</h3>
-  <div id="cronoInvSection"></div>
-
   <h3 class="section-title" id="secRanking">Ranking de <em>Ingresos</em> / Módulos de <em>Negocios</em></h3>
   <div class="rankings" id="rankings" style="grid-template-columns:1fr 1fr 1fr">
     <div class="ranking-card">
@@ -774,6 +768,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div id="pieLegendCustom" style="display:flex;flex-wrap:wrap;justify-content:center;gap:3px 6px;margin-top:4px"></div>
     </div>
   </div>
+
+  <h3 class="section-title" id="secBalInvPat"><span class="dot" style="background:var(--cyan)"></span>Balance de Inversiones y <em>Patrimonios</em></h3>
+  <div id="balInvPatSection"></div>
+
+  <h3 class="section-title" id="secCronoInv"><span class="dot" style="background:var(--green)"></span>Cronograma de <em>Inversiones</em> — Detalle</h3>
+  <div id="cronoInvSection"></div>
 
   <div class="charts" id="chartVendedoresWrap" style="grid-template-columns:1fr;margin-bottom:28px">
     <div class="chart-card full">
@@ -1886,20 +1886,16 @@ async function loadAllData(){
         });
       }
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
-    // Fetch Balance de Inversiones y Patrimonios tab
-    try{
-      var bipData=await fetchSheetRange('Balance de inversiones y Patrimonios','B1:E50');
-      window._balInvPatData=bipData||[];
-    }catch(e){window._balInvPatData=[];}
-    // Fetch Cronograma de Inversiones tab
-    try{
-      var ciData=await fetchSheetRange('Cronograma de Inversiones','C5:AS30');
-      var ciSummary=await fetchSheetRange('Cronograma de Inversiones','AU3:AW20');
-      window._cronoInvData=ciData||[];
-      window._cronoInvSummary=ciSummary||[];
-    }catch(e){window._cronoInvData=[];window._cronoInvSummary=[];}
-    // Try fetching tracking data (may not exist yet)
-    try{trackRaw=await fetchRawSheet('TRACKING_PATRIMONIO');}catch(e){trackRaw=null;}
+    // Fetch Balance de Inversiones, Cronograma, and Tracking in parallel (non-blocking)
+    var _bipP=fetchSheetRange('Balance de inversiones y Patrimonios','B1:E50').catch(function(){return[];});
+    var _ciP=fetchSheetRange('Cronograma de Inversiones','C5:AS30').catch(function(){return[];});
+    var _ciSP=fetchSheetRange('Cronograma de Inversiones','AU3:AW20').catch(function(){return[];});
+    var _trP=fetchRawSheet('TRACKING_PATRIMONIO').catch(function(){return null;});
+    var _parRes=await Promise.all([_bipP,_ciP,_ciSP,_trP]);
+    window._balInvPatData=_parRes[0]||[];
+    window._cronoInvData=_parRes[1]||[];
+    window._cronoInvSummary=_parRes[2]||[];
+    trackRaw=_parRes[3];
     // Build cuotas panel HTML
     buildCuotasPanels();
     // Fetch all cuotas panels data (non-blocking)
@@ -4271,8 +4267,8 @@ function renderModules(){
       if(typeof t!=='string')continue;
       var tl=t.toLowerCase().trim();
       if(tl.indexOf('ganancia')>=0&&tl.indexOf('año')>=0&&r.ganAnio<0) r.ganAnio=i;
-      else if(tl.indexOf('ganancia actual')>=0&&tl.indexOf('unificada')>=0&&r.ganActualUnif<0) r.ganActualUnif=i;
-      else if(tl.indexOf('ganancia actual')>=0&&r.ganActual<0) r.ganActual=i;
+      else if(tl.indexOf('ganancia')>=0&&tl.indexOf('acumulada')>=0&&tl.indexOf('unificada')>=0&&r.ganActualUnif<0) r.ganActualUnif=i;
+      else if(tl.indexOf('ganancia')>=0&&(tl.indexOf('actual')>=0||tl.indexOf('acumulada')>=0)&&r.ganActual<0) r.ganActual=i;
       else if(tl.indexOf('ganancia unificada')>=0&&r.ganUnif<0) r.ganUnif=i;
       else if(tl.indexOf('recupero')>=0&&r.recupero<0) r.recupero=i;
       else if(tl.indexOf('resta cobrar')>=0&&r.resta<0) r.resta=i;

@@ -1731,9 +1731,13 @@ async function loadAllData(){
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
-    await buildVendedorGains();
     rebuildModulosFromDashboard(dRaw);
-    await enrichResumenFromRaw();
+    // First render with core data (dashRaw, invRaw, allData)
+    populateFilters();
+    renderAll();
+    // Secondary fetches (may be slow due to gviz rate limits)
+    try{await buildVendedorGains();}catch(e){}
+    try{await enrichResumenFromRaw();}catch(e){}
     // Fetch KPI ranking data: "Ganancias Unificado en Dolares" (scan wide range to handle hidden rows)
     try{
       var ganAll=await fetchSheetRange('DASHBOARD MARTIN','C80:P115');
@@ -1842,7 +1846,7 @@ async function loadAllData(){
     if(urlVendedor&&urlVendedor.toLowerCase().indexOf('osito')>=0){fetchOsitoBalance();}
     // Show Sociedad/Empresa section on main dashboard and fetch data
     if(!urlVendedor){var secSoc=document.getElementById('secSociedadEmpresa');if(secSoc)secSoc.style.display='';fetchOsitoBalance('main');}
-    populateFilters();
+    // Final render with all secondary data
     renderAll();
   }catch(e){
     console.error('Error loading data:',e);

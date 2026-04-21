@@ -1618,6 +1618,13 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
+    // Immediate first render with core data
+    addNewModulesFromRaw(dRaw);
+    enrichModulesWithPesos(dRaw);
+    enrichVendedorFromRaw(dRaw);
+    rebuildModulosFromDashboard(dRaw);
+    populateFilters();
+    renderAll();
     // Fetch vendor header rows for Balance section dynamically (rows shift as client edits sheet)
     try{
       var balRange=await fetchSheetRange('DASHBOARD MARTIN','C200:AB290');
@@ -1728,13 +1735,6 @@ async function loadAllData(){
       });
     }catch(e){}
     // (cuotas a cobrar extraction moved below, after cuotasPreFetch is populated)
-    addNewModulesFromRaw(dRaw);
-    enrichModulesWithPesos(dRaw);
-    enrichVendedorFromRaw(dRaw);
-    rebuildModulosFromDashboard(dRaw);
-    // First render with core data (dashRaw, invRaw, allData)
-    populateFilters();
-    renderAll();
     // Secondary fetches (may be slow due to gviz rate limits)
     try{await buildVendedorGains();}catch(e){}
     try{await enrichResumenFromRaw();}catch(e){}

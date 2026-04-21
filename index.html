@@ -3953,18 +3953,18 @@ function renderModuleKPIs(){
     colHtml+='<div style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
-    // Recupero de Inversión card
-    var balColor=balVal>=0?'var(--purple)':'var(--red)';
-    var balLabel=window._balanceLabel||'Recupero de Inversión';
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
-    colHtml+='</div>';
     // A COBRAR card
     var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
+    colHtml+='</div>';
+    // Recupero de Inversión card (below A Cobrar)
+    var balColor=balVal>=0?'var(--purple)':'var(--red)';
+    var balLabel=window._balanceLabel||'Recupero de Inversión';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;
@@ -3978,6 +3978,7 @@ function renderModuleKPIs(){
     {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'},
     {label:balLabel,val:totBal,color:'var(--purple)'}
   ];
+  // Order: Inversión, A Cobrar, Recupero (matching per-vendor column order)
   totCards.forEach(function(tc){
     var valColor=tc.val>=0?tc.color:'var(--red)';
     var card=document.createElement('div');
@@ -4513,21 +4514,21 @@ function renderModules(){
 
     function vc(val,color){return val<0?'var(--red)':color;}
 
-    // KPI helper: builds one KPI block with title + sub-values (Detalles de Ingresos style)
+    // KPI helper: builds one KPI block with title + sub-values (clean style)
     function kpiBlock(title,items){
-      var h='<div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+title+'</div>';
-      items.forEach(function(it){
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">';
-        h+='<span style="font-size:9px;font-weight:400;color:var(--text3)">'+it.label+'</span>';
-        h+='<span style="font-size:11px;font-weight:700;color:'+vc(it.val,it.color)+'">'+it.fmt(it.val)+'</span>';
+      var h='<div style="font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">'+title+'</div>';
+      items.forEach(function(it,idx){
+        h+='<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0'+(idx<items.length-1?';border-bottom:1px solid rgba(255,255,255,.06)':'')+'">';
+        h+='<span style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:.3px">'+it.label+'</span>';
+        h+='<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+vc(it.val,it.color)+';letter-spacing:-.2px">'+it.fmt(it.val)+'</span>';
         h+='</div>';
       });
       return h;
     }
 
     // 9 KPIs in 3x3 grid
-    var kc='padding:10px 8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.12)';
-    var kcL=kc+';border-right:1px solid rgba(255,255,255,.12)';
+    var kc='padding:12px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)';
+    var kcL=kc+';border-right:1px solid rgba(255,255,255,.08)';
     var kcR=kc;
     var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr">';
 
@@ -4557,18 +4558,20 @@ function renderModules(){
       {label:'Unif U$D',val:recuperoU,color:'#cbd5e1',fmt:fmtUSD}
     ])+'</div>';
 
-    // Row 3
-    kpiHTML+='<div style="padding:10px 8px;text-align:left;border-right:1px solid rgba(255,255,255,.12)">'+kpiBlock('Cuotas a Cobrar Mes Actual',[
+    // Row 3 (no border-bottom on last row)
+    var kcLast='padding:12px 10px;text-align:left';
+    var kcLastL=kcLast+';border-right:1px solid rgba(255,255,255,.08)';
+    kpiHTML+='<div style="'+kcLastL+'">'+kpiBlock('Cuotas a Cobrar Mes Actual',[
       {label:'En Pesos',val:cuotasMesPesos,color:'var(--blue)',fmt:fmtPesos},
       {label:'En Dólares',val:cuotasMesUSD,color:'var(--green)',fmt:fmtUSD},
       {label:'Unif U$D',val:Math.round(cuotasMesUnif),color:'var(--gold)',fmt:fmtUSD}
     ])+'</div>';
-    kpiHTML+='<div style="padding:10px 8px;text-align:left;border-right:1px solid rgba(255,255,255,.12)">'+kpiBlock('Cuotas a Cobrar Total',[
+    kpiHTML+='<div style="'+kcLastL+'">'+kpiBlock('Cuotas a Cobrar Total',[
       {label:'En Pesos',val:cuotasTotalPesos,color:'var(--blue)',fmt:fmtPesos},
       {label:'En Dólares',val:cuotasTotalUSD,color:'var(--green)',fmt:fmtUSD},
       {label:'Unif U$D',val:Math.round(cuotasTotalUnif),color:'var(--gold)',fmt:fmtUSD}
     ])+'</div>';
-    kpiHTML+='<div style="padding:10px 8px;text-align:left">'+kpiBlock('Caja Actual',[
+    kpiHTML+='<div style="'+kcLast+'">'+kpiBlock('Caja Actual',[
       {label:'En Dólares',val:cajaU,color:'var(--green)',fmt:fmtUSD}
     ])+'</div>';
 

@@ -640,13 +640,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
-    <a onclick="document.getElementById('secGastosOp').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos Operativos</a>
-    <a onclick="document.getElementById('secCompromisos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--cyan)"></span>Compromisos de Pagos</a>
+    <a onclick="document.getElementById('secGastosInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
     <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Inversiones</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
     <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
-    <a onclick="document.getElementById('secGastosOp').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
+    <a onclick="document.getElementById('secGastosInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
     <a onclick="document.getElementById('secVentaDolares').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold2)"></span>Control de Cuotas</a>
   </nav>
 
@@ -846,21 +845,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div id="panelSections"></div>
 
-  <!-- Card 1: GASTOS OPERATIVOS DE LA EMPRESA -->
+  <!-- GASTOS OPERATIVOS E INVERSIONES -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px">
-    <h3 class="section-title" id="secGastosOp" style="margin-bottom:0">Gastos Operativos de la <em>Empresa</em></h3>
+    <h3 class="section-title" id="secGastosInv" style="margin-bottom:0">Gastos Operativos e <em>Inversiones</em></h3>
     <div id="gastosYearToggle" style="display:flex;gap:6px">
       <button class="cm-btn active" data-gyear="2026" onclick="setGastosYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-gyear="2027" onclick="setGastosYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
       <button class="cm-btn" data-gyear="all" onclick="setGastosYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
     </div>
   </div>
-  <div id="gastosOpCards"></div>
-
-  <!-- Card 2: COMPROMISOS DE PAGOS -->
-  <h3 class="section-title" id="secCompromisos">Compromisos de <em>Pagos</em></h3>
-  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Inversores / Inversiones / Gastos Operativos)</div>
-  <div id="compromisosCards"></div>
+  <div id="gastosInvPanels" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px"></div>
 
   <!-- Card 3: INVERSIONES -->
   <h3 class="section-title" id="secInvBalance">Inversiones</h3>
@@ -1913,7 +1907,7 @@ function populateFilters(){
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
       'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
-      'secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection',
+      'secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection',
       'secDashVendedores',
       'secAcumuladoAnual','acumCards'];
     hideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
@@ -2062,8 +2056,7 @@ function setGastosYearFilter(yr){
     if(b.getAttribute('data-gyear')===yr){b.classList.add('active');b.style.background='var(--gold)';b.style.color='#1a1b2e';}
     else{b.classList.remove('active');b.style.background='transparent';b.style.color='var(--text2)';}
   });
-  renderGastosOpCards();
-  renderCompromisosCards();
+  renderGastosInvPanels();
 }
 
 function extractGastosData(){
@@ -2102,97 +2095,44 @@ function extractGastosData(){
     labelResta:invRaw[riResta]?String(invRaw[riResta][1]||'Resta Pagar'):'Resta Pagar'};
 }
 
-function renderGastosOpCards(){
-  var container=document.getElementById('gastosOpCards');
+function renderGastosInvPanels(){
+  var container=document.getElementById('gastosInvPanels');
   if(!container)return;
   var d=extractGastosData();
-  if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">Cargando datos...</div>';return;}
+  if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center;grid-column:1/-1">Cargando datos...</div>';return;}
   var yr=gastosYearFilter;
   var mShort=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  // Build KPI summary
-  var totGI26=0,totCO26=0,totRP26=0,totGI27=0,totCO27=0,totRP27=0;
-  for(var i=0;i<12;i++){totGI26+=d.gastosInv[i].m26;totCO26+=d.compromisos[i].m26;totRP26+=d.restaPagar[i].m26;totGI27+=d.gastosInv[i].m27;totCO27+=d.compromisos[i].m27;totRP27+=d.restaPagar[i].m27;}
-  var totGI=yr==='2026'?totGI26:yr==='2027'?totGI27:totGI26+totGI27;
-  var totCO=yr==='2026'?totCO26:yr==='2027'?totCO27:totCO26+totCO27;
-  var totRP=yr==='2026'?totRP26:yr==='2027'?totRP27:totRP26+totRP27;
-
-  var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">';
-  kpiHTML+='<div style="padding:14px 16px;text-align:center;border-right:1px solid rgba(255,255,255,.12)">';
-  kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--rosa);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Gastos Inversiones</div>';
-  kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--rosa)">'+fmtUSD(Math.abs(totGI))+'</div></div>';
-  kpiHTML+='<div style="padding:14px 16px;text-align:center;border-right:1px solid rgba(255,255,255,.12)">';
-  kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Compromisos Cuotas</div>';
-  kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--cyan)">'+fmtUSD(Math.abs(totCO))+'</div></div>';
-  kpiHTML+='<div style="padding:14px 16px;text-align:center">';
-  kpiHTML+='<div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total Gastos</div>';
-  kpiHTML+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--red)">'+fmtUSD(Math.abs(totGI)+Math.abs(totCO))+'</div></div>';
-  kpiHTML+='</div>';
-
-  // Detail table
-  var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:var(--rosa)">Gastos Inversiones</th><th style="color:var(--cyan)">Compromisos Cuotas</th><th style="color:var(--red)">Resta Pagar</th></tr></thead><tbody>';
-  function addRows(suffix,key){
-    var dtGI=0,dtCO=0,dtRP=0;
-    for(var i=0;i<12;i++){
-      var gi=d.gastosInv[i][key],co=d.compromisos[i][key],rp=d.restaPagar[i][key];
-      dtGI+=gi;dtCO+=co;dtRP+=rp;
-      tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:var(--rosa)">'+fmtUSD(Math.abs(gi))+'</td><td style="color:var(--cyan)">'+fmtUSD(Math.abs(co))+'</td><td style="color:var(--red)">'+fmtUSD(Math.abs(rp))+'</td></tr>';
-    }
-    return{gi:dtGI,co:dtCO,rp:dtRP};
-  }
-  var t26,t27;
-  if(yr==='2026'||yr==='all')t26=addRows('26','m26');
-  if(yr==='2027'||yr==='all')t27=addRows('27','m27');
-  var fGI=Math.abs((t26?t26.gi:0)+(t27?t27.gi:0)),fCO=Math.abs((t26?t26.co:0)+(t27?t27.co:0)),fRP=Math.abs((t26?t26.rp:0)+(t27?t27.rp:0));
-  tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(fGI)+'</td><td style="color:var(--cyan)">'+fmtUSD(fCO)+'</td><td style="color:var(--red)">'+fmtUSD(fRP)+'</td></tr>';
-  tbl+='</tbody></table>';
-
-  container.innerHTML='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
-    +'<div class="module-name" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">💸</span>Gastos Operativos de la Empresa</div>'
-    +kpiHTML
-    +'<div style="padding:0">'+tbl+'</div>'
-    +'</div>';
-}
-
-function renderCompromisosCards(){
-  var container=document.getElementById('compromisosCards');
-  if(!container)return;
-  var d=extractGastosData();
-  if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">Cargando datos...</div>';return;}
-  var yr=gastosYearFilter;
-  var mShort=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-
-  // Build per-item cards — each line item gets its own card with monthly detail
-  var items=[
-    {label:d.labelGastos,icon:'📉',color:'var(--rosa)',data:d.gastosInv},
-    {label:d.labelComp,icon:'📋',color:'var(--cyan)',data:d.compromisos},
-    {label:d.labelResta,icon:'💰',color:'var(--red)',data:d.restaPagar}
+  // Build two panels side by side
+  var panels=[
+    {title:'Gastos Operativos',icon:'💸',color:'var(--rosa)',data:d.gastosInv,label:d.labelGastos||'Gastos Operativos'},
+    {title:'Compromisos de Pagos',icon:'📋',color:'var(--cyan)',data:d.compromisos,label:d.labelComp||'Compromisos de Pagos'}
   ];
 
-  var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">';
-  items.forEach(function(item){
-    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+item.color+'">Monto</th></tr></thead><tbody>';
+  var html='';
+  panels.forEach(function(panel){
     var total=0;
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+panel.color+'">Monto</th></tr></thead><tbody>';
     function addRows(suffix,key){
       for(var i=0;i<12;i++){
-        var v=item.data[i][key];
+        var v=panel.data[i][key];
         total+=v;
-        tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+item.color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
+        tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+panel.color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
       }
     }
     if(yr==='2026'||yr==='all')addRows('26','m26');
     if(yr==='2027'||yr==='all')addRows('27','m27');
-    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+item.color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
+    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+panel.color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
     tbl+='</tbody></table>';
 
     html+='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
-      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+item.icon+'</span>'+item.label+'</div>'
-      +'<div style="padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)">'
-      +'<div style="font-size:18px;font-weight:700;color:'+item.color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
-      +'<div style="padding:0">'+tbl+'</div>'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+panel.icon+'</span>'+panel.title+'</div>'
+      +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:9px;font-weight:700;color:'+panel.color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+panel.color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div>'
       +'</div>';
   });
-  html+='</div>';
   container.innerHTML=html;
 }
 
@@ -3529,7 +3469,7 @@ function renderAll(){
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
   var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
-  var invOnlyIds=['secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection'];
+  var invOnlyIds=['secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection'];
   invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
   // Hide Acumulado Anual (general) when filtering by vendor — vendors have their own acumulado section
   var acumOnlyIds=['secAcumuladoAnual','acumCards'];
@@ -3557,8 +3497,7 @@ function renderAll(){
   renderChartEmpCuotasPesos();
   renderChartEmpCuotasUnif();
   if(!isFiltered){
-    renderGastosOpCards();
-    renderCompromisosCards();
+    renderGastosInvPanels();
     renderInvBalanceCards();
     renderChartBalanceGeneral();
     renderInversiones();
@@ -5788,7 +5727,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secGastosOp','gastosOpCards','gastosYearToggle','secCompromisos','compromisosCards','secInvBalance','invBalanceCards','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

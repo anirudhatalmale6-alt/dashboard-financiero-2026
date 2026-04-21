@@ -3471,6 +3471,7 @@ function renderAll(){
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
   var invOnlyIds=['secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection'];
   invOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
+  if(!isFiltered){var gp=document.getElementById('gastosInvPanels');if(gp)gp.style.display='grid';}
   // Hide Acumulado Anual (general) when filtering by vendor — vendors have their own acumulado section
   var acumOnlyIds=['secAcumuladoAnual','acumCards'];
   acumOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});

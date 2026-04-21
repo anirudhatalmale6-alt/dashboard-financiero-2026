@@ -1277,9 +1277,10 @@ let cuotasYearFilter='2026';
 var urlVendedor=(function(){var p=new URLSearchParams(window.location.search);return p.get('vendedor')||'';})();
 if(urlVendedor)filterVendedor=urlVendedor;
 
+function fetchWithTimeout(url,ms){ms=ms||15000;var ctrl=new AbortController();var tid=setTimeout(function(){ctrl.abort();},ms);return fetch(url,{signal:ctrl.signal}).finally(function(){clearTimeout(tid);});}
 async function fetchSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   const cols=j.table.cols.map(c=>c.label);
@@ -1292,7 +1293,7 @@ async function fetchSheet(name){
 
 async function fetchRawSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
@@ -1300,14 +1301,14 @@ async function fetchRawSheet(name){
 
 async function fetchSheetRange(name,range){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 async function fetchSheetSQL(name,query){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&tq=${encodeURIComponent(query)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
@@ -1316,21 +1317,21 @@ async function fetchSheetSQL(name,query){
 // Generic fetch functions for any spreadsheet by ID
 async function fetchRawSheetById(sheetId,name){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
 }
 async function fetchSheetRangeById(sheetId,name,range){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 async function fetchRawRange(name,range){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url);
   const t=await r.text();
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));

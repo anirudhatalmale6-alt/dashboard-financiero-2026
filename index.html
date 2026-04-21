@@ -685,6 +685,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div id="kpiMonthRight" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
   </div>
   <div id="kpiModulesRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
+
+  <h2 class="section-title" style="margin-bottom:20px" id="secResumenAnio"><span class="dot" style="background:var(--blue)"></span>Resumen General <em>Año 2026</em></h2>
+  <div id="kpiAnioRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
+
+  <h2 class="section-title" style="margin-bottom:20px" id="secResumenHistorico"><span class="dot" style="background:var(--green)"></span>Resumen General <em>Acumulado Histórico 2025/26/27</em></h2>
+  <div id="kpiHistoricoRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
+
   <div class="kpis" id="kpis" style="display:none"></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px">
@@ -3506,6 +3513,8 @@ function renderAll(){
   const isFiltered=filterVendedor!=='all';
   updateDynamicTitles();
   renderKPIs();
+  renderResumenAnio();
+  renderResumenHistorico();
   renderCurrentMonthKPIs();
   toggleCompactRankingLayout();
   renderIngresosTotales();
@@ -3900,19 +3909,17 @@ function renderModuleKPIs(){
   var invData=window._vendorInvestments||{};
 
   // Render sorted cards: ganancia card + investment card below each + accumulate totals
-  var totUSD=0,totPesos=0,totUni=0,totInv=0,totBal=0,totCobrar=0;
+  var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrar=0;
   cards.forEach(function(c){
     var invMonthly=invData[c.name]||[];
     var invVal=invMonthly[cmIdx]||0;
-    var balData=window._vendorBalances||{};
-    var balVal=balData[c.name]||0;
     var cobrarData=window._vendorCuotasCobrar||{};
     var cobrarKey=normName(c.name);
     var cobrarVal=0;
     for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
     var ugv=uniGains[normName(c.name)]||0;
     // Accumulate totals
-    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totBal+=balVal;totCobrar+=cobrarVal;
+    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;
     var colHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
     // Ganancia card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
@@ -3933,26 +3940,16 @@ function renderModuleKPIs(){
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
     colHtml+='</div>';
-    // Recupero de Inversión card (below A Cobrar)
-    var balColor=balVal>=0?'var(--purple)':'var(--red)';
-    var balLabel=window._balanceLabel||'Recupero de Inversión';
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
-    colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;
   });
-  // 3 TOTAL KPI cards centered below the vendor columns
-  var balLabel=window._balanceLabel||'Recupero de Inversión';
+  // TOTAL KPI cards centered below the vendor columns
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'var(--rosa)'},
-    {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'},
-    {label:balLabel,val:totBal,color:'var(--purple)'}
+    {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'}
   ];
-  // Order: Inversión, A Cobrar, Recupero (matching per-vendor column order)
   totCards.forEach(function(tc){
     var valColor=tc.val>=0?tc.color:'var(--red)';
     var card=document.createElement('div');
@@ -3963,6 +3960,157 @@ function renderModuleKPIs(){
   });
   container.parentNode.insertBefore(totRow,container.nextSibling);
 }
+
+// Generic function: Resumen General for a range of months
+// mode: 'anio' = Jan..currentMonth (YTD), 'historico' = all 12 months
+function renderResumenRange(containerId,mode){
+  var container=document.getElementById(containerId);
+  if(!container||!dashRaw||dashRaw.length<200)return;
+  // Hide title and container when vendor filtered
+  var titleId=containerId==='kpiAnioRow'?'secResumenAnio':'secResumenHistorico';
+  var titleEl=document.getElementById(titleId);
+  if(filterVendedor!=='all'){container.style.display='none';if(titleEl)titleEl.style.display='none';return;}
+  container.style.display='flex';
+  if(titleEl)titleEl.style.display='';
+  container.innerHTML='';
+  // Remove any previously inserted totals row
+  var oldTot=container.nextElementSibling;
+  if(oldTot&&oldTot.getAttribute('data-totrow')===containerId)oldTot.remove();
+
+  var cmIdx=new Date().getMonth();
+  var endMonth=mode==='anio'?cmIdx:11; // anio: 0..cmIdx, historico: 0..11
+
+  // Find Balance section dynamically
+  var socStart=-1,martStart=-1;
+  for(var si=100;si<dashRaw.length;si++){
+    if(!dashRaw[si])continue;
+    var cv=dashRaw[si][2];
+    if(typeof cv==='string'){
+      if(cv.indexOf('Balance y Ganancias')>=0) socStart=si+1;
+      if(socStart>0&&si>socStart+30&&cv==='Tecno') martStart=si;
+    }
+  }
+  if(socStart<0) socStart=125;
+  if(martStart<0) martStart=163;
+
+  var sn=window._socVendorNames||[];
+  var mn=window._martVendorNames||[];
+  var socDef=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+  var martDef=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
+  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var offsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
+
+  function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
+
+  var cards=[];
+
+  // Sum months 0..endMonth for each vendor
+  offsets.forEach(function(o,i){
+    var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];
+    var usd=0,pesos=0;
+    for(var mi=0;mi<=endMonth;mi++){usd+=dv(socStart+2+mi,o.u);pesos+=dv(socStart+2+mi,o.p);}
+    cards.push({name:name,icon:socIcons[i],usd:usd,pesos:pesos});
+  });
+  offsets.forEach(function(o,i){
+    var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];
+    var usd=0,pesos=0;
+    for(var mi=0;mi<=endMonth;mi++){usd+=dv(martStart+2+mi,o.u);pesos+=dv(martStart+2+mi,o.p);}
+    cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
+  });
+
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+
+  // Sort by unified gains (sum months)
+  var ugRows=window._uniGainsRows||[];
+  var uniGains={};
+  for(var ui=0;ui<ugRows.length;ui++){
+    var ur=ugRows[ui];
+    if(!ur||!ur[0])continue;
+    var total=0;
+    for(var mi=0;mi<=endMonth;mi++){
+      var ugVal=ur[2+mi];
+      if(typeof ugVal==='number') total+=Math.abs(ugVal);
+      else if(typeof ugVal==='string'){var neg=ugVal.includes('-')?-1:1;var cl=ugVal.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);if(!isNaN(n))total+=Math.abs(n*neg);}
+    }
+    uniGains[normName(ur[0])]=total;
+  }
+  cards.sort(function(a,b){return(uniGains[normName(b.name)]||0)-(uniGains[normName(a.name)]||0);});
+
+  // Get investment data (sum months)
+  var invData=window._vendorInvestments||{};
+
+  // Get cuotas and balance (snapshot values — same as Mes Actual)
+  var cobrarData=window._vendorCuotasCobrar||{};
+  var balData=window._vendorBalances||{};
+
+  var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrar=0,totBal=0;
+  cards.forEach(function(c){
+    var invMonthly=invData[c.name]||[];
+    var invVal=0;
+    for(var mi=0;mi<=endMonth;mi++){invVal+=(invMonthly[mi]||0);}
+    var cobrarKey=normName(c.name);
+    var cobrarVal=0;
+    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    var balVal=balData[c.name]||0;
+    var ugv=uniGains[normName(c.name)]||0;
+    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;totBal+=balVal;
+
+    var colHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
+    // Ganancia card
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
+    colHtml+='<div style="font-size:14px;margin-bottom:4px">'+c.icon+'</div>';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos||0)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(ugv)+'</div>';
+    colHtml+='</div>';
+    // Inversión card
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
+    colHtml+='</div>';
+    // Cuotas a Cobrar card
+    var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
+    colHtml+='</div>';
+    // Balance de Inversión card
+    var balColor=balVal>=0?'var(--purple)':'var(--red)';
+    var balLabel=window._balanceLabel||'Balance de Inversión';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
+    colHtml+='</div>';
+    colHtml+='</div>';
+    container.innerHTML+=colHtml;
+  });
+  // Total KPI cards
+  var balLabel=window._balanceLabel||'Balance de Inversión';
+  var totRow=document.createElement('div');
+  totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
+  totRow.setAttribute('data-totrow',containerId);
+  var totCards=[
+    {label:'Ganancias',val:totUni,color:'var(--gold)'},
+    {label:'Inversión',val:totInv,color:'var(--rosa)'},
+    {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'},
+    {label:balLabel,val:totBal,color:'var(--purple)'}
+  ];
+  totCards.forEach(function(tc){
+    var valColor=tc.val>=0?tc.color:'var(--red)';
+    var card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:2px solid '+tc.color+';border-radius:12px;padding:12px 24px;text-align:center;min-width:140px';
+    card.innerHTML='<div style="font-size:10px;font-weight:700;color:'+tc.color+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+tc.label+'</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+fmtUSD(tc.val)+'</div>';
+    totRow.appendChild(card);
+  });
+  container.parentNode.insertBefore(totRow,container.nextSibling);
+}
+
+function renderResumenAnio(){renderResumenRange('kpiAnioRow','anio');}
+function renderResumenHistorico(){renderResumenRange('kpiHistoricoRow','historico');}
 
 function renderCurrentMonthKPIs(){
   var cmEl=document.getElementById('kpiCurrentMonth');

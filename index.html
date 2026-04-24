@@ -1619,27 +1619,85 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
-    // Immediate first render with core data
+    // Extract KPI data from dashRaw before first render (avoids slow secondary API calls)
+    try{
+      var ganRows=[];var inGanSection=false;
+      for(var gi=79;gi<Math.min(115,dRaw.length);gi++){
+        var gr=dRaw[gi];if(!gr)continue;var rawRow=gr.slice(2,16);if(!rawRow[0])continue;
+        var gl=String(rawRow[0]).toLowerCase().trim();
+        if(gl.includes('ganancias unificado en dolares')||gl.includes('ganancias unifiado en dolares')){inGanSection=true;continue;}
+        if(inGanSection){if(gl.includes('cuotas')||gl.includes('balance')||gl.includes('total')){inGanSection=false;continue;}ganRows.push(rawRow);}
+      }
+      window._uniGainsRows=ganRows;
+    }catch(e){window._uniGainsRows=null;}
+    try{
+      var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};var curSection=null;
+      for(var ci=118;ci<Math.min(204,dRaw.length);ci++){
+        var dr=dRaw[ci];if(!dr)continue;var crow=dr.slice(2,28);if(!crow[0])continue;
+        var lbl=String(crow[0]).toLowerCase().trim();
+        if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarUSD';continue;}
+        if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarPesos';continue;}
+        if((lbl.includes('cuotas')&&(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')))&&!lbl.includes('total')){curSection='uniPesos';continue;}
+        if((lbl.includes('cuotas')&&(lbl.includes('unificado en dolares')||lbl.includes('unifiado en dolares')))&&!lbl.includes('total')){curSection='uniUSD';continue;}
+        if(lbl.includes('balance y ganancias')){curSection=null;continue;}
+        if(lbl.includes('total')){if(curSection&&cuSections[curSection]){cuSections[curSection].push(crow);curSection=null;}continue;}
+        if(curSection&&cuSections[curSection])cuSections[curSection].push(crow);
+      }
+      cuSections.restaPagar=[];
+      window._cuotasPreFetch=cuSections;
+      window._vendorCuotasCobrar={};window._vendorCuotasMonthly={};
+      if(cuSections.uniUSD){
+        var cmIdx2=new Date().getMonth();
+        function pvCuota2(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.round(n*neg);}return 0;}
+        cuSections.uniUSD.forEach(function(row){
+          if(!row||!row[0])return;var name=String(row[0]).trim();
+          if(name.toLowerCase().indexOf('total')>=0)return;
+          window._vendorCuotasCobrar[name]=pvCuota2(row[2+cmIdx2]);
+          var monthly=[];for(var mi=0;mi<12;mi++){monthly.push(pvCuota2(row[2+mi]));}
+          window._vendorCuotasMonthly[name]=monthly;
+        });
+      }
+    }catch(e){}
+    try{
+      window._vendorBalances={};window._balanceLabel='';
+      var socDef2=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+      var martDef2=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+      var balOffsets=[4,9,14,19,24,29];
+      var balSections=[];
+      for(var bi=100;bi<dRaw.length;bi++){var br=dRaw[bi];if(!br)continue;var c2=br[2];if(c2&&typeof c2==='string'&&c2.trim()==='Balance')balSections.push(bi);}
+      balSections.forEach(function(secIdx,secNum){
+        var names=secNum===0?socDef2:martDef2;
+        for(var ri=secIdx+1;ri<secIdx+10&&ri<dRaw.length;ri++){
+          var row=dRaw[ri];if(!row)continue;var lbl=row[2];if(!lbl||typeof lbl!=='string')continue;
+          if(lbl.trim().toLowerCase().indexOf('recupero')<0)continue;
+          if(!window._balanceLabel)window._balanceLabel=String(lbl).trim();
+          balOffsets.forEach(function(col,idx){
+            var v=row[col];var val=0;
+            if(typeof v==='number')val=Math.round(v);
+            else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
+            window._vendorBalances[names[idx]]=val;
+          });
+          break;
+        }
+      });
+    }catch(e){}
+    // Extract vendor names from dashRaw (rows 200-290)
+    try{
+      for(var bri=199;bri<Math.min(290,dRaw.length);bri++){
+        var br0=dRaw[bri]&&dRaw[bri][2];if(!br0||typeof br0!=='string')continue;
+        var brl=br0.trim().toLowerCase();
+        if(brl.indexOf('osito')>=0&&!window._socVendorNames){window._socVendorNames=dRaw[bri].slice(2);}
+        if(brl==='tecno'&&bri>210){window._martVendorNames=dRaw[bri].slice(2);break;}
+      }
+    }catch(e){}
+    // Immediate first render with core data + KPI data
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
     enrichVendedorFromRaw(dRaw);
     rebuildModulosFromDashboard(dRaw);
     populateFilters();
     renderAll();
-    // Fetch vendor header rows for Balance section dynamically (rows shift as client edits sheet)
-    try{
-      var balRange=await fetchSheetRange('DASHBOARD MARTIN','C200:AB290');
-      if(balRange){
-        var foundSoc=false;
-        for(var bri=0;bri<balRange.length;bri++){
-          var br0=balRange[bri]&&balRange[bri][0];
-          if(!br0||typeof br0!=='string')continue;
-          var brl=br0.trim().toLowerCase();
-          if(brl.indexOf('osito')>=0&&!foundSoc){window._socVendorNames=balRange[bri];foundSoc=true;}
-          if(brl==='tecno'){window._martVendorNames=balRange[bri];break;}
-        }
-      }
-    }catch(e){}
+    // Vendor names already extracted from dashRaw above
     // Fetch monthly investment data from individual vendor tabs
     try{
       var invTabs=[
@@ -1691,128 +1749,10 @@ async function loadAllData(){
         invDeudasMensuales=deudasRange[0].map(function(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var n=v.replace(/[^0-9\-]/g,'');return parseInt(n)||0;}return 0;});
       }
     }catch(e){invDeudasMensuales=null;}
-    // Extract balance/inversión data from dashRaw — find "Balance" section headers, then read the first data row below each
-    try{
-      window._vendorBalances={};
-      window._balanceLabel='';
-      var socDef2=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
-      var martDef2=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
-      var balOffsets=[4,9,14,19,24,29];
-      // Find "Balance" section headers (col 2), then scan next rows for the data row with values
-      var balSections=[];
-      for(var bi=100;bi<dashRaw.length;bi++){
-        var br=dashRaw[bi];
-        if(!br)continue;
-        var c2=br[2];
-        if(c2&&typeof c2==='string'&&c2.trim()==='Balance'){
-          balSections.push(bi);
-        }
-      }
-      // For each Balance section, find "Recupero de Inversión" row (or similar) below it
-      balSections.forEach(function(secIdx,secNum){
-        var names=secNum===0?socDef2:martDef2;
-        for(var ri=secIdx+1;ri<secIdx+10&&ri<dashRaw.length;ri++){
-          var row=dashRaw[ri];
-          if(!row)continue;
-          var lbl=row[2];
-          if(!lbl||typeof lbl!=='string')continue;
-          var lblLow=lbl.trim().toLowerCase();
-          // Look for "Recupero" row specifically
-          if(lblLow.indexOf('recupero')<0)continue;
-          // Read label from col 2
-          if(!window._balanceLabel){
-            window._balanceLabel=String(lbl).trim();
-          }
-          // Extract values
-          balOffsets.forEach(function(col,idx){
-            var v=row[col];
-            var val=0;
-            if(typeof v==='number')val=Math.round(v);
-            else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
-            window._vendorBalances[names[idx]]=val;
-          });
-          break; // Found the data row for this section
-        }
-      });
-    }catch(e){}
-    // (cuotas a cobrar extraction moved below, after cuotasPreFetch is populated)
+    // Balance and cuotas data already extracted from dashRaw above
     // Secondary fetches (may be slow due to gviz rate limits)
     try{await buildVendedorGains();}catch(e){}
     try{await enrichResumenFromRaw();}catch(e){}
-    // Fetch KPI ranking data: "Ganancias Unificado en Dolares" (scan wide range to handle hidden rows)
-    try{
-      var ganAll=await fetchSheetRange('DASHBOARD MARTIN','C80:P115');
-      var ganRows=[];
-      var inGanSection=false;
-      for(var gi=0;gi<ganAll.length;gi++){
-        var gr=ganAll[gi];
-        if(!gr||!gr[0])continue;
-        var gl=String(gr[0]).toLowerCase().trim();
-        if(gl.includes('ganancias unificado en dolares')||gl.includes('ganancias unifiado en dolares')){inGanSection=true;continue;}
-        if(inGanSection){
-          if(gl.includes('cuotas')||gl.includes('balance')||gl.includes('total')){inGanSection=false;continue;}
-          ganRows.push(gr);
-        }
-      }
-      window._uniGainsRows=ganRows;
-    }catch(e){window._uniGainsRows=null;}
-    // Pre-fetch Cuotas a Cobrar data from Dashboard Martin rows 119-204
-    // Fetches wide range and scans by header labels (gviz skips hidden rows so exact row ranges don't work)
-    try{
-      var cuotasAll=await fetchSheetRange('DASHBOARD MARTIN','C119:AB204');
-      var cuRestaPagar=await fetchSheetRange('DASHBOARD MARTIN','C310:AB320');
-      // Parse cuotas sections by header labels
-      // Sections: Cuotas a Cobrar en Dolares → cobrarUSD, en Pesos → cobrarPesos,
-      //   Unificado en Pesos → uniPesos, Unificado en Dolares → uniUSD
-      // Each section: header row, vendor rows, Total row. Include Total in data.
-      var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};
-      var curSection=null;
-      for(var ci=0;ci<cuotasAll.length;ci++){
-        var crow=cuotasAll[ci];
-        if(!crow||!crow[0])continue;
-        var lbl=String(crow[0]).toLowerCase().trim();
-        // Section headers start new sections (skip the header row itself)
-        if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarUSD';continue;}
-        if(lbl.includes('cuotas a cobrar en pesos')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarPesos';continue;}
-        if((lbl.includes('cuotas')&&(lbl.includes('unificado en pesos')||lbl.includes('unifiado en pesos')))&&!lbl.includes('total')){curSection='uniPesos';continue;}
-        if((lbl.includes('cuotas')&&(lbl.includes('unificado en dolares')||lbl.includes('unifiado en dolares')))&&!lbl.includes('total')){curSection='uniUSD';continue;}
-        // Stop at Balance section
-        if(lbl.includes('balance y ganancias')){curSection=null;continue;}
-        // "Total" rows: include in current section, then close the section
-        if(lbl.includes('total')){
-          if(curSection&&cuSections[curSection]){cuSections[curSection].push(crow);curSection=null;}
-          continue;
-        }
-        if(curSection&&cuSections[curSection])cuSections[curSection].push(crow);
-      }
-      // Parse Resta Pagar from rows 310-320 (scan for "Resta Pagar" label)
-      var rpRow=null;
-      if(cuRestaPagar){
-        for(var ri=0;ri<cuRestaPagar.length;ri++){
-          if(cuRestaPagar[ri]&&cuRestaPagar[ri][0]&&String(cuRestaPagar[ri][0]).toLowerCase().includes('resta pagar')){
-            rpRow=cuRestaPagar[ri];break;
-          }
-        }
-      }
-      cuSections.restaPagar=rpRow?[rpRow]:[];
-      window._cuotasPreFetch=cuSections;
-      // Extract cuotas a cobrar unificadas en dolares per vendor (current month + monthly array)
-      window._vendorCuotasCobrar={};
-      window._vendorCuotasMonthly={};
-      if(cuSections.uniUSD){
-        var cmIdx2=new Date().getMonth();
-        function pvCuota(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.round(n*neg);}return 0;}
-        cuSections.uniUSD.forEach(function(row){
-          if(!row||!row[0])return;
-          var name=String(row[0]).trim();
-          if(name.toLowerCase().indexOf('total')>=0)return;
-          window._vendorCuotasCobrar[name]=pvCuota(row[2+cmIdx2]);
-          var monthly=[];
-          for(var mi=0;mi<12;mi++){monthly.push(pvCuota(row[2+mi]));}
-          window._vendorCuotasMonthly[name]=monthly;
-        });
-      }
-    }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
     // Fetch Balance de Inversiones, Cronograma, and Tracking in parallel (non-blocking)
     var _bipP=fetchSheetRange('Balance de inversiones y Patrimonios','B1:E50').catch(function(){return[];});
     var _ciP=fetchSheetRange('Cronograma de Inversiones','C5:AS30').catch(function(){return[];});

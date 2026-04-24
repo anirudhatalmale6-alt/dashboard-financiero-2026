@@ -688,7 +688,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <h2 class="section-title" style="margin-bottom:20px" id="secResumenAnio"><span class="dot" style="background:var(--blue)"></span>Resumen General <em>Año 2026</em></h2>
   <div id="kpiAnioRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
 
-  <h2 class="section-title" style="margin-bottom:20px" id="secResumenHistorico"><span class="dot" style="background:var(--green)"></span>Resumen General <em>Acumulado Histórico 2025/26/27</em></h2>
+  <h2 class="section-title" style="margin-bottom:20px" id="secResumenHistorico"><span class="dot" style="background:var(--green)"></span>Resumen General <em>Acumulado 25/26/27</em></h2>
   <div id="kpiHistoricoRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
 
   <div class="kpis" id="kpis" style="display:none"></div>
@@ -1796,19 +1796,20 @@ async function loadAllData(){
       }
       cuSections.restaPagar=rpRow?[rpRow]:[];
       window._cuotasPreFetch=cuSections;
-      // Extract cuotas a cobrar unificadas en dolares per vendor (current month)
+      // Extract cuotas a cobrar unificadas en dolares per vendor (current month + monthly array)
       window._vendorCuotasCobrar={};
+      window._vendorCuotasMonthly={};
       if(cuSections.uniUSD){
         var cmIdx2=new Date().getMonth();
+        function pvCuota(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.round(n*neg);}return 0;}
         cuSections.uniUSD.forEach(function(row){
           if(!row||!row[0])return;
           var name=String(row[0]).trim();
           if(name.toLowerCase().indexOf('total')>=0)return;
-          var v=row[2+cmIdx2];
-          var val=0;
-          if(typeof v==='number')val=Math.round(v);
-          else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);val=isNaN(n)?0:Math.round(n*neg);}
-          window._vendorCuotasCobrar[name]=val;
+          window._vendorCuotasCobrar[name]=pvCuota(row[2+cmIdx2]);
+          var monthly=[];
+          for(var mi=0;mi<12;mi++){monthly.push(pvCuota(row[2+mi]));}
+          window._vendorCuotasMonthly[name]=monthly;
         });
       }
     }catch(e){window._cuotasPreFetch=null;console.error('Cuotas prefetch error:',e);}
@@ -2149,11 +2150,38 @@ function renderGastosInvPanels(){
       +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
   }
 
+  function buildPanel4(){
+    var color='var(--purple)';
+    var title='Inversores, Inversiones y Gastos Operativos a Pagar';
+    if(!dashRaw||dashRaw.length<216) return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Cargando...</div>';
+    var row=dashRaw[215];
+    if(!row) return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Sin datos</div>';
+    function pval(v){if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n)*neg;}return 0;}
+    var total=pval(row[28]||0);
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+color+'">A Pagar</th></tr></thead><tbody>';
+    function addMonths(suffix,startCol){
+      for(var i=0;i<12;i++){
+        var v=pval(row[startCol+i]||0);
+        if(Math.abs(v)>0) tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
+      }
+    }
+    if(yr==='2026'||yr==='all')addMonths('26',4);
+    if(yr==='2027'||yr==='all')addMonths('27',16);
+    tbl+='<tr class="total-row"><td>RESTA PAGAR</td><td style="color:'+color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
+    tbl+='</tbody></table>';
+    return '<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">📊</span>'+title+'</div>'
+      +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Resta Pagar</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
+  }
+
   var html='';
   html+=buildDetailPanel('Gastos Operativos','💸','var(--rosa)',d.gastosInv);
   html+=buildRestaPagarPanel('Gastos Operativos a Pagar','💳','var(--gold)',d.gastosInv);
   html+=buildDetailPanel('Compromisos de Pagos','📋','var(--cyan)',d.compromisos);
-  html+=buildRestaPagarPanel('Compromisos y Costos a Pagar','📊','var(--purple)',d.restaPagar);
+  html+=buildPanel4();
   container.innerHTML=html;
 }
 
@@ -4002,8 +4030,8 @@ function renderResumenRange(containerId,mode){
   // Get investment data (sum months)
   var invData=window._vendorInvestments||{};
 
-  // Get cuotas and balance (snapshot values — same as Mes Actual)
-  var cobrarData=window._vendorCuotasCobrar||{};
+  // Get cuotas monthly data and balance
+  var cobrarMonthly=window._vendorCuotasMonthly||{};
   var balData=window._vendorBalances||{};
 
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrar=0,totBal=0;
@@ -4013,7 +4041,7 @@ function renderResumenRange(containerId,mode){
     for(var mi=0;mi<=endMonth;mi++){invVal+=(invMonthly[mi]||0);}
     var cobrarKey=normName(c.name);
     var cobrarVal=0;
-    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    for(var ck in cobrarMonthly){if(normName(ck)===cobrarKey){var cm=cobrarMonthly[ck];for(var mi=0;mi<12;mi++){cobrarVal+=(cm[mi]||0);}break;}}
     var balVal=balData[c.name]||0;
     var ugv=uniGains[normName(c.name)]||0;
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;totBal+=balVal;

@@ -1623,7 +1623,7 @@ async function loadAllData(){
     try{
       var ganRows=[];var inGanSection=false;
       for(var gi=50;gi<Math.min(130,dRaw.length);gi++){
-        var gr=dRaw[gi];if(!gr)continue;var rawRow=gr.slice(2,16);if(!rawRow[0])continue;
+        var gr=dRaw[gi];if(!gr)continue;var rawRow=gr.slice(2,28);if(!rawRow[0])continue;
         var gl=String(rawRow[0]).toLowerCase().trim();
         if(gl.includes('ganancias unificado en dolares')||gl.includes('ganancias unifiado en dolares')){inGanSection=true;continue;}
         if(inGanSection){if(gl.includes('cuotas')||gl.includes('balance')||gl.includes('total')){inGanSection=false;continue;}ganRows.push(rawRow);}
@@ -1653,7 +1653,7 @@ async function loadAllData(){
           if(!row||!row[0])return;var name=String(row[0]).trim();
           if(name.toLowerCase().indexOf('total')>=0)return;
           window._vendorCuotasCobrar[name]=pvCuota2(row[2+cmIdx2]);
-          var monthly=[];for(var mi=0;mi<12;mi++){monthly.push(pvCuota2(row[2+mi]));}
+          var monthly=[];for(var mi=0;mi<24;mi++){monthly.push(pvCuota2(row[2+mi]));}
           window._vendorCuotasMonthly[name]=monthly;
         });
       }
@@ -3907,7 +3907,9 @@ function renderResumenRange(containerId,mode){
   if(oldTot&&oldTot.getAttribute('data-totrow')===containerId)oldTot.remove();
 
   var cmIdx=new Date().getMonth();
-  var endMonth=mode==='anio'?cmIdx:11; // anio: 0..cmIdx, historico: 0..11
+  var endMonth=mode==='anio'?cmIdx:11; // anio: 0..cmIdx, historico: 0..11 (for Balance section rows)
+  var colEnd=mode==='anio'?cmIdx:23; // for column-based data (gains, cuotas): 0..23 = 2026+2027
+  var cobrarEnd=mode==='anio'?12:24; // cuotas months to sum
 
   // Find Balance section dynamically
   var socStart=-1,martStart=-1;
@@ -3921,6 +3923,16 @@ function renderResumenRange(containerId,mode){
   }
   if(socStart<0) socStart=125;
   if(martStart<0) martStart=163;
+  // Find 2027 month rows in Balance sections (for historico mode)
+  var soc2027=-1,mart2027=-1;
+  if(mode==='historico'){
+    for(var ri=socStart;ri<socStart+25&&ri<dashRaw.length;ri++){
+      if(dashRaw[ri]&&typeof dashRaw[ri][2]==='string'&&dashRaw[ri][2].trim().indexOf('2027')>=0){soc2027=ri+1;break;}
+    }
+    for(var ri=martStart;ri<martStart+25&&ri<dashRaw.length;ri++){
+      if(dashRaw[ri]&&typeof dashRaw[ri][2]==='string'&&dashRaw[ri][2].trim().indexOf('2027')>=0){mart2027=ri+1;break;}
+    }
+  }
 
   var sn=window._socVendorNames||[];
   var mn=window._martVendorNames||[];
@@ -3935,17 +3947,19 @@ function renderResumenRange(containerId,mode){
 
   var cards=[];
 
-  // Sum months 0..endMonth for each vendor
+  // Sum months 0..endMonth for each vendor (2026 rows + 2027 rows in historico)
   offsets.forEach(function(o,i){
     var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];
     var usd=0,pesos=0;
     for(var mi=0;mi<=endMonth;mi++){usd+=dv(socStart+2+mi,o.u);pesos+=dv(socStart+2+mi,o.p);}
+    if(soc2027>0){for(var mi=0;mi<12;mi++){usd+=dv(soc2027+mi,o.u);pesos+=dv(soc2027+mi,o.p);}}
     cards.push({name:name,icon:socIcons[i],usd:usd,pesos:pesos});
   });
   offsets.forEach(function(o,i){
     var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];
     var usd=0,pesos=0;
     for(var mi=0;mi<=endMonth;mi++){usd+=dv(martStart+2+mi,o.u);pesos+=dv(martStart+2+mi,o.p);}
+    if(mart2027>0){for(var mi=0;mi<12;mi++){usd+=dv(mart2027+mi,o.u);pesos+=dv(mart2027+mi,o.p);}}
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
@@ -3958,7 +3972,7 @@ function renderResumenRange(containerId,mode){
     var ur=ugRows[ui];
     if(!ur||!ur[0])continue;
     var total=0;
-    for(var mi=0;mi<=endMonth;mi++){
+    for(var mi=0;mi<=colEnd;mi++){
       var ugVal=ur[2+mi];
       if(typeof ugVal==='number') total+=Math.abs(ugVal);
       else if(typeof ugVal==='string'){var neg=ugVal.includes('-')?-1:1;var cl=ugVal.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);if(!isNaN(n))total+=Math.abs(n*neg);}
@@ -3978,10 +3992,10 @@ function renderResumenRange(containerId,mode){
   cards.forEach(function(c){
     var invMonthly=invData[c.name]||[];
     var invVal=0;
-    for(var mi=0;mi<=endMonth;mi++){invVal+=(invMonthly[mi]||0);}
+    for(var mi=0;mi<=colEnd;mi++){invVal+=(invMonthly[mi]||0);}
     var cobrarKey=normName(c.name);
     var cobrarVal=0;
-    for(var ck in cobrarMonthly){if(normName(ck)===cobrarKey){var cm=cobrarMonthly[ck];for(var mi=0;mi<12;mi++){cobrarVal+=(cm[mi]||0);}break;}}
+    for(var ck in cobrarMonthly){if(normName(ck)===cobrarKey){var cm=cobrarMonthly[ck];for(var mi=0;mi<cobrarEnd;mi++){cobrarVal+=(cm[mi]||0);}break;}}
     var balVal=balData[c.name]||0;
     var ugv=uniGains[normName(c.name)]||0;
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;totBal+=balVal;

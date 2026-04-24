@@ -1619,11 +1619,10 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
-    window._debugDRaw=dRaw;
     // Extract KPI data from dashRaw before first render (avoids slow secondary API calls)
     try{
       var ganRows=[];var inGanSection=false;
-      for(var gi=79;gi<Math.min(115,dRaw.length);gi++){
+      for(var gi=50;gi<Math.min(130,dRaw.length);gi++){
         var gr=dRaw[gi];if(!gr)continue;var rawRow=gr.slice(2,16);if(!rawRow[0])continue;
         var gl=String(rawRow[0]).toLowerCase().trim();
         if(gl.includes('ganancias unificado en dolares')||gl.includes('ganancias unifiado en dolares')){inGanSection=true;continue;}
@@ -1633,7 +1632,7 @@ async function loadAllData(){
     }catch(e){window._uniGainsRows=null;}
     try{
       var cuSections={cobrarUSD:[],cobrarPesos:[],uniPesos:[],uniUSD:[]};var curSection=null;
-      for(var ci=118;ci<Math.min(204,dRaw.length);ci++){
+      for(var ci=60;ci<Math.min(210,dRaw.length);ci++){
         var dr=dRaw[ci];if(!dr)continue;var crow=dr.slice(2,28);if(!crow[0])continue;
         var lbl=String(crow[0]).toLowerCase().trim();
         if(lbl.includes('cuotas a cobrar en dolares')&&!lbl.includes('unific')&&!lbl.includes('total')){curSection='cobrarUSD';continue;}

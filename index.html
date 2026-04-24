@@ -1619,6 +1619,7 @@ async function loadAllData(){
     allData={resumen:r,vendedor:v,modulos:m,panel:p,vendedorGains:[]};
     dashRaw=dRaw;
     invRaw=iRaw;
+    window._debugDRaw=dRaw;
     // Extract KPI data from dashRaw before first render (avoids slow secondary API calls)
     try{
       var ganRows=[];var inGanSection=false;

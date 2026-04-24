@@ -854,7 +854,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="cm-btn" data-gyear="all" onclick="setGastosYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
     </div>
   </div>
-  <div id="gastosInvPanels" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px"></div>
+  <div id="gastosInvPanels" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px"></div>
 
   <!-- Card 3: INVERSIONES -->
   <h3 class="section-title" id="secInvBalance">Inversiones</h3>
@@ -2102,37 +2102,58 @@ function renderGastosInvPanels(){
   if(!d){container.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center;grid-column:1/-1">Cargando datos...</div>';return;}
   var yr=gastosYearFilter;
   var mShort=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var cmIdx=new Date().getMonth();
 
-  // Build two panels side by side
-  var panels=[
-    {title:'Gastos Operativos',icon:'💸',color:'var(--rosa)',data:d.gastosInv,label:d.labelGastos||'Gastos Operativos'},
-    {title:'Compromisos de Pagos',icon:'📋',color:'var(--cyan)',data:d.compromisos,label:d.labelComp||'Compromisos de Pagos'}
-  ];
-
-  var html='';
-  panels.forEach(function(panel){
+  function buildDetailPanel(title,icon,color,data){
     var total=0;
-    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+panel.color+'">Monto</th></tr></thead><tbody>';
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+color+'">Monto</th></tr></thead><tbody>';
     function addRows(suffix,key){
       for(var i=0;i<12;i++){
-        var v=panel.data[i][key];
-        total+=v;
-        tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+panel.color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
+        var v=data[i][key];total+=v;
+        tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
       }
     }
     if(yr==='2026'||yr==='all')addRows('26','m26');
     if(yr==='2027'||yr==='all')addRows('27','m27');
-    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+panel.color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
+    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+color+'">'+fmtUSD(Math.abs(total))+'</td></tr>';
     tbl+='</tbody></table>';
-
-    html+='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
-      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+panel.icon+'</span>'+panel.title+'</div>'
+    return '<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+icon+'</span>'+title+'</div>'
       +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
-      +'<div style="font-size:9px;font-weight:700;color:'+panel.color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total</div>'
-      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+panel.color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
-      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div>'
-      +'</div>';
-  });
+      +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+color+'">'+fmtUSD(Math.abs(total))+'</div></div>'
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
+  }
+
+  function buildRestaPagarPanel(title,icon,color,data){
+    var remaining=0;
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+color+'">A Pagar</th></tr></thead><tbody>';
+    function addRows(suffix,key,startFrom){
+      for(var i=0;i<12;i++){
+        var v=data[i][key];
+        if(i>=startFrom&&Math.abs(v)>0){
+          remaining+=v;
+          tbl+='<tr><td>'+mShort[i]+' '+suffix+'</td><td style="color:'+color+'">'+fmtUSD(Math.abs(v))+'</td></tr>';
+        }
+      }
+    }
+    if(yr==='2026'||yr==='all')addRows('26','m26',cmIdx);
+    if(yr==='2027'||yr==='all')addRows('27','m27',0);
+    tbl+='<tr class="total-row"><td>RESTA PAGAR</td><td style="color:'+color+'">'+fmtUSD(Math.abs(remaining))+'</td></tr>';
+    tbl+='</tbody></table>';
+    return '<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+icon+'</span>'+title+'</div>'
+      +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Resta Pagar</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+color+'">'+fmtUSD(Math.abs(remaining))+'</div></div>'
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
+  }
+
+  var html='';
+  html+=buildDetailPanel('Gastos Operativos','💸','var(--rosa)',d.gastosInv);
+  html+=buildRestaPagarPanel('Gastos Operativos a Pagar','💳','var(--gold)',d.gastosInv);
+  html+=buildDetailPanel('Compromisos de Pagos','📋','var(--cyan)',d.compromisos);
+  html+=buildRestaPagarPanel('Compromisos y Costos a Pagar','📊','var(--purple)',d.restaPagar);
   container.innerHTML=html;
 }
 

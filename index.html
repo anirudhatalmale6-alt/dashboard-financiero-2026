@@ -3763,6 +3763,9 @@ function renderKPIs(){
 function renderModuleKPIs(){
   var container=document.getElementById('kpiModulesRow');
   if(!container||!dashRaw||dashRaw.length<200)return;
+  // Remove any previously inserted totals row
+  var oldTot=container.nextElementSibling;
+  while(oldTot&&oldTot.getAttribute&&oldTot.getAttribute('data-totrow')==='kpiModulesRow'){var next=oldTot.nextElementSibling;oldTot.remove();oldTot=next;}
   if(filterVendedor!=='all'){container.style.display='none';return;}
   container.style.display='flex';
   container.innerHTML='';
@@ -3875,6 +3878,7 @@ function renderModuleKPIs(){
   // TOTAL KPI cards centered below the vendor columns
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
+  totRow.setAttribute('data-totrow','kpiModulesRow');
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'var(--rosa)'},
     {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'}

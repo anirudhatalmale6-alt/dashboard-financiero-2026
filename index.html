@@ -698,9 +698,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <h2 class="section-title" style="margin-bottom:20px" id="secResumenAnio"><span class="dot" style="background:var(--blue)"></span>Resumen General <em>Año 2026</em></h2>
+  <div id="kpiAnioCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:18px;max-width:700px;margin-left:auto;margin-right:auto;justify-content:center">
+    <div id="kpiAnioLeft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
+    <div id="kpiAnioRight" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
+  </div>
   <div id="kpiAnioRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
 
   <h2 class="section-title" style="margin-bottom:20px" id="secResumenHistorico"><span class="dot" style="background:var(--green)"></span>Resumen General <em>Acumulado 25/26/27</em></h2>
+  <div id="kpiHistoricoCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:18px;max-width:700px;margin-left:auto;margin-right:auto;justify-content:center">
+    <div id="kpiHistoricoLeft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
+    <div id="kpiHistoricoRight" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
+  </div>
   <div id="kpiHistoricoRow" style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:28px;overflow-x:auto;padding-bottom:4px"></div>
 
   <div class="kpis" id="kpis" style="display:none"></div>
@@ -730,9 +738,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="chart-title"><span class="dot" style="background:var(--gold)"></span>Ingresos y Gastos Mensuales</div>
       <div class="chart-subtitle">Ingresos vs Gastos (DASHBOARD) — 2026</div>
       <div class="chart-mode-toggle" id="chartModeToggle">
-        <button class="cm-btn active" data-mode="solo" onclick="setChartMode('solo')">Solo</button>
+        <button class="cm-btn" data-mode="solo" onclick="setChartMode('solo')">Solo</button>
         <button class="cm-btn" data-mode="uni_usd" onclick="setChartMode('uni_usd')">Unificado U$D</button>
-        <button class="cm-btn" data-mode="uni_pesos" onclick="setChartMode('uni_pesos')">Unificado $</button>
+        <button class="cm-btn active" data-mode="uni_pesos" onclick="setChartMode('uni_pesos')">Unificado $</button>
       </div>
       <div class="chart-container" style="height:200px"><canvas id="chartIngresos"></canvas></div>
     </div>
@@ -941,7 +949,7 @@ const VENDOR_COLORS={
 };
 let charts={};
 let currency='ambas';
-let chartIngresosMode='solo';
+let chartIngresosMode='uni_pesos';
 
 // Theme
 function isDark(){return document.documentElement.getAttribute('data-theme')!=='light'}
@@ -3902,18 +3910,33 @@ function renderResumenRange(containerId,mode){
   // Hide title and container when vendor filtered
   var titleId=containerId==='kpiAnioRow'?'secResumenAnio':'secResumenHistorico';
   var titleEl=document.getElementById(titleId);
-  if(filterVendedor!=='all'){container.style.display='none';if(titleEl)titleEl.style.display='none';return;}
+  var cardsRowId=containerId==='kpiAnioRow'?'kpiAnioCardsRow':'kpiHistoricoCardsRow';
+  var cardsRowEl=document.getElementById(cardsRowId);
+  if(filterVendedor!=='all'){container.style.display='none';if(titleEl)titleEl.style.display='none';if(cardsRowEl)cardsRowEl.style.display='none';return;}
   container.style.display='flex';
   if(titleEl)titleEl.style.display='';
+  if(cardsRowEl)cardsRowEl.style.display='flex';
   container.innerHTML='';
   // Remove any previously inserted totals row
   var oldTot=container.nextElementSibling;
   if(oldTot&&oldTot.getAttribute('data-totrow')===containerId)oldTot.remove();
 
   var cmIdx=new Date().getMonth();
-  var endMonth=mode==='anio'?cmIdx:11; // anio: 0..cmIdx, historico: 0..11 (for Balance section rows)
-  var colEnd=mode==='anio'?cmIdx:23; // for column-based data (gains, cuotas): 0..23 = 2026+2027
-  var cobrarEnd=mode==='anio'?12:24; // cuotas months to sum
+  var endMonth=mode==='anio'?cmIdx:11;
+  var colEnd=mode==='anio'?cmIdx:23;
+  var cobrarEnd=mode==='anio'?12:24;
+
+  var mesNamesUni=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var uniPesosTotal=0,uniUSDTotal=0;
+  for(var mi=0;mi<=endMonth;mi++){uniPesosTotal+=dashNum(3+mi,7);uniUSDTotal+=dashNum(3+mi,8);}
+  if(mode==='historico'){for(var mi2=15;mi2<=26&&dashRaw&&mi2<dashRaw.length;mi2++){var p27=dashNum(mi2,7),u27=dashNum(mi2,8);if(p27!==0||u27!==0){uniPesosTotal+=p27;uniUSDTotal+=u27;}}}
+  var topLabel=mode==='anio'?'Año 2026':'Acumulado';
+  var topSub=mode==='anio'?'Acumulado Ene-'+mesNamesUni[cmIdx].substr(0,3):'2025 + 2026 + 2027';
+  var leftId=containerId==='kpiAnioRow'?'kpiAnioLeft':'kpiHistoricoLeft';
+  var rightId=containerId==='kpiAnioRow'?'kpiAnioRight':'kpiHistoricoRight';
+  var lEl=document.getElementById(leftId),rEl=document.getElementById(rightId);
+  if(lEl){lEl.style.display='flex';lEl.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">'+topLabel+'</div><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">'+topSub+'</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">'+fmtPesos(uniPesosTotal)+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Ganancia Unificada Pesos</div><div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>';}
+  if(rEl){rEl.style.display='flex';rEl.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">'+topLabel+'</div><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">'+topSub+'</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">'+fmtUSD(uniUSDTotal)+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Ganancia Unificada U$D</div><div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>';}
 
   // Find Balance section dynamically
   var socStart=-1,martStart=-1;
@@ -4040,10 +4063,9 @@ function renderResumenRange(containerId,mode){
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow',containerId);
   var totCards=[
-    {label:'Ganancias',val:totUni,color:'var(--gold)'},
     {label:'Inversión',val:totInv,color:'var(--rosa)'},
     {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'},
-    {label:balLabel,val:totBal,color:'var(--purple)'}
+    {label:'Recupero de Inversión',val:totBal,color:'var(--purple)'}
   ];
   totCards.forEach(function(tc){
     var valColor=tc.val>=0?tc.color:'var(--red)';

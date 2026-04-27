@@ -3805,9 +3805,9 @@ function renderModuleKPIs(){
 
   function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
 
-  // Monthly data row for current month: socStart+2+cmIdx, martStart+2+cmIdx
-  var socMonRow=socStart+2+cmIdx;
-  var martMonRow=martStart+2+cmIdx;
+  // Monthly data row for current month: header rows are vendorName, Año2025, Año2026, then Enero=cmIdx0
+  var socMonRow=socStart+3+cmIdx;
+  var martMonRow=martStart+3+cmIdx;
 
   // Collect all 12 vendors into array for sorting
   var cards=[];
@@ -3978,14 +3978,14 @@ function renderResumenRange(containerId,mode){
   offsets.forEach(function(o,i){
     var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];
     var usd=0,pesos=0;
-    for(var mi=0;mi<=endMonth;mi++){usd+=dv(socStart+2+mi,o.u);pesos+=dv(socStart+2+mi,o.p);}
+    for(var mi=0;mi<=endMonth;mi++){usd+=dv(socStart+3+mi,o.u);pesos+=dv(socStart+3+mi,o.p);}
     if(soc2027>0){for(var mi=0;mi<12;mi++){usd+=dv(soc2027+mi,o.u);pesos+=dv(soc2027+mi,o.p);}}
     cards.push({name:name,icon:socIcons[i],usd:usd,pesos:pesos});
   });
   offsets.forEach(function(o,i){
     var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];
     var usd=0,pesos=0;
-    for(var mi=0;mi<=endMonth;mi++){usd+=dv(martStart+2+mi,o.u);pesos+=dv(martStart+2+mi,o.p);}
+    for(var mi=0;mi<=endMonth;mi++){usd+=dv(martStart+3+mi,o.u);pesos+=dv(martStart+3+mi,o.p);}
     if(mart2027>0){for(var mi=0;mi<12;mi++){usd+=dv(mart2027+mi,o.u);pesos+=dv(mart2027+mi,o.p);}}
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
@@ -4479,8 +4479,8 @@ function renderModules(){
   }
 
   // Find balance rows dynamically by scanning for "Balance" marker after monthly data
-  // Sociedades: starts at socStart, monthly data at socStart+2 (after Año header), balance after Total+Año2027+...
-  var socMonthStart=socStart+2; // Año 2026 row + 1
+  // Sociedades: starts at socStart, monthly data at socStart+3 (after vendor, Año2025, Año2026 headers)
+  var socMonthStart=socStart+3;
   var socBalStart=-1,martBalStart=-1;
   for(var bi=socStart;bi<dashRaw.length&&bi<socStart+50;bi++){
     if(dashRaw[bi]&&dashRaw[bi][2]==='Balance'){socBalStart=bi;break;}
@@ -4519,8 +4519,8 @@ function renderModules(){
   var mB={ganActualUnif:mBal.ganActualUnif>=0?mBal.ganActualUnif:-1,ganAnio:mBal.ganAnio>=0?mBal.ganAnio:(mBal.ganActual>=0?mBal.ganActual:196),ganUnif:mBal.ganUnif>=0?mBal.ganUnif:197,recupero:mBal.recupero>=0?mBal.recupero:-1,resta:mBal.resta>=0?mBal.resta:199,caja:mBal.caja>=0?mBal.caja:200,prom:mBal.promMart>=0?mBal.promMart:(mBal.promSoc>=0?mBal.promSoc:201)};
 
   // Monthly data start: first month row after "Año 2026"
-  var socMonStart=socStart+2; // socStart=vendor row, +1=Año2026, +2=Enero
-  var martMonStart=martStart+2;
+  var socMonStart=socStart+3;
+  var martMonStart=martStart+3;
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   // Read dynamic labels from dashRaw column C

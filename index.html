@@ -3860,25 +3860,25 @@ function renderModuleKPIs(){
     var ugv=uniGains[normName(c.name)]||0;
     // Accumulate totals
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;
-    var colHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
+    var colHtml='<div style="flex:1;min-width:95px;display:flex;flex-direction:column;gap:4px">';
     // Ganancia card
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
-    colHtml+='<div style="font-size:14px;margin-bottom:4px">'+c.icon+'</div>';
-    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos||0)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(ugv)+'</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">';
+    colHtml+='<div style="font-size:16px;margin-bottom:5px">'+c.icon+'</div>';
+    colHtml+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(c.usd)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:600;color:var(--blue);line-height:1.4">'+fmtPesos(c.pesos||0)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--gold);line-height:1.4;margin-top:3px">'+fmtUSD(ugv)+'</div>';
     colHtml+='</div>';
     // Investment card below
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
     // A COBRAR card
     var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;
@@ -4027,24 +4027,24 @@ function renderResumenRange(containerId,mode){
     var ugv=uniGains[normName(c.name)]||0;
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;totBal+=balVal;
 
-    var colHtml='<div style="flex:1;min-width:75px;display:flex;flex-direction:column;gap:4px">';
+    var colHtml='<div style="flex:1;min-width:95px;display:flex;flex-direction:column;gap:4px">';
     // Ganancia card
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center">';
-    colHtml+='<div style="font-size:14px;margin-bottom:4px">'+c.icon+'</div>';
-    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(c.usd)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue);line-height:1.3">'+fmtPesos(c.pesos||0)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.3;margin-top:2px">'+fmtUSD(ugv)+'</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">';
+    colHtml+='<div style="font-size:16px;margin-bottom:5px">'+c.icon+'</div>';
+    colHtml+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(c.usd)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:600;color:var(--blue);line-height:1.4">'+fmtPesos(c.pesos||0)+'</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--gold);line-height:1.4;margin-top:3px">'+fmtUSD(ugv)+'</div>';
     colHtml+='</div>';
     // Inversión card
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
     // Cuotas a Cobrar card
     var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
-    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
     colHtml+='</div>';
     // Balance de Inversión card

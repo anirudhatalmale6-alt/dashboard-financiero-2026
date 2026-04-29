@@ -3775,23 +3775,19 @@ function toggleBalCard(id){
   document.querySelectorAll('.module-card[data-zoomed="1"]').forEach(function(other){
     if(other.id!==id){
       other.setAttribute('data-zoomed','0');
-      other.style.position='';other.style.zIndex='';other.style.left='';other.style.top='';
-      other.style.width='';other.style.maxHeight='';other.style.overflowY='';
-      other.style.transform='';other.style.boxShadow='';other.style.borderColor='';
+      other.style.transform='';other.style.zIndex='';
+      other.style.boxShadow='';other.style.borderColor='';
     }
   });
   if(isZoomed){
     el.setAttribute('data-zoomed','0');
-    el.style.position='';el.style.zIndex='';el.style.left='';el.style.top='';
-    el.style.width='';el.style.maxHeight='';el.style.overflowY='';
-    el.style.transform='';el.style.boxShadow='';el.style.borderColor='';
+    el.style.transform='';el.style.zIndex='';
+    el.style.boxShadow='';el.style.borderColor='';
   }else{
     el.setAttribute('data-zoomed','1');
-    el.style.position='fixed';el.style.zIndex='9999';
-    el.style.left='5vw';el.style.top='3vh';
-    el.style.width='90vw';el.style.maxHeight='94vh';el.style.overflowY='auto';
-    el.style.transform='none';el.style.boxShadow='0 0 60px rgba(0,0,0,.7)';
-    el.style.borderColor='var(--gold)';el.style.background='var(--bg)';
+    el.style.transform='scale(1.35)';el.style.zIndex='9999';
+    el.style.boxShadow='0 0 60px rgba(0,0,0,.7)';
+    el.style.borderColor='var(--gold)';
   }
 }
 function toggleVendorCard(id){

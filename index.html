@@ -3768,6 +3768,21 @@ function renderKPIs(){
   }
 }
 
+function toggleBalCard(id){
+  var el=document.getElementById(id);if(!el)return;
+  var det=el.querySelector('.bal-detail');
+  var arrow=el.querySelector('.bal-arrow');
+  if(!det)return;
+  if(det.style.display==='none'){
+    det.style.display='block';
+    if(arrow)arrow.style.transform='rotate(180deg)';
+    el.style.borderColor='var(--gold)';
+  }else{
+    det.style.display='none';
+    if(arrow)arrow.style.transform='rotate(0deg)';
+    el.style.borderColor='';
+  }
+}
 function toggleVendorCard(id){
   var el=document.getElementById(id);if(!el)return;
   var exp=el.getAttribute('data-expanded')==='1';
@@ -4723,15 +4738,26 @@ function renderModules(){
     }
     tbodyHTML+='<tr class="total-row"><td>TOTAL</td><td style="color:var(--rosa)">'+fmtUSD(dtInv)+'</td><td style="color:var(--green)">'+fmtUSD(dtU)+'</td><td style="color:var(--blue)">'+fmtPesos(dtP)+'</td><td style="color:var(--gold)">'+fmtUSD(Math.round(dtUnif))+'</td></tr>';
 
+    var cardId='bal_'+v.name.replace(/[^a-zA-Z0-9]/g,'_');
     container.innerHTML+=`
-      <div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
-        <div class="module-name" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">${v.icon}</span>${v.name}</div>
-        <div style="margin:0">${kpiHTML}</div>
-        <div style="padding:0">
-          <table class="module-table" style="margin-top:0;border-radius:0">
-            <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th><th style="color:var(--gold)">Unif U$D</th></tr></thead>
-            <tbody>${tbodyHTML}</tbody>
-          </table>
+      <div id="${cardId}" class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
+        <div class="module-name" style="padding:16px 20px;margin-bottom:0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleBalCard('${cardId}')">
+          <span><span class="icon">${v.icon}</span>${v.name}</span>
+          <span style="display:flex;gap:16px;align-items:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--green)">${fmtUSD(ganAnioU)}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--blue)">${fmtPesos(ganAnioP)}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--gold)">${fmtUSD(ganAnioUnif)}</span>
+            <span class="bal-arrow" style="font-size:14px;color:var(--text3);transition:transform .3s">▼</span>
+          </span>
+        </div>
+        <div class="bal-detail" style="display:none">
+          <div style="margin:0">${kpiHTML}</div>
+          <div style="padding:0">
+            <table class="module-table" style="margin-top:0;border-radius:0">
+              <thead><tr><th>Mes</th><th style="color:var(--rosa)">Inversión</th><th>Ganancia U$D</th><th>Ganancia $</th><th style="color:var(--gold)">Unif U$D</th></tr></thead>
+              <tbody>${tbodyHTML}</tbody>
+            </table>
+          </div>
         </div>
       </div>`;
   }

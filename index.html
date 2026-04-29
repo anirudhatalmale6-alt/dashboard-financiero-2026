@@ -3771,39 +3771,19 @@ function renderKPIs(){
 function toggleBalCard(id){
   var el=document.getElementById(id);if(!el)return;
   var isZoomed=el.getAttribute('data-zoomed')==='1';
-  var overlay=document.getElementById('balOverlay');
-  // Close any other zoomed card
   document.querySelectorAll('.module-card[data-zoomed="1"]').forEach(function(other){
     if(other.id!==id){
       other.setAttribute('data-zoomed','0');
-      other.style.position='';other.style.zIndex='';other.style.left='';other.style.top='';
-      other.style.width='';other.style.height='';other.style.maxHeight='';
-      other.style.overflowY='';other.style.transform='';
-      other.style.boxShadow='';other.style.borderColor='';other.style.margin='';
+      other.style.transform='';other.style.zIndex='';other.style.borderColor='';
     }
   });
   if(isZoomed){
     el.setAttribute('data-zoomed','0');
-    el.style.position='';el.style.zIndex='';el.style.left='';el.style.top='';
-    el.style.width='';el.style.height='';el.style.maxHeight='';
-    el.style.overflowY='';el.style.transform='';
-    el.style.boxShadow='';el.style.borderColor='';el.style.margin='';
-    if(overlay)overlay.style.display='none';
+    el.style.transform='';el.style.zIndex='';el.style.borderColor='';
   }else{
-    if(!overlay){
-      overlay=document.createElement('div');overlay.id='balOverlay';
-      overlay.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.6);z-index:9998;display:none';
-      overlay.onclick=function(){document.querySelectorAll('.module-card[data-zoomed="1"]').forEach(function(c){toggleBalCard(c.id);});};
-      document.body.appendChild(overlay);
-    }
-    overlay.style.display='block';
     el.setAttribute('data-zoomed','1');
-    el.style.position='fixed';el.style.zIndex='9999';
-    el.style.left='2vw';el.style.top='2vh';
-    el.style.width='96vw';el.style.maxHeight='96vh';
-    el.style.overflowY='auto';el.style.margin='0';
-    el.style.boxShadow='0 0 80px rgba(0,0,0,.8)';
-    el.style.borderColor='var(--gold)';el.style.background='var(--bg)';
+    el.style.transform='scale(1.25)';el.style.zIndex='100';
+    el.style.borderColor='var(--gold)';
   }
 }
 function toggleVendorCard(id){
@@ -3818,7 +3798,7 @@ function toggleVendorCard(id){
       other.querySelectorAll('.vc-name').forEach(function(e){e.style.fontSize='11px';});
       other.querySelectorAll('.vc-usd').forEach(function(e){e.style.fontSize='14px';});
       other.querySelectorAll('.vc-pesos,.vc-uni').forEach(function(e){e.style.fontSize='13px';});
-      other.querySelectorAll('.vc-inv,.vc-cob').forEach(function(e){e.style.fontSize='12px';});
+      other.querySelectorAll('.vc-inv,.vc-cob,.vc-bal').forEach(function(e){e.style.fontSize='12px';});
       other.querySelectorAll('.vc-label').forEach(function(e){e.style.display='none';});
       other.style.borderColor='transparent';
     }
@@ -3830,7 +3810,7 @@ function toggleVendorCard(id){
     el.querySelectorAll('.vc-name').forEach(function(e){e.style.fontSize='11px';});
     el.querySelectorAll('.vc-usd').forEach(function(e){e.style.fontSize='14px';});
     el.querySelectorAll('.vc-pesos,.vc-uni').forEach(function(e){e.style.fontSize='13px';});
-    el.querySelectorAll('.vc-inv,.vc-cob').forEach(function(e){e.style.fontSize='12px';});
+    el.querySelectorAll('.vc-inv,.vc-cob,.vc-bal').forEach(function(e){e.style.fontSize='12px';});
     el.querySelectorAll('.vc-label').forEach(function(e){e.style.display='none';});
     el.style.borderColor='transparent';
   }else{
@@ -3840,7 +3820,7 @@ function toggleVendorCard(id){
     el.querySelectorAll('.vc-name').forEach(function(e){e.style.fontSize='15px';});
     el.querySelectorAll('.vc-usd').forEach(function(e){e.style.fontSize='22px';});
     el.querySelectorAll('.vc-pesos,.vc-uni').forEach(function(e){e.style.fontSize='19px';});
-    el.querySelectorAll('.vc-inv,.vc-cob').forEach(function(e){e.style.fontSize='17px';});
+    el.querySelectorAll('.vc-inv,.vc-cob,.vc-bal').forEach(function(e){e.style.fontSize='17px';});
     el.querySelectorAll('.vc-label').forEach(function(e){e.style.display='block';});
     el.style.borderColor='var(--gold)';
   }
@@ -4097,7 +4077,7 @@ function renderResumenRange(containerId,mode){
   var balData=window._vendorBalances||{};
 
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrar=0,totBal=0;
-  cards.forEach(function(c){
+  cards.forEach(function(c,ci){
     var invMonthly=invData[c.name]||[];
     var invVal=0;
     for(var mi=0;mi<=colEnd;mi++){invVal+=(invMonthly[mi]||0);}
@@ -4108,32 +4088,36 @@ function renderResumenRange(containerId,mode){
     var ugv=uniGains[normName(c.name)]||0;
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;totBal+=balVal;
 
-    var colHtml='<div style="flex:1;min-width:95px;display:flex;flex-direction:column;gap:4px">';
+    var cid=containerId+'_vc_'+ci;
+    var colHtml='<div id="'+cid+'" data-expanded="0" style="flex:1;min-width:95px;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:all .3s" onclick="toggleVendorCard(\''+cid+'\')">';
     // Ganancia card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">';
-    colHtml+='<div style="font-size:16px;margin-bottom:5px">'+c.icon+'</div>';
-    colHtml+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(c.usd)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:600;color:var(--blue);line-height:1.4">'+fmtPesos(c.pesos||0)+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--gold);line-height:1.4;margin-top:3px">'+fmtUSD(ugv)+'</div>';
+    colHtml+='<div class="vc-icon" style="font-size:16px;margin-bottom:5px">'+c.icon+'</div>';
+    colHtml+='<div class="vc-name" style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+c.name+'">'+c.name+'</div>';
+    colHtml+='<div class="vc-label" style="display:none;font-size:10px;color:var(--text3);margin-bottom:2px">Ganancia USD</div>';
+    colHtml+='<div class="vc-usd" style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(c.usd)+'</div>';
+    colHtml+='<div class="vc-label" style="display:none;font-size:10px;color:var(--text3);margin-top:4px;margin-bottom:2px">Ganancia Pesos</div>';
+    colHtml+='<div class="vc-pesos" style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:600;color:var(--blue);line-height:1.4">'+fmtPesos(c.pesos||0)+'</div>';
+    colHtml+='<div class="vc-label" style="display:none;font-size:10px;color:var(--text3);margin-top:4px;margin-bottom:2px">Unificado USD</div>';
+    colHtml+='<div class="vc-uni" style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:var(--gold);line-height:1.4;margin-top:3px">'+fmtUSD(ugv)+'</div>';
     colHtml+='</div>';
     // Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
+    colHtml+='<div class="vc-label-inv" style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div class="vc-inv" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
     // Cuotas a Cobrar card
     var cobrarColor=cobrarVal>=0?'var(--cyan)':'var(--red)';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
+    colHtml+='<div class="vc-label-cob" style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">A Cobrar</div>';
+    colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+cobrarColor+';line-height:1.3">'+fmtUSD(cobrarVal)+'</div>';
     colHtml+='</div>';
     // Balance de Inversión card
     var balColor=balVal>=0?'var(--purple)':'var(--red)';
     var balLabel=window._balanceLabel||'Balance de Inversión';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
     colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
-    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
+    colHtml+='<div class="vc-bal" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;

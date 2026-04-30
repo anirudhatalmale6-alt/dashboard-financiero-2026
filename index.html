@@ -675,7 +675,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="print-header" style="display:none"><strong>Dashboard Financiero Martin 2026</strong><span id="printDate"></span></div>
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
-  <h2 class="section-title" style="margin-bottom:20px"><span class="dot" style="background:var(--gold)"></span>Resumen General del <em>Mes Actual</em></h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px">
+    <h2 class="section-title" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Resumen General del <em id="mesActualLabel">Mes Actual</em></h2>
+    <select id="mesActualSelect" onchange="setMesActual(parseInt(this.value))" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;outline:none">
+      <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+      <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+      <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+      <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select>
+  </div>
   <div id="kpiCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:28px;max-width:700px;margin-left:auto;margin-right:auto;justify-content:center">
     <div id="kpiMonthLeft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
     <div id="kpiCardUSD" style="display:none"></div>
@@ -3571,6 +3579,30 @@ function toggleCompactRankingLayout(){
   }
 }
 
+var _mesActualIdx=new Date().getMonth();
+function setMesActual(idx){
+  _mesActualIdx=idx;
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var label=document.getElementById('mesActualLabel');
+  if(label) label.textContent=idx===new Date().getMonth()?'Mes Actual':meses[idx]+' 2026';
+  renderMesActualCards();
+  renderModuleKPIs();
+}
+function renderMesActualCards(){
+  if(!dashRaw||dashRaw.length<20)return;
+  var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var cmIdx=_mesActualIdx;
+  var cmName=cmNames[cmIdx];
+  var cmRow=3+cmIdx;
+  var cmUniUSD=dashNum(cmRow,8);
+  var cmUniPesos=dashNum(cmRow,7);
+  var mLeft=document.getElementById('kpiMonthLeft');
+  var mRight=document.getElementById('kpiMonthRight');
+  var mesLabel=cmIdx===new Date().getMonth()?'Mes Actual':cmName;
+  if(mLeft){mLeft.style.display='flex';mLeft.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">'+mesLabel+'</div><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">'+cmName+' 2026</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">'+fmtPesos(cmUniPesos)+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado Pesos</div><div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>';}
+  if(mRight){mRight.style.display='flex';mRight.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">'+mesLabel+'</div><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">'+cmName+' 2026</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">'+fmtUSD(cmUniUSD)+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado U$D</div><div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>';}
+}
+
 function renderKPIs(){
   const isUSD=currency==='usd'||currency==='ambas';
   const allMeses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -3732,38 +3764,10 @@ function renderKPIs(){
         ${kpiRow('Total Neto Pesos',fmtPesos(netoPesos),'','var(--gold)',true)}
       `;
     }
-    // Populate current month side indicators
-    var mLeft=document.getElementById('kpiMonthLeft');
-    var mRight=document.getElementById('kpiMonthRight');
-    if(mLeft||mRight){
-      var cmNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-      var cmIdx=new Date().getMonth();
-      var cmName=cmNames[cmIdx];
-      var cmRow=3+cmIdx;
-      var cmUniUSD=dashNum(cmRow,8);
-      var cmUniPesos=dashNum(cmRow,7);
-      var cmBrutoUSD=dashNum(cmRow,4);
-      var cmBrutoPesos=dashNum(cmRow,5);
-      if(mLeft){
-        mLeft.style.display='flex';
-        mLeft.innerHTML=`
-          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">Mes Actual</div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--blue);line-height:1.2">${fmtPesos(cmUniPesos)}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado Pesos</div>
-          <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
-      }
-      if(mRight){
-        mRight.style.display='flex';
-        mRight.innerHTML=`
-          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">Mes Actual</div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${cmName} 2026</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:800;color:var(--green);line-height:1.2">${fmtUSD(cmUniUSD)}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:4px">Unificado U$D</div>
-          <div style="width:40px;height:2px;background:var(--gold);margin:8px auto 0"></div>`;
-      }
-    }
-    // Render 12 module mini-KPIs for current month
+    // Set month dropdown to current month and render month cards
+    var mesSelect=document.getElementById('mesActualSelect');
+    if(mesSelect) mesSelect.value=String(_mesActualIdx);
+    renderMesActualCards();
     renderModuleKPIs();
   }
 }
@@ -3771,21 +3775,25 @@ function renderKPIs(){
 function toggleBalCard(id){
   var el=document.getElementById(id);if(!el)return;
   var isZoomed=el.getAttribute('data-zoomed')==='1';
+  var mainEl=document.querySelector('.main');
   document.querySelectorAll('.module-card[data-zoomed="1"]').forEach(function(other){
     if(other.id!==id){
       other.setAttribute('data-zoomed','0');
-      other.style.transform='';other.style.zIndex='';other.style.borderColor='';
+      other.style.transform='';other.style.zIndex='';other.style.borderColor='';other.style.transformOrigin='';
     }
   });
   if(isZoomed){
     el.setAttribute('data-zoomed','0');
     el.style.transform='';el.style.zIndex='';el.style.borderColor='';el.style.transformOrigin='';
+    if(mainEl) mainEl.style.overflowX='';
   }else{
     el.setAttribute('data-zoomed','1');
+    if(mainEl) mainEl.style.overflowX='visible';
     var rect=el.getBoundingClientRect();
     var vw=window.innerWidth;
-    if(rect.left<vw*0.3) el.style.transformOrigin='left center';
-    else if(rect.right>vw*0.7) el.style.transformOrigin='right center';
+    var expandX=rect.width*0.125;
+    if(rect.left-expandX<10) el.style.transformOrigin='0% center';
+    else if(rect.right+expandX>vw-10) el.style.transformOrigin='100% center';
     else el.style.transformOrigin='center center';
     el.style.transform='scale(1.25)';el.style.zIndex='100';
     el.style.borderColor='var(--gold)';
@@ -3842,8 +3850,7 @@ function renderModuleKPIs(){
   container.style.display='flex';
   container.innerHTML='';
 
-  // Find current month index
-  var cmIdx=new Date().getMonth();
+  var cmIdx=_mesActualIdx;
 
   // Find Balance section dynamically (same logic as renderModules)
   var socStart=-1,martStart=-1;

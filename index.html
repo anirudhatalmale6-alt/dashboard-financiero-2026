@@ -3779,11 +3779,17 @@ function toggleBalCard(id){
   });
   if(isZoomed){
     el.setAttribute('data-zoomed','0');
-    el.style.transform='';el.style.zIndex='';el.style.borderColor='';
+    el.style.transform='';el.style.zIndex='';el.style.borderColor='';el.style.transformOrigin='';
   }else{
     el.setAttribute('data-zoomed','1');
+    var rect=el.getBoundingClientRect();
+    var vw=window.innerWidth;
+    if(rect.left<vw*0.3) el.style.transformOrigin='left center';
+    else if(rect.right>vw*0.7) el.style.transformOrigin='right center';
+    else el.style.transformOrigin='center center';
     el.style.transform='scale(1.25)';el.style.zIndex='100';
     el.style.borderColor='var(--gold)';
+    setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
   }
 }
 function toggleVendorCard(id){
@@ -3823,6 +3829,7 @@ function toggleVendorCard(id){
     el.querySelectorAll('.vc-inv,.vc-cob,.vc-bal').forEach(function(e){e.style.fontSize='17px';});
     el.querySelectorAll('.vc-label').forEach(function(e){e.style.display='block';});
     el.style.borderColor='var(--gold)';
+    setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
   }
 }
 function renderModuleKPIs(){

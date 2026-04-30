@@ -3924,10 +3924,10 @@ function renderModuleKPIs(){
   cards.forEach(function(c,ci){
     var invMonthly=invData[c.name]||[];
     var invVal=invMonthly[cmIdx]||0;
-    var cobrarData=window._vendorCuotasCobrar||{};
+    var cobrarMonthlyData=window._vendorCuotasMonthly||{};
     var cobrarKey=normName(c.name);
     var cobrarVal=0;
-    for(var ck in cobrarData){if(normName(ck)===cobrarKey){cobrarVal=cobrarData[ck];break;}}
+    for(var ck in cobrarMonthlyData){if(normName(ck)===cobrarKey){var cm=cobrarMonthlyData[ck];cobrarVal=(cm&&cm[cmIdx])||0;break;}}
     var ugv=uniGains[normName(c.name)]||0;
     // Accumulate totals
     totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrar+=cobrarVal;

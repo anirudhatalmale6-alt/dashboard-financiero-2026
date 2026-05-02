@@ -830,7 +830,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
-    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares Vs Gastos Operativos y Compromisos de Pagos</em></h3>
+    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas en Dólares Vs Gastos Operativos y <em>Compromisos de Pagos</em></h3>
     <div id="cuotasYearToggleUnif" style="display:flex;gap:6px">
       <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
@@ -1365,28 +1365,26 @@ var CUOTAS_PANELS=[
   {key:'creditosDolares',vendor:'CRÉDITOS',label:'Créditos en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA CREDITOS EN DOLARES',color:'var(--purple)'},
   {key:'inversionesDolares',vendor:'INVERSIONES',label:'Inversiones en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'INVERSIONES CRONOGRAMA',color:'var(--green)'},
   // LINEA 314
-  {key:'linea314Dolares',vendor:'LINEA 314',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTA EN DOLARES',color:'var(--blue)'},
-  {key:'linea314Pesos',vendor:'LINEA 314',label:'Créditos y Pesos',icon:'$',currency:'$',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'CREDITOS Y VENTA EN PESOS',color:'var(--blue)'},
+  {key:'linea314Dolares',vendor:'LINEA 314',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'VENTAS EN DOLARES',color:'var(--blue)'},
+  {key:'linea314Pesos',vendor:'LINEA 314',label:'Créditos y Pesos',icon:'$',currency:'$',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw',tab:'CREDITOS Y VENTAS EN PESOS',color:'var(--blue)'},
   // OSITO
-  {key:'ositoDolares',vendor:'OSITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN DOLARES',color:'var(--orange)'},
-  {key:'ositoPesos',vendor:'OSITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTA EN PESOS',color:'var(--orange)'},
-  {key:'ositoCreditos',vendor:'OSITO',label:'Créditos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'CREDITOS',color:'var(--orange)'},
+  {key:'ositoDolares',vendor:'OSITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTAS EN DOLARES',color:'var(--orange)'},
+  {key:'ositoPesos',vendor:'OSITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1hrDYiUGbfwars04Wx_ZImVrrgLZKIzO6bDk-CxGeX-c',tab:'VENTAS EN PESOS',color:'var(--orange)'},
   // MELY
   {key:'melyDolares',vendor:'MELY',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN DOLARES',color:'var(--pink)'},
   {key:'melyPesos',vendor:'MELY',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'VENTA EN PESOS',color:'var(--pink)'},
   {key:'melyCreditos',vendor:'MELY',label:'Créditos',icon:'$',currency:'$',sheetId:'1_EJbkqX7Xp8ui8QCaNaIMv3SteKTApx9S7xWiCbn2Q4',tab:'CREDITOS',color:'var(--pink)'},
   // GONZA
-  {key:'gonzaDolares',vendor:'GONZA',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN DOLARES',color:'var(--teal)'},
-  {key:'gonzaPesos',vendor:'GONZA',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTA EN PESOS',color:'var(--teal)'},
+  {key:'gonzaDolares',vendor:'GONZA',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTAS EN DOLARES',color:'var(--teal)'},
+  {key:'gonzaPesos',vendor:'GONZA',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1DlKcy7lmn0Yr02fGrEUf8FiB-BEltv7eVw5nKuObTag',tab:'VENTAS EN PESOS',color:'var(--teal)'},
   // TOBIAS
-  {key:'tobiasDolares',vendor:'TOBIAS',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTA EN DOLARES',color:'var(--cyan)'},
-  {key:'tobiasVentasAnt',vendor:'TOBIAS',label:'Ventas Anteriores',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS ANTERIORES',color:'var(--cyan)'},
-  {key:'tobiasVentasDol',vendor:'TOBIAS',label:'Ventas en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS EN DOLARES',color:'var(--cyan)'},
+  {key:'tobiasDolares',vendor:'TOBIAS',label:'Ventas en Dólares',icon:'U$D',currency:'U$D',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS EN DOLARES',color:'var(--cyan)'},
+  {key:'tobiasPesos',vendor:'TOBIAS',label:'Ventas en Pesos',icon:'$',currency:'$',sheetId:'1_jCQkl2fBgsWVH326o6VBLq2tciSK6TZw43NCb0UT8Q',tab:'VENTAS EN PESOS',color:'var(--cyan)'},
   // TINO
-  {key:'tinoDolares',vendor:'TINO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTA DOLARES MARTIN',color:'var(--red)'},
+  {key:'tinoDolares',vendor:'TINO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1KBusYiaUuD4-rQ-JHTTv6kaH27xHyC4p6IFyRoScimM',tab:'VENTAS DOLARES MARTIN',color:'var(--red)'},
   // PATO (PATITO)
-  {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN DOLARES',color:'#e879f9'},
-  {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTA EN PESOS',color:'#e879f9'},
+  {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN DOLARES',color:'#e879f9'},
+  {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN PESOS',color:'#e879f9'},
   // MODULO 1
   {key:'modulo1Dolares',vendor:'MÓDULO 1',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN DOLARES',color:'#94a3b8'},
   {key:'modulo1Pesos',vendor:'MÓDULO 1',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN PESOS',color:'#94a3b8'},
@@ -4142,7 +4140,7 @@ function renderResumenRange(containerId,mode){
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow',containerId);
   var totCards=[
-    {label:'Inversión',val:totInv,color:'var(--rosa)'},
+    {label:'Inversión',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar',val:totCobrar,color:'var(--cyan)'},
     {label:'Recupero de Inversión',val:totBal,color:'var(--purple)'}
   ];
@@ -4941,7 +4939,7 @@ function extractCuotasData(vendorFilter,useEmpresas){
   var compromisosPagos=[];
   if(dashRaw){
     var compRow=-1;
-    for(var ci=280;ci<dashRaw.length;ci++){
+    for(var ci=180;ci<dashRaw.length;ci++){
       if(!dashRaw[ci])continue;
       var cv=dashRaw[ci][2];
       if(cv&&typeof cv==='string'&&cv.indexOf('Total de Compromisos')>=0){compRow=ci;break;}
@@ -5096,7 +5094,7 @@ function renderCuotasCardsUnif(){
   container.innerHTML='';
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasUnif');
-  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares Vs Gastos Operativos y Compromisos de Pagos</em>'+(vLabel||'');}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas en Dólares Vs Gastos Operativos y <em>Compromisos de Pagos</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
   const compPagos=q.compromisosPagos||[];
   let totalCobrar=0,totalPagar=0,totalComp=0;

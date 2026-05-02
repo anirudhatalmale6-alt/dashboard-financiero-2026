@@ -4938,7 +4938,22 @@ function extractCuotasData(vendorFilter,useEmpresas){
     cobrarUniUSD.push(useUniUSDIdx>=0?getVal(uniD[useUniUSDIdx],m):0);
     cobrarUniPesos.push(useUniPesosIdx>=0?getVal(uniP[useUniPesosIdx],m):0);
   }
-  return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos};
+  var compromisosPagos=[];
+  if(dashRaw){
+    var compRow=-1;
+    for(var ci=280;ci<dashRaw.length;ci++){
+      if(!dashRaw[ci])continue;
+      var cv=dashRaw[ci][2];
+      if(cv&&typeof cv==='string'&&cv.indexOf('Total de Compromisos')>=0){compRow=ci;break;}
+    }
+    if(compRow>=0){
+      for(var m=0;m<12;m++){
+        var cv=dashRaw[compRow]?dashRaw[compRow][4+m]:0;
+        compromisosPagos.push(typeof cv==='number'?Math.abs(Math.round(cv)):pv(cv));
+      }
+    }else{for(var m=0;m<12;m++)compromisosPagos.push(0);}
+  }else{for(var m=0;m<12;m++)compromisosPagos.push(0);}
+  return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos,compromisosPagos:compromisosPagos};
 }
 
 function renderChartCuotasUSD(){
@@ -5083,13 +5098,19 @@ function renderCuotasCardsUnif(){
   var secTitle=document.getElementById('secCuotasUnif');
   if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar Unificadas en Dólares Vs Gastos Operativos y Compromisos de Pagos</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
-  let totalCobrar=0,totalPagar=0;
+  const compPagos=q.compromisosPagos||[];
+  let totalCobrar=0,totalPagar=0,totalComp=0;
   q.labels.forEach((mes,i)=>{
     const cobrarUnif=(q.cobrarUniUSD&&q.cobrarUniUSD[i])?q.cobrarUniUSD[i]:Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/blue));
     const pagarUnif=Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/blue));
+    const compVal=compPagos[i]||0;
     totalCobrar+=cobrarUnif;
     totalPagar+=pagarUnif;
+    totalComp+=compVal;
     const pct=cobrarUnif>0&&pagarUnif>0?Math.min(100,Math.round((cobrarUnif/(cobrarUnif+pagarUnif))*100)):cobrarUnif>0?100:0;
+    const compHTML=isVendor||!compVal?'':`
+        <span class="lbl" style="color:#fb923c">Compromisos de Pagos</span>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#fb923c;line-height:1.4">-${fmtUSD(compVal)}</div>`;
     const pagarHTML=isVendor?'':`
         <span class="lbl">A Pagar</span>
         <div class="pagar">${pagarUnif>0?'-':''}${fmtUSD(pagarUnif)}</div>`;
@@ -5098,12 +5119,16 @@ function renderCuotasCardsUnif(){
         <div class="mes">${mes}</div>
         <span class="lbl">A Cobrar Unif</span>
         <div class="cobrar">${fmtUSD(cobrarUnif)}</div>
+        ${compHTML}
         ${pagarHTML}
         <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:pct}%"></div></div>
         ${isVendor?'':`<div class="cuota-pct">Cobro: ${pct}%</div>`}
       </div>`;
   });
   const totalPct=totalCobrar>0&&totalPagar>0?Math.min(100,Math.round((totalCobrar/(totalCobrar+totalPagar))*100)):totalCobrar>0?100:0;
+  const totalCompHTML=isVendor||!totalComp?'':`
+      <span class="lbl" style="color:#fb923c">Total Compromisos</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#fb923c;line-height:1.4">-${fmtUSD(totalComp)}</div>`;
   const totalPagarHTML=isVendor?'':`
       <span class="lbl">Total A Pagar</span>
       <div class="pagar">${totalPagar>0?'-':''}${fmtUSD(totalPagar)}</div>`;
@@ -5112,6 +5137,7 @@ function renderCuotasCardsUnif(){
       <div class="mes">Acumulado Anual</div>
       <span class="lbl">Total A Cobrar Unif</span>
       <div class="cobrar">${fmtUSD(totalCobrar)}</div>
+      ${totalCompHTML}
       ${totalPagarHTML}
       <div class="cuota-bar"><div class="cuota-fill" style="width:${isVendor?100:totalPct}%"></div></div>
       ${isVendor?'':`<div class="cuota-pct">Cobro: ${totalPct}%</div>`}
@@ -5124,6 +5150,7 @@ function renderChartCuotasUnif(){
   const q=extractCuotasData(filterVendedor);
   const cobrarUnif=q.cobrarUniUSD||q.labels.map((_,i)=>Math.round((q.cobrarUSD[i]||0)+((q.cobrarPesos[i]||0)/(dolarBlue||1300))));
   const pagarUnif=q.labels.map((_,i)=>Math.round((q.pagarUSD[i]||0)+((q.pagarPesos[i]||0)/(dolarBlue||1300))));
+  const compPagos=q.compromisosPagos||[];
   if(charts.cuotasUnif)charts.cuotasUnif.destroy();
   var canvas=document.getElementById('chartCuotasUnif');
   if(!canvas)return;
@@ -5135,6 +5162,7 @@ function renderChartCuotasUnif(){
         {label:'Cuotas Unificadas U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]:[
         {label:'Cuotas a Cobrar Unif U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
+        {label:'Compromisos de Pagos U$D',data:compPagos,backgroundColor:'rgba(251,146,60,.6)',borderColor:'#fb923c',borderWidth:1,borderRadius:6,barPercentage:.5},
         {label:'A Pagar Unif U$D',data:pagarUnif,backgroundColor:'rgba(248,113,113,.6)',borderColor:'#f87171',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]
     },

@@ -3982,8 +3982,6 @@ function renderModuleKPIs(){
   totRow.setAttribute('data-totrow','kpiModulesRow');
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
-    {label:'Cuotas a Cobrar Mes $',val:totCobrarPesos,color:'var(--blue)',fmt:'pesos'},
-    {label:'Cuotas a Cobrar Mes U$D',val:totCobrarUSD,color:'var(--green)'},
     {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'}
   ];
   totCards.forEach(function(tc){
@@ -4166,8 +4164,6 @@ function renderResumenRange(containerId,mode){
   totRow.setAttribute('data-totrow',containerId);
   var totCards=[
     {label:'Inversión',val:totInv,color:'#cbd5e1'},
-    {label:'Cuotas a Cobrar Total $',val:totCobrarPesos,color:'var(--blue)',fmt:'pesos'},
-    {label:'Cuotas a Cobrar Total U$D',val:totCobrarUSD,color:'var(--green)'},
     {label:'Cuotas a Cobrar Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
     {label:'Recupero de Inversión',val:totBal,color:'var(--purple)'}
   ];

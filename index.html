@@ -1728,49 +1728,24 @@ async function loadAllData(){
     rebuildModulosFromDashboard(dRaw);
     populateFilters();
     renderAll();
-    // Vendor names already extracted from dashRaw above
-    // Fetch monthly investment data from individual vendor tabs
+    // Fetch monthly investment data from DASHBOARD MARTIN section "Inversiones Mensuales de cada Vendedor / Módulo UNIFICADO EN DOLARES"
     try{
-      var invTabs=[
-        {name:'Gonza',tab:'Gonza',range:'B4:G62'},
-        {name:'Osito S.r.l.',tab:'Osito S.r.l.',range:'B66:J118'},
-        {name:'Mely',tab:'Mely',range:'B91:I149'},
-        {name:'Tobias',tab:'Tobias',range:'B4:G56'},
-        {name:'Tino',tab:'Tino',range:'B4:G56'},
-        {name:'Linea 314',tab:'Linea 314',range:'B6:H54'},
-        {name:'Patito S.A.',tab:'Patito S.A.',range:'B110:F158'},
-        {name:'Creditos',tab:'VENTA CREDITOS EN PESOS',sql:'select AP, AT where AP is not null limit 15'},
-        {name:'Inversiones',tab:'_SKIP_',skip:true},
-        {name:'Tecno',tab:'VENTA TECNO EN DOLARES',sql:'select AW, BC where AW is not null limit 15'}
-      ];
-      // Fetch sequentially to avoid gviz rate limiting
-      var invResults=[];
-      for(var ii=0;ii<invTabs.length;ii++){
-        try{
-          var t=invTabs[ii];
-          if(t.skip) invResults.push(null);
-          else if(t.sql) invResults.push(await fetchSheetSQL(t.tab,t.sql));
-          else invResults.push(await fetchSheetRange(t.tab,t.range));
-        }catch(e){invResults.push(null);}
-      }
+      var invRows=await fetchSheetRange('DASHBOARD MARTIN','C326:P335');
       window._vendorInvestments={};
-      var MN={ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
       function parseInvVal(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
-      for(var ti=0;ti<invResults.length;ti++){
-        var rows=invResults[ti];
-        var vn=invTabs[ti].name;
-        if(!rows){window._vendorInvestments[vn]=[0,0,0,0,0,0,0,0,0,0,0,0];continue;}
-        var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
-        var seen={};
-        for(var ri=0;ri<rows.length;ri++){
-          if(!rows[ri]||!rows[ri][0])continue;
-          var lb=String(rows[ri][0]).trim().toUpperCase();
-          if(lb in MN && !(lb in seen)){
-            seen[lb]=1;
-            monthly[MN[lb]]=parseInvVal(rows[ri][rows[ri].length-1]);
+      if(invRows){
+        for(var ri=0;ri<invRows.length;ri++){
+          var row=invRows[ri];
+          if(!row||!row[0])continue;
+          var vn=String(row[0]).trim();
+          if(!vn||vn.toLowerCase().indexOf('inversiones mensuales')>=0)continue;
+          var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
+          for(var mi=0;mi<12;mi++){
+            monthly[mi]=parseInvVal(row[mi+2]);
           }
+          var vnKey=vn.toLowerCase().replace(/\.+$/,'').trim();
+          window._vendorInvestments[vnKey]=monthly;
         }
-        window._vendorInvestments[vn]=monthly;
       }
     }catch(e){window._invError=e.message||String(e);}
     // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
@@ -3937,7 +3912,7 @@ function renderModuleKPIs(){
   // Render sorted cards: ganancia card + investment card below each + accumulate totals
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0;
   cards.forEach(function(c,ci){
-    var invMonthly=invData[c.name]||[];
+    var invMonthly=invData[normName(c.name)]||[];
     var invVal=invMonthly[cmIdx]||0;
     var cobrarKey=normName(c.name);
     var cobPesos=0,cobUSD=0,cobUnif=0;
@@ -4109,7 +4084,7 @@ function renderResumenRange(containerId,mode){
 
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0,totBal=0;
   cards.forEach(function(c,ci){
-    var invMonthly=invData[c.name]||[];
+    var invMonthly=invData[normName(c.name)]||[];
     var invVal=0;
     for(var mi=0;mi<=colEnd;mi++){invVal+=(invMonthly[mi]||0);}
     var cobrarKey=normName(c.name);
@@ -4677,7 +4652,8 @@ function renderModules(){
     var curMi=new Date().getMonth(); // 0=Ene
     var ganMesActualU=dv(monthStart+curMi,v.uCol);
     var ganMesActualP=dv(monthStart+curMi,v.pCol);
-    var invData=window._vendorInvestments&&window._vendorInvestments[v.name]?window._vendorInvestments[v.name]:[];
+    var vnNorm=v.name.toLowerCase().replace(/\.+$/,'').trim();
+    var invData=window._vendorInvestments&&window._vendorInvestments[vnNorm]?window._vendorInvestments[vnNorm]:[];
     var invMesActual=invData[curMi]||0;
 
     // Cuotas lookups per vendor

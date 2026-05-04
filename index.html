@@ -1730,20 +1730,25 @@ async function loadAllData(){
     renderAll();
     // Fetch monthly investment data from DASHBOARD MARTIN section "Inversiones Mensuales de cada Vendedor / Módulo UNIFICADO EN DOLARES"
     try{
-      var invRows=await fetchSheetRange('DASHBOARD MARTIN','C318:P340');
+      var invRows=await fetchSheetRange('DASHBOARD MARTIN','C310:P345');
       window._vendorInvestments={};
       function parseInvVal(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
       if(invRows){
+        var invStarted=false;
         for(var ri=0;ri<invRows.length;ri++){
           var row=invRows[ri];
           if(!row||!row[0])continue;
           var vn=String(row[0]).trim();
-          if(!vn||vn.toLowerCase().indexOf('inversiones mensuales')>=0)continue;
+          if(!vn)continue;
+          var vnl=vn.toLowerCase();
+          if(vnl.indexOf('inversiones mensuales')>=0){invStarted=true;continue;}
+          if(!invStarted)continue;
+          if(vnl==='total'||vnl.indexOf('total ')>=0)break;
           var monthly=[0,0,0,0,0,0,0,0,0,0,0,0];
           for(var mi=0;mi<12;mi++){
             monthly[mi]=parseInvVal(row[mi+2]);
           }
-          var vnKey=vn.toLowerCase().replace(/\.+$/,'').trim();
+          var vnKey=vnl.replace(/\.+$/,'').trim();
           window._vendorInvestments[vnKey]=monthly;
         }
       }

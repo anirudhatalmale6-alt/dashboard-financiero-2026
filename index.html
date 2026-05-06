@@ -3960,9 +3960,14 @@ function renderModuleKPIs(){
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow','kpiModulesRow');
+  var compRow=-1;
+  for(var ci=200;ci<dashRaw.length;ci++){if(dashRaw[ci]&&typeof dashRaw[ci][2]==='string'&&dashRaw[ci][2].toLowerCase().indexOf('total de compromisos')>=0){compRow=ci;break;}}
+  var compVal=0;
+  if(compRow>=0){var cv=dashRaw[compRow][4+cmIdx];compVal=typeof cv==='number'?cv:0;}
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
-    {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'}
+    {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
+    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'}
   ];
   totCards.forEach(function(tc){
     var valColor=tc.val>=0?tc.color:'var(--red)';
@@ -4142,9 +4147,14 @@ function renderResumenRange(containerId,mode){
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow',containerId);
+  var compRow=-1;
+  for(var ci=200;ci<dashRaw.length;ci++){if(dashRaw[ci]&&typeof dashRaw[ci][2]==='string'&&dashRaw[ci][2].toLowerCase().indexOf('total de compromisos')>=0){compRow=ci;break;}}
+  var compVal=0;
+  if(compRow>=0){for(var mi=0;mi<=endMonth;mi++){var cv=dashRaw[compRow][4+mi];if(typeof cv==='number')compVal+=cv;}}
   var totCards=[
     {label:'Inversión',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
+    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'},
     {label:'Recupero de Inversión',val:totBal,color:'var(--purple)'}
   ];
   totCards.forEach(function(tc){

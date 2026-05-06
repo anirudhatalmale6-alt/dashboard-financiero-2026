@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Financiero 2026 — Glassmorphism</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0c29 0%, #1a1145 30%, #302b63 60%, #24243e 100%);
+    color: #e2e8f0;
+    line-height: 1.5;
+    padding: 28px 36px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Floating background orbs */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -15%;
+    left: -5%;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glass effect base */
+  .glass {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  .glass:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+  }
+
+  /* Layout */
+  .container { position: relative; z-index: 1; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.3px;
+  }
+  .header .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  .header .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 8px #22d3ee;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px #22d3ee; }
+    50% { opacity: 0.5; box-shadow: 0 0 16px #22d3ee; }
+  }
+
+  /* KPI Row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+  }
+  .kpi-card.cyan::before {
+    background: linear-gradient(90deg, #06b6d4, #22d3ee);
+    box-shadow: 0 0 20px rgba(6,182,212,0.4);
+  }
+  .kpi-card.purple::before {
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    box-shadow: 0 0 20px rgba(139,92,246,0.4);
+  }
+  .kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .kpi-value.cyan-text {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .kpi-value.purple-text {
+    background: linear-gradient(135deg, #8b5cf6, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .kpi-change {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    color: #34d399;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 14px;
+  }
+
+  /* Vendor Cards */
+  .vendor-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .vendor-card {
+    padding: 18px;
+    text-align: center;
+    position: relative;
+    cursor: default;
+  }
+  .vendor-card:hover {
+    border-color: rgba(139,92,246,0.4);
+    box-shadow: 0 0 24px rgba(139,92,246,0.15), inset 0 0 20px rgba(139,92,246,0.05);
+  }
+  .vendor-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+  }
+  .vendor-amount {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .vendor-amount.v1 { color: #22d3ee; }
+  .vendor-amount.v2 { color: #a78bfa; }
+  .vendor-amount.v3 { color: #f472b6; }
+  .vendor-amount.v4 { color: #34d399; }
+  .vendor-amount.v5 { color: rgba(255,255,255,0.3); }
+  .vendor-unit {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+  .vendor-detail {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .vendor-detail-item {
+    text-align: center;
+  }
+  .vendor-detail-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  .vendor-detail-lbl {
+    font-size: 9px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Two Column */
+  .two-col {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 18px;
+  }
+
+  /* Table */
+  .table-wrap {
+    padding: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    text-align: left;
+    padding: 0 14px 14px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  thead th:not(:first-child) { text-align: right; }
+  tbody td {
+    font-size: 14px;
+    padding: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-variant-numeric: tabular-nums;
+    color: rgba(255,255,255,0.8);
+  }
+  tbody td:not(:first-child) {
+    text-align: right;
+    font-weight: 600;
+  }
+  tbody tr:hover {
+    background: rgba(255,255,255,0.03);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .total-row td {
+    font-weight: 800;
+    color: #e2e8f0;
+    border-top: 1px solid rgba(139,92,246,0.3);
+    border-bottom: none;
+    padding-top: 16px;
+  }
+  .total-row td:nth-child(2) { color: #22d3ee; }
+  .total-row td:nth-child(3) { color: #a78bfa; }
+  .total-row td:nth-child(4) { color: #f472b6; }
+
+  /* Chart area */
+  .chart-wrap {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1;
+    min-height: 140px;
+    padding-bottom: 8px;
+  }
+  .chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .chart-bar {
+    width: 100%;
+    max-width: 32px;
+    border-radius: 6px 6px 0 0;
+    position: relative;
+  }
+  .chart-bar.b1 {
+    background: linear-gradient(180deg, #06b6d4, #0891b2);
+    box-shadow: 0 0 12px rgba(6,182,212,0.3);
+  }
+  .chart-bar.b2 {
+    background: linear-gradient(180deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 0 12px rgba(139,92,246,0.3);
+  }
+  .chart-bar.b3 {
+    background: linear-gradient(180deg, #ec4899, #db2777);
+    box-shadow: 0 0 12px rgba(236,72,153,0.3);
+  }
+  .chart-bar.b4 {
+    background: linear-gradient(180deg, #34d399, #059669);
+    box-shadow: 0 0 12px rgba(52,211,153,0.3);
+  }
+  .chart-bar.b5 {
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+    box-shadow: 0 0 12px rgba(245,158,11,0.3);
+  }
+  .chart-lbl {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 500;
+  }
+
+  .chart-placeholder {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 10px;
+  }
+  .chart-placeholder span {
+    color: rgba(255,255,255,0.25);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Glow border on focus */
+  @keyframes borderGlow {
+    0%, 100% { border-color: rgba(139,92,246,0.2); }
+    50% { border-color: rgba(6,182,212,0.3); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Panel Financiero 2026</h1>
+    <div class="status">
+      <div class="pulse"></div>
+      <span>Actualizado en tiempo real</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card glass cyan">
+      <div class="kpi-label">Ganancia Unificada Pesos</div>
+      <div class="kpi-value cyan-text">$ 9.574.938</div>
+      <div class="kpi-change">&#9650; +12,3% vs mes anterior</div>
+    </div>
+    <div class="kpi-card glass purple">
+      <div class="kpi-label">Ganancia Unificada U$D</div>
+      <div class="kpi-value purple-text">U$D 6.791</div>
+      <div class="kpi-change">&#9650; +8,7% vs mes anterior</div>
+    </div>
+  </div>
+
+  <!-- Vendor Cards -->
+  <div class="section-title">Vendedores</div>
+  <div class="vendor-row">
+    <div class="vendor-card glass">
+      <div class="vendor-name">Tecno</div>
+      <div class="vendor-amount v1">2.429</div>
+      <div class="vendor-unit">U$D Unificado</div>
+      <div class="vendor-detail">
+        <div class="vendor-detail-item"><div class="vendor-detail-val">3.427k</div><div class="vendor-detail-lbl">Pesos</div></div>
+        <div class="vendor-detail-item"><div class="vendor-detail-val">2.429</div><div class="vendor-detail-lbl">USD</div></div>
+      </div>
+    </div>
+    <div class="vendor-card glass">
+      <div class="vendor-name">Linea 314</div>
+      <div class="vendor-amount v2">1.747</div>
+      <div class="vendor-unit">U$D Unificado</div>
+      <div class="vendor-detail">
+        <div class="vendor-detail-item"><div class="vendor-detail-val">2.465k</div><div class="vendor-detail-lbl">Pesos</div></div>
+        <div class="vendor-detail-item"><div class="vendor-detail-val">1.747</div><div class="vendor-detail-lbl">USD</div></div>
+      </div>
+    </div>
+    <div class="vendor-card glass">
+      <div class="vendor-name">Mely</div>
+      <div class="vendor-amount v3">775</div>
+      <div class="vendor-unit">U$D Unificado</div>
+      <div class="vendor-detail">
+        <div class="vendor-detail-item"><div class="vendor-detail-val">1.094k</div><div class="vendor-detail-lbl">Pesos</div></div>
+        <div class="vendor-detail-item"><div class="vendor-detail-val">775</div><div class="vendor-detail-lbl">USD</div></div>
+      </div>
+    </div>
+    <div class="vendor-card glass">
+      <div class="vendor-name">Inversiones</div>
+      <div class="vendor-amount v4">1.797</div>
+      <div class="vendor-unit">U$D Unificado</div>
+      <div class="vendor-detail">
+        <div class="vendor-detail-item"><div class="vendor-detail-val">2.536k</div><div class="vendor-detail-lbl">Pesos</div></div>
+        <div class="vendor-detail-item"><div class="vendor-detail-val">1.797</div><div class="vendor-detail-lbl">USD</div></div>
+      </div>
+    </div>
+    <div class="vendor-card glass">
+      <div class="vendor-name">Creditos</div>
+      <div class="vendor-amount v5">0</div>
+      <div class="vendor-unit">U$D Unificado</div>
+      <div class="vendor-detail">
+        <div class="vendor-detail-item"><div class="vendor-detail-val">53k</div><div class="vendor-detail-lbl">Pesos</div></div>
+        <div class="vendor-detail-item"><div class="vendor-detail-val">0</div><div class="vendor-detail-lbl">USD</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table + Chart -->
+  <div class="two-col">
+    <div class="glass table-wrap">
+      <div class="section-title" style="margin-bottom:16px;">Ingresos Mensuales</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Ventas U$D</th>
+            <th>Ventas $</th>
+            <th>Unificado U$D</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Enero</td>
+            <td>1.245</td>
+            <td>1.757.050</td>
+            <td>1.245</td>
+          </tr>
+          <tr>
+            <td>Febrero</td>
+            <td>1.532</td>
+            <td>2.161.640</td>
+            <td>1.532</td>
+          </tr>
+          <tr>
+            <td>Marzo</td>
+            <td>1.187</td>
+            <td>1.675.230</td>
+            <td>1.187</td>
+          </tr>
+          <tr>
+            <td>Abril</td>
+            <td>1.489</td>
+            <td>2.100.990</td>
+            <td>1.489</td>
+          </tr>
+          <tr>
+            <td>Mayo</td>
+            <td>1.338</td>
+            <td>1.880.028</td>
+            <td>1.338</td>
+          </tr>
+          <tr class="total-row">
+            <td>Total</td>
+            <td>6.791</td>
+            <td>9.574.938</td>
+            <td>6.791</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="glass chart-wrap">
+      <div class="section-title" style="margin-bottom:12px;">Ventas por Mes</div>
+      <div class="chart-bars">
+        <div class="chart-col">
+          <div class="chart-bar b1" style="height:55%"></div>
+          <span class="chart-lbl">Ene</span>
+        </div>
+        <div class="chart-col">
+          <div class="chart-bar b2" style="height:72%"></div>
+          <span class="chart-lbl">Feb</span>
+        </div>
+        <div class="chart-col">
+          <div class="chart-bar b3" style="height:48%"></div>
+          <span class="chart-lbl">Mar</span>
+        </div>
+        <div class="chart-col">
+          <div class="chart-bar b4" style="height:68%"></div>
+          <span class="chart-lbl">Abr</span>
+        </div>
+        <div class="chart-col">
+          <div class="chart-bar b5" style="height:60%"></div>
+          <span class="chart-lbl">May</span>
+        </div>
+      </div>
+      <div class="chart-placeholder">
+        <span>Area para graficos adicionales (torta / linea)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

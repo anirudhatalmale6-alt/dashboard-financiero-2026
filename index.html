@@ -3915,7 +3915,7 @@ function renderModuleKPIs(){
   var invData=window._vendorInvestments||{};
 
   // Render sorted cards: ganancia card + investment card below each + accumulate totals
-  var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0;
+  var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0,totRecupero=0;
   cards.forEach(function(c,ci){
     var invMonthly=invData[normName(c.name)]||[];
     var invVal=invMonthly[cmIdx]||0;
@@ -3926,8 +3926,9 @@ function renderModuleKPIs(){
     cobUSD=getMonth1(window._vendorCobrarUSDMonthly||{},cmIdx);
     cobUnif=getMonth1(window._vendorCuotasMonthly||{},cmIdx);
     var ugv=uniGains[normName(c.name)]||0;
+    var recuperoVal=0;var _vb=window._vendorBalances||{};for(var bk in _vb){if(normName(bk)===normName(c.name)){recuperoVal=_vb[bk];break;}}
     // Accumulate totals
-    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrarPesos+=cobPesos;totCobrarUSD+=cobUSD;totCobrarUnif+=cobUnif;
+    totUSD+=c.usd;totPesos+=c.pesos||0;totUni+=ugv;totInv+=invVal;totCobrarPesos+=cobPesos;totCobrarUSD+=cobUSD;totCobrarUnif+=cobUnif;totRecupero+=recuperoVal;
     var cid='vcard_'+ci;
     var colHtml='<div id="'+cid+'" data-expanded="0" style="flex:1;min-width:95px;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:all .3s" onclick="toggleVendorCard(\''+cid+'\')">';
     // Ganancia card
@@ -3953,6 +3954,11 @@ function renderModuleKPIs(){
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
     colHtml+='</div>';
+    // Recupero de Inversión card
+    colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Recupero Inversión</div>';
+    colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+(recuperoVal>=0?'var(--purple)':'var(--red)')+';line-height:1.3">'+fmtUSD(recuperoVal)+'</div>';
+    colHtml+='</div>';
     colHtml+='</div>';
     container.innerHTML+=colHtml;
   });
@@ -3967,7 +3973,8 @@ function renderModuleKPIs(){
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
-    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'}
+    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'},
+    {label:'Recupero de Inversión',val:totRecupero,color:'var(--purple)'}
   ];
   totCards.forEach(function(tc){
     var valColor=tc.val>=0?tc.color:'var(--red)';

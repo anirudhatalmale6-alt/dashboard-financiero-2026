@@ -580,6 +580,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .panel-section{max-height:0;overflow:hidden;transition:max-height .4s ease;margin-bottom:0}
 .panel-section.open{max-height:none;overflow:hidden;margin-bottom:16px}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
+.team-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
+.team-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.team-btn.active{background:var(--gold);color:#1a1b2e;border-color:var(--gold)}
+.vd-kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.vd-card{background:var(--surface);border-radius:14px;padding:16px 18px;flex:1;min-width:180px}
+.vd-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.vd-card-item{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.vd-card-item span:first-child{font-size:10px;color:var(--text3)}
+.vd-card-item span:last-child{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;letter-spacing:-.2px}
 </style>
 </head>
 <body>
@@ -672,6 +681,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="header-date" id="headerDate"></div>
     </div>
   </div>
+  <div id="teamButtonsBar" style="text-align:center;margin:16px 0 20px"></div>
+  <div id="teamDashView" style="display:none;padding-bottom:40px"></div>
   <div class="print-header" style="display:none"><strong>Dashboard Financiero Martin 2026</strong><span id="printDate"></span></div>
   <div class="print-filter-info" style="display:none" id="printFilterInfo"></div>
 
@@ -3527,6 +3538,8 @@ function renderAll(){
       if(vdCont)parent.insertBefore(vdCont,ref);
     }
   }
+  renderTeamButtons();
+  if(_teamDashActive) renderTeamDashboard(_teamDashActive);
   var dateStr=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
   document.getElementById('headerDate').textContent='Actualizado: '+dateStr;
   var sidebarDateEl=document.getElementById('sidebarDate');if(sidebarDateEl)sidebarDateEl.textContent='Actualizado: '+dateStr;
@@ -3985,6 +3998,196 @@ function renderModuleKPIs(){
     totRow.appendChild(card);
   });
   container.parentNode.insertBefore(totRow,container.nextSibling);
+}
+
+// ====== EQUIPOS DE NEGOCIOS — Vendor Team Dashboard ======
+var _teamDashActive=null;
+function _teamVendorList(){
+  if(!dashRaw||dashRaw.length<200)return[];
+  var socStart=-1,martStart=-1;
+  for(var si=100;si<dashRaw.length;si++){if(!dashRaw[si])continue;var cv=dashRaw[si][2];if(typeof cv==='string'){if(cv.indexOf('Balance y Ganancias')>=0)socStart=si+1;if(socStart>0&&martStart<0&&si>socStart+30&&cv==='Tecno')martStart=si;}}
+  if(socStart<0)socStart=125;if(martStart<0)martStart=163;
+  var sn=window._socVendorNames||[],mn=window._martVendorNames||[];
+  var socDef=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+  var martDef=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
+  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var offsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
+  function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
+  var cards=[];
+  offsets.forEach(function(o,i){var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];cards.push({name:name,icon:socIcons[i],section:'soc',idx:i,offset:o});});
+  offsets.forEach(function(o,i){var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];cards.push({name:name,icon:martIcons[i],section:'mart',idx:i,offset:o});});
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+  var cmIdx=_mesActualIdx;var uniG={};var ugR=window._uniGainsRows||[];
+  for(var ui=0;ui<ugR.length;ui++){var ur=ugR[ui];if(!ur||!ur[0])continue;var ugv=ur[2+cmIdx];if(typeof ugv==='number')uniG[normName(ur[0])]=Math.abs(ugv);else if(typeof ugv==='string'){var neg=ugv.includes('-')?-1:1;var cl=ugv.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniG[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}}
+  cards.sort(function(a,b){return(uniG[normName(b.name)]||0)-(uniG[normName(a.name)]||0);});
+  cards._socStart=socStart;cards._martStart=martStart;
+  return cards;
+}
+function renderTeamButtons(){
+  var container=document.getElementById('teamButtonsBar');
+  if(!container)return;
+  var cards=_teamVendorList();
+  if(!cards.length){container.innerHTML='';return;}
+  var h='<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px">Equipos de Negocios</span></div>';
+  h+='<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">';
+  cards.forEach(function(c){
+    var cls=_teamDashActive===c.name?'team-btn active':'team-btn';
+    h+='<button class="'+cls+'" onclick="showTeamDash(\''+c.name.replace(/'/g,"\\'")+'\')">';
+    h+='<span style="font-size:14px">'+c.icon+'</span><span>'+c.name+'</span></button>';
+  });
+  h+='</div>';
+  container.innerHTML=h;
+}
+function showTeamDash(name){
+  _teamDashActive=name;
+  var main=document.querySelector('.main');
+  for(var i=0;i<main.children.length;i++){
+    var el=main.children[i];
+    if(el.id==='teamButtonsBar'||el.id==='teamDashView'||el.classList.contains('header'))continue;
+    el.setAttribute('data-td-prev',el.style.display||'');
+    el.style.display='none';
+  }
+  document.getElementById('teamDashView').style.display='block';
+  renderTeamButtons();
+  renderTeamDashboard(name);
+  window.scrollTo(0,0);
+}
+function exitTeamDash(){
+  _teamDashActive=null;
+  var main=document.querySelector('.main');
+  for(var i=0;i<main.children.length;i++){
+    var el=main.children[i];
+    if(el.hasAttribute('data-td-prev')){el.style.display=el.getAttribute('data-td-prev');el.removeAttribute('data-td-prev');}
+  }
+  document.getElementById('teamDashView').style.display='none';
+  renderTeamButtons();
+  window.scrollTo(0,0);
+}
+function renderTeamDashboard(name){
+  var container=document.getElementById('teamDashView');
+  if(!container||!dashRaw||dashRaw.length<200)return;
+  var cards=_teamVendorList();if(!cards.length)return;
+  var vendor=null;
+  function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
+  for(var i=0;i<cards.length;i++){if(cards[i].name===name){vendor=cards[i];break;}}
+  if(!vendor)return;
+  var o=vendor.offset,isSoc=vendor.section==='soc';
+  var socStart=cards._socStart,martStart=cards._martStart;
+  var sectionStart=isSoc?socStart:martStart;
+  var cmIdx=_mesActualIdx;
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
+  function vc(val,c){return val<0?'var(--red)':c;}
+  // Monthly data 2026
+  var mGU=[],mGP=[],mUnif=[],mInv=[],mCobP=[],mCobU=[],mCobUnif=[];
+  for(var mi=0;mi<12;mi++){mGU.push(dv(sectionStart+3+mi,o.u));mGP.push(dv(sectionStart+3+mi,o.p));}
+  // Unificado gains per month
+  var ugR=window._uniGainsRows||[];var nn=normName(name);
+  for(var ui=0;ui<ugR.length;ui++){var ur=ugR[ui];if(!ur||!ur[0])continue;if(normName(ur[0])===nn){for(var mi=0;mi<12;mi++){var v=ur[2+mi];if(typeof v==='number')mUnif.push(v);else if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);mUnif.push(isNaN(n)?0:n*neg);}else mUnif.push(0);}break;}}
+  while(mUnif.length<12)mUnif.push(0);
+  // Investment
+  var invD=window._vendorInvestments||{};var invArr=invD[nn]||[];
+  for(var mi=0;mi<12;mi++)mInv.push(invArr[mi]||0);
+  // Cuotas
+  var cobP=window._vendorCobrarPesosMonthly||{},cobU=window._vendorCobrarUSDMonthly||{},cobUnif=window._vendorCuotasMonthly||{};
+  function gm(src,mi){for(var ck in src){if(normName(ck)===nn){var cm=src[ck];return(cm&&cm[mi])||0;}}return 0;}
+  for(var mi=0;mi<12;mi++){mCobP.push(gm(cobP,mi));mCobU.push(gm(cobU,mi));mCobUnif.push(gm(cobUnif,mi));}
+  // Recupero
+  var recuperoU=0;var vb=window._vendorBalances||{};for(var bk in vb){if(normName(bk)===nn){recuperoU=vb[bk];break;}}
+  // Balance section KPIs
+  var socBalStart=-1,martBalStart=-1;
+  for(var bi=100;bi<dashRaw.length;bi++){if(!dashRaw[bi])continue;var bc=dashRaw[bi][2];if(typeof bc==='string'&&bc.trim()==='Balance'){if(socBalStart<0)socBalStart=bi;else if(martBalStart<0)martBalStart=bi;}}
+  if(socBalStart<0)socBalStart=154;if(martBalStart<0)martBalStart=192;
+  var balBase=isSoc?socBalStart:martBalStart;
+  var bR={ganAnio:-1,ganUnif:-1,ganActualUnif:-1,recupero:-1,resta:-1,caja:-1};
+  for(var bi=balBase+1;bi<balBase+15&&bi<dashRaw.length;bi++){if(!dashRaw[bi])continue;var t=dashRaw[bi][2];if(typeof t!=='string')continue;var tl=t.toLowerCase().trim();
+    if(tl.indexOf('ganancia')>=0&&tl.indexOf('año')>=0&&bR.ganAnio<0)bR.ganAnio=bi;
+    else if(tl.indexOf('ganancia')>=0&&tl.indexOf('acumulada')>=0&&tl.indexOf('unificada')>=0&&bR.ganActualUnif<0)bR.ganActualUnif=bi;
+    else if(tl.indexOf('ganancia unificada')>=0&&bR.ganUnif<0)bR.ganUnif=bi;
+    else if(tl.indexOf('recupero')>=0&&bR.recupero<0)bR.recupero=bi;
+    else if(tl.indexOf('resta cobrar')>=0&&bR.resta<0)bR.resta=bi;
+    else if(tl.indexOf('caja')>=0&&tl.indexOf('actual')>=0&&bR.caja<0)bR.caja=bi;}
+  var ganAnioU=bR.ganAnio>=0?dv(bR.ganAnio,o.u):0,ganAnioP=bR.ganAnio>=0?dv(bR.ganAnio,o.p):0;
+  var ganUnifVal=bR.ganUnif>=0?dv(bR.ganUnif,o.u):0;
+  var ganAcumUnifU=bR.ganActualUnif>=0?dv(bR.ganActualUnif,o.u):0;
+  var restaU=bR.resta>=0?dv(bR.resta,o.u):0,restaP=bR.resta>=0?dv(bR.resta,o.p):0;
+  var cajaU=bR.caja>=0?dv(bR.caja,o.u):0;
+  // Sums
+  var sumGU=0,sumGP=0,sumUnif=0,sumInv=0,sumCobP=0,sumCobU=0,sumCobUnif=0;
+  for(var mi=0;mi<=cmIdx;mi++){sumGU+=mGU[mi];sumGP+=mGP[mi];sumUnif+=mUnif[mi];sumInv+=mInv[mi];sumCobP+=mCobP[mi];sumCobU+=mCobU[mi];sumCobUnif+=mCobUnif[mi];}
+  var totGU=0,totGP=0,totUnif=0,totInv=0,totCobP=0,totCobU=0,totCobUnif=0;
+  for(var mi=0;mi<12;mi++){totGU+=mGU[mi];totGP+=mGP[mi];totUnif+=mUnif[mi];totInv+=mInv[mi];totCobP+=mCobP[mi];totCobU+=mCobU[mi];totCobUnif+=mCobUnif[mi];}
+  // KPI card builder
+  function kc(title,items,borderColor){
+    var h='<div class="vd-card" style="border:2px solid '+borderColor+'">';
+    h+='<div class="vd-card-title" style="color:'+borderColor+'">'+title+'</div>';
+    items.forEach(function(it){h+='<div class="vd-card-item"><span>'+it.l+'</span><span style="color:'+vc(it.v,it.c)+'">'+it.f(it.v)+'</span></div>';});
+    return h+'</div>';
+  }
+  var h='';
+  // Back + vendor name
+  h+='<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">';
+  h+='<button onclick="exitTeamDash()" class="team-btn" style="padding:8px 16px">← Volver</button>';
+  h+='<div style="font-size:28px">'+vendor.icon+'</div>';
+  h+='<div><h2 style="font-size:22px;font-weight:800;color:var(--text);margin:0">'+name+'</h2>';
+  h+='<div style="font-size:11px;color:var(--text3)">Dashboard Individual — '+(isSoc?'Sociedades':'Martin')+'</div></div></div>';
+  // SECTION 1: MES ACTUAL
+  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--gold)"></span>Mes Actual — <em>'+meses[cmIdx]+' 2026</em></h2>';
+  h+='<div class="vd-kpi-row">';
+  h+=kc('Ganancia Mes',[{l:'En Pesos',v:mGP[cmIdx],c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:mGU[cmIdx],c:'var(--green)',f:fmtUSD},{l:'Unificado U$D',v:mUnif[cmIdx],c:'var(--gold)',f:fmtUSD}],'var(--gold)');
+  h+=kc('Inversión Mes',[{l:'Unif U$D',v:mInv[cmIdx],c:'#cbd5e1',f:fmtUSD}],'#cbd5e1');
+  h+=kc('Recupero de Inversión',[{l:'Unif U$D',v:recuperoU,c:'var(--purple)',f:fmtUSD}],'var(--purple)');
+  h+=kc('Cuotas a Cobrar Mes',[{l:'En Pesos',v:mCobP[cmIdx],c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:mCobU[cmIdx],c:'var(--green)',f:fmtUSD},{l:'Unif U$D',v:mCobUnif[cmIdx],c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
+  h+='</div>';
+  // SECTION 2: AÑO 2026
+  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--blue)"></span>Año <em>2026</em> <span style="font-size:11px;color:var(--text3);font-weight:400">(Ene - '+meses[cmIdx]+')</span></h2>';
+  h+='<div class="vd-kpi-row">';
+  h+=kc('Ganancia Año',[{l:'En Pesos',v:sumGP,c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:sumGU,c:'var(--green)',f:fmtUSD},{l:'Unificado U$D',v:sumUnif,c:'var(--gold)',f:fmtUSD}],'var(--blue)');
+  h+=kc('Inversión Año',[{l:'Unif U$D',v:sumInv,c:'#cbd5e1',f:fmtUSD}],'#cbd5e1');
+  h+=kc('Cuotas a Cobrar Año',[{l:'En Pesos',v:sumCobP,c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:sumCobU,c:'var(--green)',f:fmtUSD},{l:'Unif U$D',v:sumCobUnif,c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
+  h+='</div>';
+  // SECTION 3: BALANCE ACUMULADO
+  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--green)"></span>Balance <em>Acumulado</em></h2>';
+  h+='<div class="vd-kpi-row">';
+  h+=kc('Ganancia Acumulada',[{l:'Año U$D',v:ganAnioU,c:'var(--green)',f:fmtUSD},{l:'Unificada U$D',v:ganUnifVal,c:'var(--gold)',f:fmtUSD},{l:'Acum. Unif U$D',v:ganAcumUnifU,c:'var(--gold)',f:fmtUSD}],'var(--green)');
+  h+=kc('Inversión y Recupero',[{l:'Inversión Total U$D',v:totInv,c:'#cbd5e1',f:fmtUSD},{l:'Recupero U$D',v:recuperoU,c:'var(--purple)',f:fmtUSD}],'var(--purple)');
+  h+=kc('Cuotas Pendientes',[{l:'Resta Cobrar $',v:restaP,c:'var(--blue)',f:fmtPesos},{l:'Resta Cobrar U$D',v:restaU,c:'var(--green)',f:fmtUSD},{l:'Caja Actual U$D',v:cajaU,c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
+  h+='</div>';
+  // SECTION 4: MONTHLY TABLE
+  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--purple)"></span>Detalle <em>Mensual</em> 2026</h2>';
+  h+='<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:rgba(212,168,83,.15)">';
+  var thS='padding:10px 8px;text-align:right;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px';
+  h+='<th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.5px">Mes</th>';
+  h+='<th style="'+thS+';color:var(--green)">Gan U$D</th>';
+  h+='<th style="'+thS+';color:var(--blue)">Gan Pesos</th>';
+  h+='<th style="'+thS+';color:var(--gold)">Unificado</th>';
+  h+='<th style="'+thS+';color:#cbd5e1">Inversión</th>';
+  h+='<th style="'+thS+';color:var(--cyan)">Cuotas Unif</th>';
+  h+='</tr></thead><tbody>';
+  for(var mi=0;mi<12;mi++){
+    var cur=mi===cmIdx;var bg=cur?'rgba(212,168,83,.1)':(mi%2===0?'transparent':'rgba(255,255,255,.02)');var fw=cur?'700':'500';
+    var tdS='padding:8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:'+fw;
+    h+='<tr style="background:'+bg+';border-bottom:1px solid rgba(255,255,255,.05)">';
+    h+='<td style="padding:8px 12px;font-weight:'+fw+';color:var(--text)">'+(cur?'● ':'')+meses[mi]+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(mGU[mi],'var(--green)')+'">'+fmtUSD(mGU[mi])+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(mGP[mi],'var(--blue)')+'">'+fmtPesos(mGP[mi])+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(mUnif[mi],'var(--gold)')+'">'+fmtUSD(mUnif[mi])+'</td>';
+    h+='<td style="'+tdS+';color:#cbd5e1">'+fmtUSD(mInv[mi])+'</td>';
+    h+='<td style="'+tdS+';color:var(--cyan)">'+fmtUSD(mCobUnif[mi])+'</td>';
+    h+='</tr>';
+  }
+  h+='<tr style="background:rgba(212,168,83,.15);border-top:2px solid var(--gold)">';
+  var tfS='padding:10px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:800';
+  h+='<td style="padding:10px 12px;font-weight:800;color:var(--gold)">TOTAL</td>';
+  h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(totGU)+'</td>';
+  h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totGP)+'</td>';
+  h+='<td style="'+tfS+';color:var(--gold)">'+fmtUSD(totUnif)+'</td>';
+  h+='<td style="'+tfS+';color:#cbd5e1">'+fmtUSD(totInv)+'</td>';
+  h+='<td style="'+tfS+';color:var(--cyan)">'+fmtUSD(totCobUnif)+'</td>';
+  h+='</tr></tbody></table></div>';
+  container.innerHTML=h;
 }
 
 // Generic function: Resumen General for a range of months

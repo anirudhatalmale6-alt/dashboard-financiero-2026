@@ -914,6 +914,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
+const EXCLUDED_VENDORS=['Tobias','Tino'];
+function isExcluded(name){return EXCLUDED_VENDORS.some(function(e){return name===e||name.toLowerCase()===e.toLowerCase();});};
 let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;
@@ -1001,7 +1003,7 @@ function buildCuotasPanels(){
     var id=btn.id.replace('btn','');openPanels[id]=true;
   });
   var groups={};
-  var panelsToShow=CUOTAS_PANELS;
+  var panelsToShow=CUOTAS_PANELS.filter(function(p){return !isExcluded(p.vendor);});
   // When vendor is selected (from URL or dropdown), only show panels for that vendor
   if(filterVendedor!=='all'){
     var vl=filterVendedor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -1834,7 +1836,7 @@ function populateFilters(){
   sel.value='all';filterMes='all';
   if(mSel)mSel.value='all';
 
-  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))].filter(v=>!isExcluded(v));
   const sel2=document.getElementById('filterVendedor');
   const mSel2=document.getElementById('mobileFilterVend');
   sel2.innerHTML='<option value="all">Todos</option>';
@@ -2581,7 +2583,7 @@ function parseDashVendedores(){
   // Use vendedorGains data (fetched from GANANCIA DE LOS VENDEDORES section)
   var vg=allData.vendedorGains||[];
   if(vg.length===0)return[];
-  var vendNames=[...new Set(vg.map(function(r){return r.Vendedor;}))];
+  var vendNames=[...new Set(vg.map(function(r){return r.Vendedor;}))].filter(function(v){return !isExcluded(v);});
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var result=[];
   vendNames.forEach(function(name){
@@ -2647,12 +2649,12 @@ function renderVendedorDash(){
 
   // Use pre-built vendedorGains data (vendor's OWN gains from GANANCIA DE LOS VENDEDORES section)
   var vgData=allData.vendedorGains||[];
-  var vendNames=[...new Set(vgData.map(function(r){return r.Vendedor;}))];
+  var vendNames=[...new Set(vgData.map(function(r){return r.Vendedor;}))].filter(function(v){return !isExcluded(v);});
 
   container.className='module-details-grid';
   let idx=0;
   vendNames.forEach(function(name){
-    // Vendedor filter: skip if a specific vendedor is selected and doesn't match
+    if(isExcluded(name))return;
     if(filterVendedor!=='all'&&name!==filterVendedor)return;
 
     let totalUSD=0,totalPesos=0;
@@ -3063,6 +3065,7 @@ function renderEstadoCuentas(){
 
   let hasAny=false;
   ecVendors.forEach(vName=>{
+    if(isExcluded(vName))return;
     if(isFiltered&&vName!==filterVendedor)return;
     const color=VENDOR_COLORS[vName]||'#d4a853';
     hasAny=true;
@@ -3552,7 +3555,7 @@ function getFilteredResumen(){
 }
 
 function getFilteredVendedor(){
-  let d=allData.vendedor;
+  let d=allData.vendedor.filter(r=>!isExcluded(r.Vendedor));
   if(filterMes!=='all')d=d.filter(r=>r.Mes===filterMes);
   if(filterVendedor!=='all')d=d.filter(r=>r.Vendedor===filterVendedor);
   return d;
@@ -3907,8 +3910,7 @@ function renderModuleKPIs(){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  // Filter out Modulo 1 and Modulo 2 (no revenue yet)
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
 
   // Sort by "Ganancias Unificado en Dolares" (Dashboard Martin rows 93-103, fetched via range)
   var uniGains={};
@@ -4017,7 +4019,7 @@ function _teamVendorList(){
   var cards=[];
   offsets.forEach(function(o,i){var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];cards.push({name:name,icon:socIcons[i],section:'soc',idx:i,offset:o});});
   offsets.forEach(function(o,i){var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];cards.push({name:name,icon:martIcons[i],section:'mart',idx:i,offset:o});});
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
   var cmIdx=_mesActualIdx;var uniG={};var ugR=window._uniGainsRows||[];
   for(var ui=0;ui<ugR.length;ui++){var ur=ugR[ui];if(!ur||!ur[0])continue;var ugv=ur[2+cmIdx];if(typeof ugv==='number')uniG[normName(ur[0])]=Math.abs(ugv);else if(typeof ugv==='string'){var neg=ugv.includes('-')?-1:1;var cl=ugv.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniG[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}}
   cards.sort(function(a,b){return(uniG[normName(b.name)]||0)-(uniG[normName(a.name)]||0);});
@@ -4278,7 +4280,7 @@ function renderResumenRange(containerId,mode){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2';});
+  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
 
   // Sort by unified gains (sum months)
   var ugRows=window._uniGainsRows||[];
@@ -4667,7 +4669,7 @@ function renderChartPie(){
 function renderChartVendedores(){
   const isAmbas=currency==='ambas';
   const isUSD=currency==='usd'||isAmbas;
-  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))];
+  const vends=[...new Set(allData.vendedor.map(r=>r.Vendedor))].filter(v=>!isExcluded(v));
   const meses=[...new Set(allData.vendedor.map(r=>r.Mes))];
   let filteredVends=filterVendedor!=='all'?[filterVendedor]:vends;
   if(charts.vendedores)charts.vendedores.destroy();
@@ -4704,7 +4706,7 @@ function renderChartVendedores(){
 function renderRankings(){
   const isUSD=currency==='usd';
   const aggUSD={},aggPesos={};
-  let data=allData.vendedor;
+  let data=allData.vendedor.filter(r=>!isExcluded(r.Vendedor));
   if(filterMes!=='all')data=data.filter(r=>r.Mes===filterMes);
   if(filterVendedor!=='all')data=data.filter(r=>r.Vendedor===filterVendedor);
   data.forEach(r=>{
@@ -4862,6 +4864,7 @@ function renderModules(){
   scanCuotasSection('Cuotas a Cobrar Unificado en Dolares',null,cuotasMapUnif);
 
   function buildCard(v,balRows,monthStart){
+    if(isExcluded(v.name))return;
     if(filterVendedor!=='all'&&filterVendedor!==v.name)return;
     // Extract all balance KPI values
     var ganActualUnifU=balRows.ganActualUnif>=0?dv(balRows.ganActualUnif,v.uCol):0;
@@ -5461,7 +5464,7 @@ function renderSidebarStats(){
   const promMensual=totalVentas/Math.max(mesesConDatos,1);
   document.getElementById('sidebarStats').innerHTML=`
     <div class="sidebar-stat"><span class="label">Meses con datos</span><span class="val">${mesesConDatos}</span></div>
-    <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0).map(r=>r.Vendedor))].length}</span></div>
+    <div class="sidebar-stat"><span class="label">Vendedores activos</span><span class="val">${[...new Set(allData.vendedor.filter(r=>(r.Ganancia_USD||0)>0&&!isExcluded(r.Vendedor)).map(r=>r.Vendedor))].length}</span></div>
     <div class="sidebar-stat"><span class="label">Promedio mensual</span><span class="val">${fmtUSD(promMensual)}</span></div>
   `;
 }

@@ -580,7 +580,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .panel-section{max-height:0;overflow:hidden;transition:max-height .4s ease;margin-bottom:0}
 .panel-section.open{max-height:none;overflow:hidden;margin-bottom:16px}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
-.team-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
+.team-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px 22px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;white-space:nowrap;min-width:130px}
 .team-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
 .team-btn.active{background:var(--gold);color:#1a1b2e;border-color:var(--gold)}
 .vd-kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
@@ -4036,7 +4036,7 @@ function renderTeamButtons(){
   cards.forEach(function(c){
     var cls=_teamDashActive===c.name?'team-btn active':'team-btn';
     h+='<button class="'+cls+'" onclick="showTeamDash(\''+c.name.replace(/'/g,"\\'")+'\')">';
-    h+='<span style="font-size:14px">'+c.icon+'</span><span>'+c.name+'</span></button>';
+    h+='<span style="font-size:18px">'+c.icon+'</span><span>'+c.name+'</span></button>';
   });
   h+='</div>';
   container.innerHTML=h;

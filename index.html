@@ -845,7 +845,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px">
-    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas en Dólares Vs Gastos Operativos y <em>Compromisos de Pagos</em></h3>
+    <h3 class="section-title" id="secCuotasUnif" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas Vs <em>Compromisos de Pagos a Pagar</em></h3>
     <div id="cuotasYearToggleUnif" style="display:flex;gap:6px">
       <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
       <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
@@ -5207,19 +5207,8 @@ function extractCuotasData(vendorFilter,useEmpresas){
     cobrarUniPesos.push(useUniPesosIdx>=0?getVal(uniP[useUniPesosIdx],m):0);
   }
   var compromisosPagos=[];
-  if(dashRaw){
-    var compRow=-1;
-    for(var ci=180;ci<dashRaw.length;ci++){
-      if(!dashRaw[ci])continue;
-      var cv=dashRaw[ci][2];
-      if(cv&&typeof cv==='string'&&cv.indexOf('Total de Compromisos')>=0){compRow=ci;break;}
-    }
-    if(compRow>=0){
-      for(var m=0;m<12;m++){
-        var cv=dashRaw[compRow]?dashRaw[compRow][4+m]:0;
-        compromisosPagos.push(typeof cv==='number'?Math.abs(Math.round(cv)):pv(cv));
-      }
-    }else{for(var m=0;m<12;m++)compromisosPagos.push(0);}
+  if(cronGastosAPagar&&cronGastosAPagar.length>=12){
+    for(var m=0;m<12;m++){compromisosPagos.push(cronGastosAPagar[m]||0);}
   }else{for(var m=0;m<12;m++)compromisosPagos.push(0);}
   return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos,compromisosPagos:compromisosPagos};
 }
@@ -5364,7 +5353,7 @@ function renderCuotasCardsUnif(){
   container.innerHTML='';
   const isVendor=filterVendedor!=='all';
   var secTitle=document.getElementById('secCuotasUnif');
-  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas en Dólares Vs Gastos Operativos y <em>Compromisos de Pagos</em>'+(vLabel||'');}
+  if(secTitle){var vLabel=isVendor?' — '+filterVendedor:'';secTitle.innerHTML='<span class="dot" style="background:var(--gold)"></span>Cuotas a <em>Cobrar</em> Unificadas Vs <em>Compromisos de Pagos a Pagar</em>'+(vLabel||'');}
   const blue=dolarBlue||1300;
   const compPagos=q.compromisosPagos||[];
   let totalCobrar=0,totalComp=0;
@@ -5374,7 +5363,7 @@ function renderCuotasCardsUnif(){
     totalCobrar+=cobrarUnif;
     totalComp+=compVal;
     const compHTML=isVendor||!compVal?'':`
-        <span class="lbl" style="color:#fb923c">Compromisos de Pagos</span>
+        <span class="lbl" style="color:#fb923c">Compromisos de Pagos a Pagar</span>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#fb923c;line-height:1.4">-${fmtUSD(compVal)}</div>`;
     container.innerHTML+=`
       <div class="cuota-card">
@@ -5385,7 +5374,7 @@ function renderCuotasCardsUnif(){
       </div>`;
   });
   const totalCompHTML=isVendor||!totalComp?'':`
-      <span class="lbl" style="color:#fb923c">Total Compromisos</span>
+      <span class="lbl" style="color:#fb923c">Total Compromisos a Pagar</span>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#fb923c;line-height:1.4">-${fmtUSD(totalComp)}</div>`;
   container.innerHTML+=`
     <div class="cuota-card acum">
@@ -5413,7 +5402,7 @@ function renderChartCuotasUnif(){
         {label:'Cuotas Unificadas U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]:[
         {label:'Cuotas a Cobrar Unif U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
-        {label:'Compromisos de Pagos U$D',data:compPagos,backgroundColor:'rgba(251,146,60,.6)',borderColor:'#fb923c',borderWidth:1,borderRadius:6,barPercentage:.5}
+        {label:'Compromisos de Pagos a Pagar U$D',data:compPagos,backgroundColor:'rgba(251,146,60,.6)',borderColor:'#fb923c',borderWidth:1,borderRadius:6,barPercentage:.5}
       ]
     },
     plugins:[ChartDataLabels],

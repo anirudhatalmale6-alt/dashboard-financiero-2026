@@ -1770,11 +1770,16 @@ async function loadAllData(){
         }
       }
     }catch(e){window._invError=e.message||String(e);}
-    // Fetch monthly deudas/compromisos from INVERSIONES CRONOGRAMA (Excel row 189, cols R-AC = lo que falta cancelar por mes)
+    // Extract monthly compromisos from invRaw row 171 (sheet row 172 = "Compromisos de Cuotas Mensuales"), cols D-O (3-14) = Jan-Dec 2026
     try{
-      var deudasRange=await fetchSheetRange('INVERSIONES CRONOGRAMA','R189:AC189');
-      if(deudasRange&&deudasRange[0]){
-        invDeudasMensuales=deudasRange[0].map(function(v){if(typeof v==='number')return Math.round(v);if(typeof v==='string'){var n=v.replace(/[^0-9\-]/g,'');return parseInt(n)||0;}return 0;});
+      if(invRaw&&invRaw[171]){
+        invDeudasMensuales=[];
+        for(var dmi=0;dmi<12;dmi++){
+          var dv=invRaw[171][3+dmi];
+          if(typeof dv==='number')invDeudasMensuales.push(Math.round(Math.abs(dv)));
+          else if(typeof dv==='string'){var dn=dv.replace(/[^0-9\-.,]/g,'').replace(/\./g,'').replace(',','.');var dp=parseFloat(dn);invDeudasMensuales.push(isNaN(dp)?0:Math.round(Math.abs(dp)));}
+          else invDeudasMensuales.push(0);
+        }
       }
     }catch(e){invDeudasMensuales=null;}
     // Balance and cuotas data already extracted from dashRaw above

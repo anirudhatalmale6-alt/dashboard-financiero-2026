@@ -889,7 +889,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <!-- Card 3: INVERSIONES -->
   <h3 class="section-title" id="secInvBalance">Inversiones</h3>
-  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Inversores / Inversiones / Gastos Operativos)</div>
+  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Gastos Operativos / Compromisos / Inversiones)</div>
   <div id="invBalanceCards"></div>
 
   <div class="inv-section" id="invSection">
@@ -923,7 +923,9 @@ function isExcluded(name){return EXCLUDED_VENDORS.some(function(e){return name==
 let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;
-let invDeudasMensuales=null; // Monthly deudas from INVERSIONES CRONOGRAMA row 191, cols R-AC (Enero-Diciembre 2026)
+let invDeudasMensuales=null;
+let cronGastosAPagar=null; // Cronograma de Inversiones row 151 cols R-AC (Jan-Dec 2026)
+let cronCompromisosAPagar=null; // Cronograma de Inversiones row 189 cols R-AC (Jan-Dec 2026)
 let trackRaw=null;
 let ventaDolaresRaw=null;
 let ventaDolaresMonths=null;
@@ -1770,18 +1772,19 @@ async function loadAllData(){
         }
       }
     }catch(e){window._invError=e.message||String(e);}
-    // Extract monthly compromisos from invRaw row 171 (sheet row 172 = "Compromisos de Cuotas Mensuales"), cols D-O (3-14) = Jan-Dec 2026
+    // Fetch monthly data from "Cronograma de Inversiones": row 151 (gastos a pagar) and row 189 (compromisos a pagar), cols R-AC = Jan-Dec 2026
+    function parseCronoRow(rangeData){
+      if(!rangeData||!rangeData[0])return null;
+      return rangeData[0].map(function(v){if(typeof v==='number')return Math.round(Math.abs(v));if(typeof v==='string'){var n=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var p=parseFloat(n);return isNaN(p)?0:Math.round(Math.abs(p)));}return 0;});
+    }
     try{
-      if(invRaw&&invRaw[171]){
-        invDeudasMensuales=[];
-        for(var dmi=0;dmi<12;dmi++){
-          var dv=invRaw[171][3+dmi];
-          if(typeof dv==='number')invDeudasMensuales.push(Math.round(Math.abs(dv)));
-          else if(typeof dv==='string'){var dn=dv.replace(/[^0-9\-.,]/g,'').replace(/\./g,'').replace(',','.');var dp=parseFloat(dn);invDeudasMensuales.push(isNaN(dp)?0:Math.round(Math.abs(dp)));}
-          else invDeudasMensuales.push(0);
-        }
-      }
-    }catch(e){invDeudasMensuales=null;}
+      var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
+      var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
+      var _cronoRes=await Promise.all([_cgP,_ccP]);
+      cronGastosAPagar=parseCronoRow(_cronoRes[0]);
+      cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
+      invDeudasMensuales=cronCompromisosAPagar;
+    }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above
     // Secondary fetches (may be slow due to gviz rate limits)
     try{await buildVendedorGains();}catch(e){}
@@ -2150,11 +2153,33 @@ function renderGastosInvPanels(){
       +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
   }
 
+  function buildCronoPanel(title,icon,color,monthlyArr,subtitle){
+    if(!monthlyArr||!monthlyArr.length)return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Cargando...</div>';
+    var total=0;
+    var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+color+'">A Pagar</th></tr></thead><tbody>';
+    for(var i=0;i<12;i++){
+      var v=monthlyArr[i]||0;
+      if(yr==='2026'||yr==='all'){
+        total+=v;
+        if(v>0)tbl+='<tr'+(i===cmIdx?' style="background:rgba(212,168,83,.1)"':'')+'><td>'+mShort[i]+' 26</td><td style="color:'+color+'">'+fmtUSD(v)+'</td></tr>';
+      }
+    }
+    tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+color+'">'+fmtUSD(total)+'</td></tr>';
+    tbl+='</tbody></table>';
+    var subHtml=subtitle?'<div style="font-size:9px;color:var(--text3);margin-top:2px">('+subtitle+')</div>':'';
+    return '<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
+      +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+icon+'</span>'+title+subHtml+'</div>'
+      +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total a Pagar</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+color+'">'+fmtUSD(total)+'</div></div>'
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
+  }
+
   var html='';
-  html+=buildDetailPanel('Gastos Operativos','💸','var(--rosa)',d.gastosInv);
-  html+=buildRestaPagarPanel('Gastos Operativos a Pagar','💳','var(--gold)',d.gastosInv);
-  html+=buildDetailPanel('Compromisos de Pagos','📋','var(--cyan)',d.compromisos);
-  html+=buildPanel4();
+  html+=buildDetailPanel('Gastos Operativos Anuales','💸','var(--rosa)',d.gastosInv);
+  html+=buildCronoPanel('Gastos Operativos a Pagar','💳','var(--gold)',cronGastosAPagar);
+  html+=buildDetailPanel('Compromisos de Pagos Anuales','📋','var(--cyan)',d.compromisos);
+  html+=buildCronoPanel('Compromisos de Pagos a Pagar','📊','var(--purple)',cronCompromisosAPagar,'Gastos Operativos / Inversores / Inversiones');
   container.innerHTML=html;
 }
 

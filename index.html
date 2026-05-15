@@ -221,7 +221,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ing-month-card tbody tr:last-child td{border-bottom:none}
 .ing-month-card .total-row td{font-weight:700;border-top:1px solid var(--gold);background:rgba(212,168,83,.05);padding:6px 8px}
 .ing-month-card .total-row td{color:var(--gold)}
-.ing-month-card .uni-row td{color:var(--gold)}
+.ing-month-card .uni-row td{color:var(--gold);font-size:13px;font-weight:800;padding:8px 8px}
 .ing-month-card .positive{color:var(--green)}
 .ing-month-card .negative{color:var(--red)}
 .ing-month-card.no-data{opacity:.35}
@@ -486,7 +486,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .ing-month-card thead th{background:#e5e7eb!important;color:#333!important}
   .ing-month-card tbody td{color:#111!important}
   .ing-month-card .total-row td{color:#b8860b!important;border-top:1px solid #b8860b!important;background:rgba(184,134,11,.06)!important}
-  .ing-month-card .uni-row td{color:#b8860b!important}
+  .ing-month-card .uni-row td{color:#b8860b!important;font-size:13px!important;font-weight:800!important}
   .ing-month-card .positive{color:#16a34a!important}
   .ing-month-card .negative{color:#dc2626!important}
   .acum-cards{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
@@ -2976,9 +2976,9 @@ function renderDetalleIngresos(){
       const uniUSD=dashNum(uniRow,8);
       const uniPesos=dashNum(uniRow,7);
       tbodyHTML+=`<tr class="total-row uni-row">
-        <td>TOTAL UNIFICADO</td>
-        <td style="${uniUSD!==0?'color:var(--green)':''}">${fmtUSD(uniUSD)}</td>
-        <td style="${uniPesos!==0?'color:var(--blue)':''}">${fmtPesos(uniPesos)}</td>
+        <td style="font-size:12px">TOTAL UNIFICADO</td>
+        <td style="color:var(--gold);font-size:14px;font-weight:800">${fmtUSD(uniUSD)}</td>
+        <td style="color:var(--blue);font-size:14px;font-weight:800">${fmtPesos(uniPesos)}</td>
       </tr>`;
 
       var mesLabel=yearFilterDetalle==='all'?mes+' '+blk.label:mes;
@@ -3985,10 +3985,8 @@ function renderModuleKPIs(){
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow','kpiModulesRow');
-  var compRow=-1;
-  for(var ci=200;ci<dashRaw.length;ci++){if(dashRaw[ci]&&typeof dashRaw[ci][2]==='string'&&dashRaw[ci][2].toLowerCase().indexOf('total de compromisos')>=0){compRow=ci;break;}}
   var compVal=0;
-  if(compRow>=0){var cv=dashRaw[compRow][4+cmIdx];compVal=typeof cv==='number'?cv:0;}
+  if(invDeudasMensuales&&invDeudasMensuales[cmIdx]!=null){compVal=invDeudasMensuales[cmIdx];}
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
@@ -4376,10 +4374,8 @@ function renderResumenRange(containerId,mode){
   var totRow=document.createElement('div');
   totRow.style.cssText='display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap';
   totRow.setAttribute('data-totrow',containerId);
-  var compRow=-1;
-  for(var ci=200;ci<dashRaw.length;ci++){if(dashRaw[ci]&&typeof dashRaw[ci][2]==='string'&&dashRaw[ci][2].toLowerCase().indexOf('total de compromisos')>=0){compRow=ci;break;}}
   var compVal=0;
-  if(compRow>=0){for(var mi=0;mi<=endMonth;mi++){var cv=dashRaw[compRow][4+mi];if(typeof cv==='number')compVal+=cv;}}
+  if(invDeudasMensuales){for(var mi=0;mi<=endMonth&&mi<invDeudasMensuales.length;mi++){compVal+=(invDeudasMensuales[mi]||0);}}
   var totCards=[
     {label:'Inversión',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Unif U$D',val:totCobrarUnif,color:'var(--gold)'},

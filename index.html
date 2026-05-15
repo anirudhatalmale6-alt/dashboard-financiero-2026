@@ -1775,7 +1775,7 @@ async function loadAllData(){
     // Fetch monthly data from "Cronograma de Inversiones": row 151 (gastos a pagar) and row 189 (compromisos a pagar), cols R-AC = Jan-Dec 2026
     function parseCronoRow(rangeData){
       if(!rangeData||!rangeData[0])return null;
-      return rangeData[0].map(function(v){if(typeof v==='number')return Math.round(Math.abs(v));if(typeof v==='string'){var n=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var p=parseFloat(n);return isNaN(p)?0:Math.round(Math.abs(p)));}return 0;});
+      return rangeData[0].map(function(v){if(typeof v==='number')return Math.round(Math.abs(v));if(typeof v==='string'){var n=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var p=parseFloat(n);return isNaN(p)?0:Math.round(Math.abs(p));}return 0;});
     }
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});

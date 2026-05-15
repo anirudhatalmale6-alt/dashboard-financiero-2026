@@ -654,7 +654,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
     <a onclick="document.getElementById('secGastosInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
-    <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Inversiones</a>
+    <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Balance Inversión</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
     <a onclick="document.getElementById('secCuotasPesos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Cuotas Pesos</a>
     <a onclick="document.getElementById('secCuotasUnif').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Cuotas Unificadas</a>
@@ -888,8 +888,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="gastosInvPanels" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px"></div>
 
   <!-- Card 3: INVERSIONES -->
-  <h3 class="section-title" id="secInvBalance">Inversiones</h3>
-  <div style="color:var(--text2);font-size:12px;margin:-8px 0 12px;letter-spacing:.3px">(Gastos Operativos / Compromisos / Inversiones)</div>
+  <h3 class="section-title" id="secInvBalance">Balance de <em>Inversión y Patrimonio</em></h3>
   <div id="invBalanceCards"></div>
 
   <div class="inv-section" id="invSection">
@@ -2207,12 +2206,13 @@ function renderInvBalanceCards(){
     if(ll==='totales'||ll==='total'){totalUSD=valUSD;totalPesos=valPesos;continue;}
     if(ll==='inversión'||ll==='resta cobrar'||ll==='caja actual')continue;
     if(label===label.toUpperCase()&&label.length>3&&!valUSD){
-      curCat={title:label,items:[],color:'var(--gold)'};
-      if(ll.indexOf('propiedad')>=0)curCat.color='var(--gold)';
-      else if(ll.indexOf('vehículo')>=0||ll.indexOf('vehiculo')>=0)curCat.color='var(--blue)';
-      else if(ll.indexOf('inversiones')>=0)curCat.color='var(--green)';
-      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('venta')>=0)curCat.color='var(--cyan)';
-      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('inversor')>=0)curCat.color='var(--purple)';
+      curCat={title:label,items:[],color:'var(--gold)',icon:'📋'};
+      if(ll.indexOf('propiedad')>=0){curCat.color='var(--gold)';curCat.icon='🏠';}
+      else if(ll.indexOf('vehículo')>=0||ll.indexOf('vehiculo')>=0){curCat.color='var(--blue)';curCat.icon='🚗';}
+      else if(ll.indexOf('inversiones')>=0){curCat.color='var(--green)';curCat.icon='📈';}
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('venta')>=0){curCat.color='var(--cyan)';curCat.icon='🧾';}
+      else if(ll.indexOf('cuotas')>=0&&ll.indexOf('inversor')>=0){curCat.color='var(--purple)';curCat.icon='💼';}
+      else if(ll.indexOf('compromiso')>=0){curCat.color='var(--red)';curCat.icon='📝';}
       categories.push(curCat);
       continue;
     }
@@ -2238,7 +2238,7 @@ function renderInvBalanceCards(){
     var catTotal=cat.items.reduce(function(s,it){return s+it.usd;},0);
     html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px">';
     html+='<div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)">';
-    html+='<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:'+cat.color+'">'+cat.title+'</span>';
+    html+='<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:'+cat.color+'">'+(cat.icon?cat.icon+' ':'')+cat.title+'</span>';
     html+='<span style="font-size:12px;font-weight:700;color:'+cat.color+'">'+fvClean(catTotal)+'</span></div>';
     cat.items.forEach(function(item){
       if(!item.usd)return;

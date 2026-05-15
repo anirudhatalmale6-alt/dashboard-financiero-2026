@@ -583,12 +583,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .team-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px 22px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;white-space:nowrap;min-width:130px}
 .team-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
 .team-btn.active{background:var(--gold);color:#1a1b2e;border-color:var(--gold)}
-.vd-kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
-.vd-card{background:var(--surface);border-radius:14px;padding:16px 18px;flex:1;min-width:180px}
-.vd-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-.vd-card-item{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
-.vd-card-item span:first-child{font-size:10px;color:var(--text3)}
-.vd-card-item span:last-child{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;letter-spacing:-.2px}
+.vd-kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px}
+.vd-card{background:var(--surface);border-radius:16px;padding:24px 26px;flex:1;min-width:220px}
+.vd-card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.vd-card-item{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.vd-card-item span:first-child{font-size:12px;color:var(--text3)}
+.vd-card-item span:last-child{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;letter-spacing:-.3px}
+.vd-nav-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
+.vd-nav-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 18px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;white-space:nowrap}
+.vd-nav-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.vd-nav-btn.active{background:var(--gold);color:#1a1b2e;border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -4046,12 +4050,11 @@ function showTeamDash(name){
   var main=document.querySelector('.main');
   for(var i=0;i<main.children.length;i++){
     var el=main.children[i];
-    if(el.id==='teamButtonsBar'||el.id==='teamDashView'||el.classList.contains('header'))continue;
+    if(el.id==='teamDashView')continue;
     el.setAttribute('data-td-prev',el.style.display||'');
     el.style.display='none';
   }
   document.getElementById('teamDashView').style.display='block';
-  renderTeamButtons();
   renderTeamDashboard(name);
   window.scrollTo(0,0);
 }
@@ -4128,12 +4131,20 @@ function renderTeamDashboard(name){
     return h+'</div>';
   }
   var h='';
-  // Back + vendor name
-  h+='<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">';
-  h+='<button onclick="exitTeamDash()" class="team-btn" style="padding:8px 16px">← Volver</button>';
-  h+='<div style="font-size:28px">'+vendor.icon+'</div>';
-  h+='<div><h2 style="font-size:22px;font-weight:800;color:var(--text);margin:0">'+name+'</h2>';
-  h+='<div style="font-size:11px;color:var(--text3)">Dashboard Individual — '+(isSoc?'Sociedades':'Martin')+'</div></div></div>';
+  // Vendor header with icon and name
+  h+='<div style="text-align:center;margin-bottom:20px;padding-top:16px">';
+  h+='<div style="font-size:42px;margin-bottom:8px">'+vendor.icon+'</div>';
+  h+='<h2 style="font-size:26px;font-weight:800;color:var(--text);margin:0">'+name+'</h2>';
+  h+='<div style="font-size:12px;color:var(--text3);margin-top:4px">Dashboard Individual — '+(isSoc?'Sociedades':'Martin')+'</div></div>';
+  // Vendor navigation bar
+  h+='<div class="vd-nav-bar">';
+  h+='<button onclick="exitTeamDash()" class="vd-nav-btn" style="border-color:var(--gold);color:var(--gold)">← Inicio</button>';
+  cards.forEach(function(c){
+    var cls=c.name===name?'vd-nav-btn active':'vd-nav-btn';
+    h+='<button class="'+cls+'" onclick="showTeamDash(\''+c.name.replace(/'/g,"\\'")+'\')">';
+    h+='<span>'+c.icon+'</span><span>'+c.name+'</span></button>';
+  });
+  h+='</div>';
   // SECTION 1: MES ACTUAL
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--gold)"></span>Mes Actual — <em>'+meses[cmIdx]+' 2026</em></h2>';
   h+='<div class="vd-kpi-row">';
@@ -4159,13 +4170,15 @@ function renderTeamDashboard(name){
   // SECTION 4: MONTHLY TABLE
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--purple)"></span>Detalle <em>Mensual</em> 2026</h2>';
   h+='<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">';
-  h+='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:rgba(212,168,83,.15)">';
-  var thS='padding:10px 8px;text-align:right;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px';
-  h+='<th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.5px">Mes</th>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(212,168,83,.15)">';
+  var thS='padding:12px 10px;text-align:right;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px';
+  h+='<th style="padding:12px 14px;text-align:left;font-weight:700;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Mes</th>';
   h+='<th style="'+thS+';color:var(--green)">Gan U$D</th>';
   h+='<th style="'+thS+';color:var(--blue)">Gan Pesos</th>';
   h+='<th style="'+thS+';color:var(--gold)">Unificado</th>';
   h+='<th style="'+thS+';color:#cbd5e1">Inversión</th>';
+  h+='<th style="'+thS+';color:var(--blue)">Cuotas $</th>';
+  h+='<th style="'+thS+';color:var(--green)">Cuotas U$D</th>';
   h+='<th style="'+thS+';color:var(--cyan)">Cuotas Unif</th>';
   h+='</tr></thead><tbody>';
   for(var mi=0;mi<12;mi++){
@@ -4177,6 +4190,8 @@ function renderTeamDashboard(name){
     h+='<td style="'+tdS+';color:'+vc(mGP[mi],'var(--blue)')+'">'+fmtPesos(mGP[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mUnif[mi],'var(--gold)')+'">'+fmtUSD(mUnif[mi])+'</td>';
     h+='<td style="'+tdS+';color:#cbd5e1">'+fmtUSD(mInv[mi])+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(mCobP[mi],'var(--blue)')+'">'+fmtPesos(mCobP[mi])+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(mCobU[mi],'var(--green)')+'">'+fmtUSD(mCobU[mi])+'</td>';
     h+='<td style="'+tdS+';color:var(--cyan)">'+fmtUSD(mCobUnif[mi])+'</td>';
     h+='</tr>';
   }
@@ -4187,6 +4202,8 @@ function renderTeamDashboard(name){
   h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totGP)+'</td>';
   h+='<td style="'+tfS+';color:var(--gold)">'+fmtUSD(totUnif)+'</td>';
   h+='<td style="'+tfS+';color:#cbd5e1">'+fmtUSD(totInv)+'</td>';
+  h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totCobP)+'</td>';
+  h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(totCobU)+'</td>';
   h+='<td style="'+tfS+';color:var(--cyan)">'+fmtUSD(totCobUnif)+'</td>';
   h+='</tr></tbody></table></div>';
   container.innerHTML=h;

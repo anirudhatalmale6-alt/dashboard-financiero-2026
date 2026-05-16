@@ -2416,7 +2416,9 @@ function renderInversiones(){
       <div class="val" style="color:var(--text)">$ ${Number(cotizacion).toLocaleString('es-AR')}</div>
     </div>`;
 
-  // Evolución de Patrimonio - line chart showing cumulative net patrimony by month
+}
+
+function renderChartEvolucionPatrimonio(){
   const q=extractCuotasData('all');
   const mLabels=q.labels||[];
   const cumData=[];
@@ -3550,6 +3552,7 @@ function renderAll(){
     renderInvBalanceCards();
     renderChartBalanceGeneral();
     renderInversiones();
+    renderChartEvolucionPatrimonio();
     renderEvolucion();
   }
   renderVendedorDash();

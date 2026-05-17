@@ -1818,7 +1818,7 @@ async function loadAllData(){
         cronCompromisosDetail=[];
       }
       invDeudasMensuales=cronCompromisosAPagar;
-    }catch(e){console.log('CRONO_DEBUG: ERROR='+e.message);cronGastosAPagar=null;cronCompromisosAPagar=null;}
+    }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above
     // Secondary fetches (may be slow due to gviz rate limits)
     try{await buildVendedorGains();}catch(e){}

@@ -4972,10 +4972,10 @@ function renderModules(){
     }
 
     // 9 KPIs in 3x3 grid
-    var kc='padding:12px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)';
+    var kc='padding:12px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;justify-content:center';
     var kcL=kc+';border-right:1px solid rgba(255,255,255,.08)';
     var kcR=kc;
-    var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr">';
+    var kpiHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-auto-rows:1fr">';
 
     // Row 1
     kpiHTML+='<div style="'+kcL+'">'+kpiBlock('Ganancia Mes Actual',[
@@ -5004,7 +5004,7 @@ function renderModules(){
     ])+'</div>';
 
     // Row 3 (no border-bottom on last row)
-    var kcLast='padding:12px 10px;text-align:left';
+    var kcLast='padding:12px 10px;text-align:left;display:flex;flex-direction:column;justify-content:center';
     var kcLastL=kcLast+';border-right:1px solid rgba(255,255,255,.08)';
     kpiHTML+='<div style="'+kcLastL+'">'+kpiBlock('Cuotas a Cobrar Mes Actual',[
       {label:'En Pesos',val:cuotasMesPesos,color:'var(--blue)',fmt:fmtPesos},

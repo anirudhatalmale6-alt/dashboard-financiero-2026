@@ -651,6 +651,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secDetalleIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Detalle Ingresos</a>
     <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual Neto</a>
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
+    <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
     <a onclick="document.getElementById('secGastosInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
     <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Balance Inversión</a>
@@ -771,8 +772,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div id="secGraficos" style="display:none"></div>
 
-  <h3 class="section-title" id="secModulos" style="display:none"></h3>
-  <div class="modules" id="modules" style="display:none"></div>
+  <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
+  <div class="modules" id="modules"></div>
 
   <h3 class="section-title" id="secRanking">Ranking de <em>Ingresos</em></h3>
   <div class="rankings" id="rankings" style="grid-template-columns:1fr 1fr 1fr">
@@ -1880,7 +1881,7 @@ function populateFilters(){
     var hideIds=['kpis','kpiCardsRow','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
-      'secRanking','rankings','chartVendedoresWrap',
+      'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
       'secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection',
       'secDashVendedores',
       'secAcumuladoAnual','acumCards'];
@@ -3523,7 +3524,7 @@ function renderAll(){
   renderChartPie();
   renderChartVendedores();
   renderRankings();
-  // renderModules(); — Módulos section removed
+  renderModules();
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
   var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});

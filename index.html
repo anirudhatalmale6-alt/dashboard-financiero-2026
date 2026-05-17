@@ -1782,23 +1782,25 @@ async function loadAllData(){
     function parseCronoDetail(rangeData){
       if(!rangeData||!rangeData.length)return[];
       var entries=[];
-      for(var i=0;i<rangeData.length;i+=2){
+      for(var i=0;i<rangeData.length-1;i++){
         var row=rangeData[i];if(!row)continue;
         var name=row[0]?String(row[0]).trim():'';
         if(!name||name==='CLIENTES')continue;
         var desc=row[1]?String(row[1]).trim():'';
-        var cuota=row[7]?String(row[7]).trim():'';
+        var cuota='';
+        if(row[7]!=null){var cv=row[7];cuota=typeof cv==='number'?String(Math.round(cv)):String(cv).trim();}
         var checks=rangeData[i+1]||[];
         var pending=[];var paid=[];
-        for(var m=0;m<12;m++){var v=checks[10+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
+        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
         entries.push({name:name,desc:desc,cuota:cuota,paid:paid,pending:pending});
+        i++;
       }
       return entries;
     }
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
       var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
-      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C120:AC176').catch(function(){return null;});
+      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C100:AC200').catch(function(){return null;});
       var _cronoRes=await Promise.all([_cgP,_ccP,_cronoAllP]);
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);

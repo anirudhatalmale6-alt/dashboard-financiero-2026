@@ -1790,8 +1790,7 @@ async function loadAllData(){
         var cuota=row[7]?String(row[7]).trim():'';
         var checks=rangeData[i+1]||[];
         var pending=[];var paid=[];
-        var mN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
+        for(var m=0;m<12;m++){var v=checks[10+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
         entries.push({name:name,desc:desc,cuota:cuota,paid:paid,pending:pending});
       }
       return entries;
@@ -1799,13 +1798,23 @@ async function loadAllData(){
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
       var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
-      var _gdP=fetchSheetRange('Cronograma de Inversiones','C120:AC145').catch(function(){return null;});
-      var _cdP=fetchSheetRange('Cronograma de Inversiones','C148:AC177').catch(function(){return null;});
-      var _cronoRes=await Promise.all([_cgP,_ccP,_gdP,_cdP]);
+      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C120:AC176').catch(function(){return null;});
+      var _cronoRes=await Promise.all([_cgP,_ccP,_cronoAllP]);
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
-      cronGastosDetail=parseCronoDetail(_cronoRes[2]);
-      cronCompromisosDetail=parseCronoDetail(_cronoRes[3]);
+      var _cronoAll=_cronoRes[2]||[];
+      var _splitIdx=-1;
+      for(var _ci=1;_ci<_cronoAll.length;_ci++){
+        var _cr=_cronoAll[_ci];
+        if(_cr&&_cr[0]&&String(_cr[0]).trim()==='CLIENTES'){_splitIdx=_ci;break;}
+      }
+      if(_splitIdx>0){
+        cronGastosDetail=parseCronoDetail(_cronoAll.slice(0,_splitIdx));
+        cronCompromisosDetail=parseCronoDetail(_cronoAll.slice(_splitIdx));
+      }else{
+        cronGastosDetail=parseCronoDetail(_cronoAll);
+        cronCompromisosDetail=[];
+      }
       invDeudasMensuales=cronCompromisosAPagar;
     }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above

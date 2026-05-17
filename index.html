@@ -1805,21 +1805,18 @@ async function loadAllData(){
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
       var _cronoAll=_cronoRes[2]||[];
-      console.log('CRONO_DEBUG: allLen='+_cronoAll.length);
-      var _splitIdx=-1;
-      for(var _ci=1;_ci<_cronoAll.length;_ci++){
+      var _clIdxs=[];
+      for(var _ci=0;_ci<_cronoAll.length;_ci++){
         var _cr=_cronoAll[_ci];
-        if(_cr&&_cr[0]&&String(_cr[0]).trim()==='CLIENTES'){_splitIdx=_ci;break;}
+        if(_cr&&_cr[0]&&String(_cr[0]).trim()==='CLIENTES')_clIdxs.push(_ci);
       }
-      console.log('CRONO_DEBUG: splitIdx='+_splitIdx);
-      if(_splitIdx>0){
-        cronGastosDetail=parseCronoDetail(_cronoAll.slice(0,_splitIdx));
-        cronCompromisosDetail=parseCronoDetail(_cronoAll.slice(_splitIdx));
-      }else{
-        cronGastosDetail=parseCronoDetail(_cronoAll);
+      if(_clIdxs.length>=2){
+        cronGastosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[0],_clIdxs[1]));
+        cronCompromisosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[1]));
+      }else if(_clIdxs.length===1){
+        cronGastosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[0]));
         cronCompromisosDetail=[];
       }
-      console.log('CRONO_DEBUG: gastosDetail='+cronGastosDetail.length+' compromisosDetail='+cronCompromisosDetail.length);
       invDeudasMensuales=cronCompromisosAPagar;
     }catch(e){console.log('CRONO_DEBUG: ERROR='+e.message);cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above

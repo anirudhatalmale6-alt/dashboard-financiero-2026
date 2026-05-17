@@ -924,8 +924,10 @@ let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;
 let invDeudasMensuales=null;
-let cronGastosAPagar=null; // Cronograma de Inversiones row 151 cols R-AC (Jan-Dec 2026)
-let cronCompromisosAPagar=null; // Cronograma de Inversiones row 189 cols R-AC (Jan-Dec 2026)
+let cronGastosAPagar=null;
+let cronCompromisosAPagar=null;
+let cronGastosDetail=null;
+let cronCompromisosDetail=null;
 let trackRaw=null;
 let ventaDolaresRaw=null;
 let ventaDolaresMonths=null;
@@ -1777,12 +1779,33 @@ async function loadAllData(){
       if(!rangeData||!rangeData[0])return null;
       return rangeData[0].map(function(v){if(typeof v==='number')return Math.round(Math.abs(v));if(typeof v==='string'){var n=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var p=parseFloat(n);return isNaN(p)?0:Math.round(Math.abs(p));}return 0;});
     }
+    function parseCronoDetail(rangeData){
+      if(!rangeData||!rangeData.length)return[];
+      var entries=[];
+      for(var i=0;i<rangeData.length;i+=2){
+        var row=rangeData[i];if(!row)continue;
+        var name=row[0]?String(row[0]).trim():'';
+        if(!name||name==='CLIENTES')continue;
+        var desc=row[1]?String(row[1]).trim():'';
+        var cuota=row[7]?String(row[7]).trim():'';
+        var checks=rangeData[i+1]||[];
+        var pending=[];var paid=[];
+        var mN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
+        entries.push({name:name,desc:desc,cuota:cuota,paid:paid,pending:pending});
+      }
+      return entries;
+    }
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
       var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
-      var _cronoRes=await Promise.all([_cgP,_ccP]);
+      var _gdP=fetchSheetRange('Cronograma de Inversiones','C120:AC145').catch(function(){return null;});
+      var _cdP=fetchSheetRange('Cronograma de Inversiones','C148:AC177').catch(function(){return null;});
+      var _cronoRes=await Promise.all([_cgP,_ccP,_gdP,_cdP]);
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
+      cronGastosDetail=parseCronoDetail(_cronoRes[2]);
+      cronCompromisosDetail=parseCronoDetail(_cronoRes[3]);
       invDeudasMensuales=cronCompromisosAPagar;
     }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above
@@ -2153,7 +2176,7 @@ function renderGastosInvPanels(){
       +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
   }
 
-  function buildCronoPanel(title,icon,color,monthlyArr,subtitle){
+  function buildCronoPanel(title,icon,color,monthlyArr,subtitle,detailArr){
     if(!monthlyArr||!monthlyArr.length)return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Cargando...</div>';
     var total=0;
     var tbl='<table class="module-table" style="margin-top:0;border-radius:0"><thead><tr><th>Mes</th><th style="color:'+color+'">A Pagar</th></tr></thead><tbody>';
@@ -2166,20 +2189,40 @@ function renderGastosInvPanels(){
     }
     tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+color+'">'+fmtUSD(total)+'</td></tr>';
     tbl+='</tbody></table>';
+    var detHtml='';
+    if(detailArr&&detailArr.length){
+      var uid='det_'+Math.random().toString(36).substr(2,6);
+      var mN=['E','F','M','A','M','J','J','A','S','O','N','D'];
+      detHtml+='<div style="border-top:1px solid var(--border);padding:8px 12px;text-align:center">'
+        +'<button onclick="var d=document.getElementById(\''+uid+'\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';this.textContent=d.style.display===\'none\'?\'▼ Ver Detalle\':\'▲ Ocultar Detalle\'" style="background:none;border:1px solid '+color+';color:'+color+';font-size:10px;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:.5px">▼ Ver Detalle</button></div>';
+      detHtml+='<div id="'+uid+'" style="display:none;border-top:1px solid var(--border);max-height:350px;overflow-y:auto">';
+      detHtml+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+      detHtml+='<thead><tr style="background:rgba(255,255,255,.03)"><th style="padding:6px 8px;text-align:left;color:var(--text3);font-size:9px;font-weight:700;letter-spacing:.5px">CLIENTE</th><th style="padding:6px 8px;text-align:right;color:var(--text3);font-size:9px;font-weight:700;letter-spacing:.5px">CUOTA</th><th style="padding:6px 8px;text-align:center;color:var(--text3);font-size:9px;font-weight:700;letter-spacing:.5px">MESES</th></tr></thead><tbody>';
+      detailArr.forEach(function(e){
+        var dots='';
+        for(var mi=0;mi<12;mi++){
+          var isPaid=e.paid.indexOf(mi)>=0;
+          dots+='<span title="'+mN[mi]+(isPaid?' (pagado)':' (pendiente)')+'" style="display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:3px;font-size:8px;font-weight:700;margin:1px;'+(isPaid?'background:rgba(34,211,238,.15);color:var(--cyan)':'background:rgba(248,113,113,.12);color:var(--red)')+'">'+mN[mi]+'</span>';
+        }
+        detHtml+='<tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:6px 8px;color:var(--text)">'+e.name+(e.desc?'<div style="font-size:9px;color:var(--text3);margin-top:1px">'+e.desc.substring(0,35)+'</div>':'')+'</td><td style="padding:6px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:'+color+'">'+e.cuota+'</td><td style="padding:6px 4px;text-align:center;white-space:nowrap">'+dots+'</td></tr>';
+      });
+      detHtml+='</tbody></table></div>';
+    }
     var subHtml=subtitle?'<div style="font-size:9px;color:var(--text3);margin-top:2px">('+subtitle+')</div>':'';
     return '<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
       +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+icon+'</span>'+title+subHtml+'</div>'
       +'<div style="padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)">'
       +'<div style="font-size:9px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total a Pagar</div>'
       +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:20px;font-weight:700;color:'+color+'">'+fmtUSD(total)+'</div></div>'
-      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
+      +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div>'
+      +detHtml+'</div>';
   }
 
   var html='';
   html+=buildDetailPanel('Gastos Operativos Anuales','💸','var(--rosa)',d.gastosInv);
-  html+=buildCronoPanel('Gastos Operativos a Pagar','💳','var(--gold)',cronGastosAPagar);
+  html+=buildCronoPanel('Gastos Operativos a Pagar','💳','var(--gold)',cronGastosAPagar,null,cronGastosDetail);
   html+=buildDetailPanel('Compromisos de Pagos Anuales','📋','var(--cyan)',d.compromisos);
-  html+=buildCronoPanel('Compromisos de Pagos a Pagar','📊','var(--purple)',cronCompromisosAPagar,'Gastos Operativos / Inversores / Inversiones');
+  html+=buildCronoPanel('Compromisos de Pagos a Pagar','📊','var(--purple)',cronCompromisosAPagar,'Gastos Operativos / Inversores / Inversiones',cronCompromisosDetail);
   container.innerHTML=html;
 }
 

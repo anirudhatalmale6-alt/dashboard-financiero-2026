@@ -720,7 +720,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="it-scroll"><table class="it-table" id="ingresosTotalesTable"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando datos...</td></tr></tbody></table></div>
   </div>
 
-  <h2 class="section-title" style="margin-bottom:20px" id="secResumenAnio"><span class="dot" style="background:var(--blue)"></span>Resumen General <em>Año 2026</em></h2>
+  <h2 class="section-title" style="margin-bottom:4px" id="secResumenAnio"><span class="dot" style="background:var(--blue)"></span>Resumen General <em>Año 2026</em></h2>
+  <div id="subtituloResumenAnio" style="color:var(--text3);font-size:13px;margin-bottom:20px;letter-spacing:.3px"></div>
   <div id="kpiAnioCardsRow" style="display:flex;gap:24px;align-items:stretch;margin-bottom:18px;max-width:700px;margin-left:auto;margin-right:auto;justify-content:center">
     <div id="kpiAnioLeft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
     <div id="kpiAnioRight" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px;text-align:center"></div>
@@ -4426,7 +4427,7 @@ function renderResumenRange(containerId,mode){
   container.parentNode.insertBefore(totRow,container.nextSibling);
 }
 
-function renderResumenAnio(){renderResumenRange('kpiAnioRow','anio');}
+function renderResumenAnio(){renderResumenRange('kpiAnioRow','anio');var sub=document.getElementById('subtituloResumenAnio');if(sub){var h=new Date();var d=h.getDate();var m=h.getMonth();var y=h.getFullYear();var mN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];sub.textContent='Hasta la fecha de hoy '+d+'/'+( m+1)+'/'+y;}}
 function renderResumenHistorico(){renderResumenRange('kpiHistoricoRow','historico');}
 
 function renderCurrentMonthKPIs(){

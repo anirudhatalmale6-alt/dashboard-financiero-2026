@@ -3955,7 +3955,7 @@ function renderModuleKPIs(){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  cards=cards.filter(function(c){return !isExcluded(c.name);});
+  cards=cards.filter(function(c){return c.name&&!isExcluded(c.name);});
 
   // Sort by "Ganancias Unificado en Dolares" (Dashboard Martin rows 93-103, fetched via range)
   var uniGains={};
@@ -4062,7 +4062,7 @@ function _teamVendorList(){
   var cards=[];
   offsets.forEach(function(o,i){var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];cards.push({name:name,icon:socIcons[i],section:'soc',idx:i,offset:o});});
   offsets.forEach(function(o,i){var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];cards.push({name:name,icon:martIcons[i],section:'mart',idx:i,offset:o});});
-  cards=cards.filter(function(c){return !isExcluded(c.name);});
+  cards=cards.filter(function(c){return c.name&&!isExcluded(c.name);});
   var cmIdx=_mesActualIdx;var uniG={};var ugR=window._uniGainsRows||[];
   for(var ui=0;ui<ugR.length;ui++){var ur=ugR[ui];if(!ur||!ur[0])continue;var ugv=ur[2+cmIdx];if(typeof ugv==='number')uniG[normName(ur[0])]=Math.abs(ugv);else if(typeof ugv==='string'){var neg=ugv.includes('-')?-1:1;var cl=ugv.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniG[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}}
   cards.sort(function(a,b){return(uniG[normName(b.name)]||0)-(uniG[normName(a.name)]||0);});
@@ -4336,7 +4336,7 @@ function renderResumenRange(containerId,mode){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  cards=cards.filter(function(c){return !isExcluded(c.name);});
+  cards=cards.filter(function(c){return c.name&&!isExcluded(c.name);});
 
   // Sort by unified gains (sum months)
   var ugRows=window._uniGainsRows||[];

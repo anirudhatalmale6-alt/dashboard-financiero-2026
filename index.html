@@ -3534,12 +3534,6 @@ function renderAll(){
   // Hide Acumulado Anual (general) when filtering by vendor — vendors have their own acumulado section
   var acumOnlyIds=['secAcumuladoAnual','acumCards'];
   acumOnlyIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isFiltered?'none':'';});
-  var cuotasContainer=document.getElementById('cuotasCards');
-  var cuotasCharts=cuotasContainer?cuotasContainer.nextElementSibling:null;
-  if(cuotasCharts)cuotasCharts.style.display='';
-  var cuotasPesosContainer=document.getElementById('cuotasCardsPesos');
-  var cuotasPesosCharts=cuotasPesosContainer?cuotasPesosContainer.nextElementSibling:null;
-  if(cuotasPesosCharts)cuotasPesosCharts.style.display='';
   var cuotasUnifContainer=document.getElementById('cuotasCardsUnif');
   var cuotasUnifCharts=cuotasUnifContainer?cuotasUnifContainer.nextElementSibling:null;
   if(cuotasUnifCharts)cuotasUnifCharts.style.display='';

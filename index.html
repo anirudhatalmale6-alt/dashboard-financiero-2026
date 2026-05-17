@@ -187,9 +187,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ranking-card .chart-subtitle{font-size:10px}
 
 /* Module Cards */
-.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:48px}
+.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:48px;align-items:stretch}
 .sidebar.collapsed~.main .modules{grid-template-columns:repeat(4,1fr)}
-.module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:.3s}
+.module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;transition:.3s;display:flex;flex-direction:column;overflow:hidden}
+.module-card>div:nth-child(2){flex:1}
 .module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
 .module-name{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .module-name .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--gold-dim);color:var(--gold)}
@@ -5213,7 +5214,9 @@ function extractCuotasData(vendorFilter,useEmpresas){
     cobrarUniPesos.push(useUniPesosIdx>=0?getVal(uniP[useUniPesosIdx],m):0);
   }
   var compromisosPagos=[];
-  if(cronGastosAPagar&&cronGastosAPagar.length>=12){
+  if(cronCompromisosAPagar&&cronCompromisosAPagar.length>=12){
+    for(var m=0;m<12;m++){compromisosPagos.push(cronCompromisosAPagar[m]||0);}
+  }else if(cronGastosAPagar&&cronGastosAPagar.length>=12){
     for(var m=0;m<12;m++){compromisosPagos.push(cronGastosAPagar[m]||0);}
   }else{for(var m=0;m<12;m++)compromisosPagos.push(0);}
   return{labels:labels,cobrarUSD:cobrarUSD,pagarUSD:pagarUSD,cobrarPesos:cobrarPesos,pagarPesos:pagarPesos,gastosPesos:gastosPesos,gastosUSD:gastosUSD,cotizacion:cotizacion,unifiedIncome:unifiedIncome,unifiedExpenses:unifiedExpenses,deudasMensuales:deudasMensuales,vendors:vendorsList,cobrarUniUSD:cobrarUniUSD,cobrarUniPesos:cobrarUniPesos,compromisosPagos:compromisosPagos};

@@ -638,7 +638,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 
   <div class="filter-section">
-    <label class="filter-label">Vendedor / Módulo</label>
+    <label class="filter-label">Vendedor</label>
     <select class="filter-select" id="filterVendedor">
       <option value="all">Todos</option>
     </select>
@@ -652,7 +652,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a onclick="document.getElementById('secAcumuladoAnual').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--blue)"></span>Acumulado Anual Neto</a>
     <a onclick="document.getElementById('secGraficosIngresos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--gold)"></span>Gráficos Mensuales</a>
     <a onclick="document.getElementById('secRanking').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Ranking Ingresos</a>
-    <a onclick="document.getElementById('secModulos').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--purple)"></span>Módulos de Negocio</a>
     <a onclick="document.getElementById('secGastosInv').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--red)"></span>Gastos / Compromisos</a>
     <a onclick="document.getElementById('secInvBalance').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Balance Inversión</a>
     <a onclick="document.getElementById('secCuotas').scrollIntoView({behavior:'smooth',block:'start'})"><span class="nav-dot" style="background:var(--green)"></span>Cuotas U$D</a>
@@ -772,10 +771,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div id="secGraficos" style="display:none"></div>
 
-  <h3 class="section-title" id="secModulos">Módulos de <em>Negocio</em> / Balance Anual</h3>
-  <div class="modules" id="modules"></div>
+  <h3 class="section-title" id="secModulos" style="display:none"></h3>
+  <div class="modules" id="modules" style="display:none"></div>
 
-  <h3 class="section-title" id="secRanking">Ranking de <em>Ingresos</em> / Módulos de <em>Negocios</em></h3>
+  <h3 class="section-title" id="secRanking">Ranking de <em>Ingresos</em></h3>
   <div class="rankings" id="rankings" style="grid-template-columns:1fr 1fr 1fr">
     <div class="ranking-card">
       <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Top Vendedores USD</div>
@@ -804,7 +803,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="charts" id="chartVendedoresWrap" style="grid-template-columns:1fr;margin-bottom:28px">
     <div class="chart-card full">
-      <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ingresos por Vendedor / Módulo</div>
+      <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Ingresos por Vendedor</div>
       <div class="chart-subtitle">Comparación mensual — ingresos unificados en U$D</div>
       <div class="chart-container" style="height:280px"><canvas id="chartVendedores"></canvas></div>
     </div>
@@ -918,7 +917,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
-const EXCLUDED_VENDORS=['Tobias','Tino'];
+const EXCLUDED_VENDORS=['Tobias','Tino','Modulo 1','Modulo 2'];
 function isExcluded(name){return EXCLUDED_VENDORS.some(function(e){return name===e||name.toLowerCase()===e.toLowerCase();});};
 let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
@@ -941,7 +940,6 @@ const EC_GROUPS=[
   ]},
   {totalR:76,invR:77,restaR:78,cajaR:79,vendors:[
     {name:'Mely',lc:2,uc:4,pc:5},
-    {name:'Modulo 2',lc:7,uc:9,pc:10},
     {name:'Tobias',lc:12,uc:14,pc:15}
   ]},
   {totalR:93,invR:94,restaR:95,cajaR:96,vendors:[
@@ -951,8 +949,7 @@ const EC_GROUPS=[
   ]},
   {totalR:110,invR:111,restaR:112,cajaR:113,vendors:[
     {name:'Tino',lc:2,uc:4,pc:5},
-    {name:'Linea 314',lc:7,uc:9,pc:10},
-    {name:'Modulo 1',lc:12,uc:14,pc:15}
+    {name:'Linea 314',lc:7,uc:9,pc:10}
   ]}
 ];
 // Estado de Cuentas: vendor sheet ranges (as provided by client)
@@ -962,9 +959,7 @@ const EC_VENDOR_SHEETS=[
   {name:'Gonza',sheet:'GONZA',range:'B47:C55'},
   {name:'Mely',sheet:'MELY',range:'E64:F72'},
   {name:'Tobias',sheet:'TOBIAS',range:'B35:C43'},
-  {name:'Tino',sheet:'TINO',range:'B41:C49'},
-  {name:'Modulo 1',sheet:'MODULO 1',range:'E34:F42'},
-  {name:'Modulo 2',sheet:'MODULO 2',range:'E34:F42'}
+  {name:'Tino',sheet:'TINO',range:'B41:C49'}
 ];
 let ecSheetData={};
 // Comisiones row range in DASHBOARD (gviz rows 152-156)
@@ -973,7 +968,7 @@ const EC_COM_START=152,EC_COM_END=156;
 const VENDOR_COLORS={
   'Osito S.r.l.':'#d4a853','Patito S.A.':'#60a5fa','Gonza':'#34d399',
   'Mely':'#f87171','Tobias':'#a78bfa','Tino':'#2dd4bf',
-  'Modulo 1':'#fb923c','Modulo 2':'#22d3ee','Tecno':'#e879f9',
+  'Tecno':'#e879f9',
   'Inversiones':'#22d3ee','Creditos':'#f472b6','Linea 314':'#e879f9'
 };
 let charts={};
@@ -1003,7 +998,7 @@ function togglePanel(name){
 }
 
 // Build panel groups and sections dynamically from CUOTAS_PANELS config
-var VENDOR_ICONS={'TECNO':'💰','CRÉDITOS':'💳','INVERSIONES':'📈','LINEA 314':'📡','OSITO':'🏢','MELY':'👩','GONZA':'🤝','TOBIAS':'🧑','TINO':'💻','PATITO':'📦','MÓDULO 1':'🔧','MÓDULO 2':'⚙️'};
+var VENDOR_ICONS={'TECNO':'💰','CRÉDITOS':'💳','INVERSIONES':'📈','LINEA 314':'📡','OSITO':'🏢','MELY':'👩','GONZA':'🤝','TOBIAS':'🧑','TINO':'💻','PATITO':'📦'};
 function buildCuotasPanels(){
   // Preserve open panel state across rebuilds
   var openPanels={};
@@ -1406,14 +1401,6 @@ var CUOTAS_PANELS=[
   // PATO (PATITO)
   {key:'patoDolares',vendor:'PATITO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN DOLARES',color:'#e879f9'},
   {key:'patoPesos',vendor:'PATITO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1k1Uyphm-df7eN6IyEx77fqOixuROy4p1Cfq8t5tng78',tab:'VENTAS EN PESOS',color:'#e879f9'},
-  // MODULO 1
-  {key:'modulo1Dolares',vendor:'MÓDULO 1',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN DOLARES',color:'#94a3b8'},
-  {key:'modulo1Pesos',vendor:'MÓDULO 1',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'VENTA EN PESOS',color:'#94a3b8'},
-  {key:'modulo1Creditos',vendor:'MÓDULO 1',label:'Créditos',icon:'$',currency:'$',sheetId:'1t42edtRuqh3mJRV7hKnBKaSq_THwd9FwbpqEc8Zn86U',tab:'CREDITOS',color:'#94a3b8'},
-  // MODULO 2
-  {key:'modulo2Dolares',vendor:'MÓDULO 2',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN DOLARES',color:'#cbd5e1'},
-  {key:'modulo2Pesos',vendor:'MÓDULO 2',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'VENTA EN PESOS',color:'#cbd5e1'},
-  {key:'modulo2Creditos',vendor:'MÓDULO 2',label:'Créditos',icon:'$',currency:'$',sheetId:'1zpIuSEtlmm4fZN-YIy86u_NLp3actVdFj9zy78pCSbA',tab:'CREDITOS',color:'#cbd5e1'}
 ];
 var cuotasPanelData={};
 
@@ -1439,31 +1426,7 @@ function dashNum(row,col){
 }
 
 function addNewModulesFromRaw(raw){
-  // Modulo 2: gviz row 63 header (1-indexed), months at rows 64-75, col J(10)=USD, K(11)=Pesos
-  // Modulo 1: gviz row 97 header (1-indexed), months at rows 98-109, col O(15)=USD, P(16)=Pesos
-  const newMods=[
-    {name:'Modulo 2',startRow:64,usdCol:10,pesosCol:11,totalRow:76,invRow:77,restaRow:78,cajaRow:79},
-    {name:'Modulo 1',startRow:98,usdCol:15,pesosCol:16,totalRow:110,invRow:111,restaRow:112,cajaRow:113}
-  ];
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  newMods.forEach(mod=>{
-    meses.forEach((m,i)=>{
-      const gUSD=cellVal(raw,mod.startRow+i,mod.usdCol);
-      const gPesos=cellVal(raw,mod.startRow+i,mod.pesosCol);
-      const ganUSD=typeof gUSD==='number'?gUSD:0;
-      const ganPesos=typeof gPesos==='number'?gPesos:0;
-      allData.modulos.push({
-        Modulo:mod.name,Mes:m,
-        Ganancia_USD:ganUSD,
-        Ganancia_Pesos:ganPesos,
-        Inversion_USD:cellVal(raw,mod.invRow,mod.usdCol)||0,
-        Resta_Cobrar_USD:cellVal(raw,mod.restaRow,mod.usdCol)||0,
-        Caja_Actual_USD:cellVal(raw,mod.cajaRow,mod.usdCol)||0,
-        Inversion_Pesos:cellVal(raw,mod.invRow,mod.pesosCol)||0,
-        Resta_Cobrar_Pesos:cellVal(raw,mod.restaRow,mod.pesosCol)||0
-      });
-    });
-  });
+  // Modulo 1 and Modulo 2 removed — function kept as no-op for call-site compatibility
 }
 
 function enrichVendedorFromRaw(raw){
@@ -1713,7 +1676,7 @@ async function loadAllData(){
     try{
       window._vendorBalances={};window._balanceLabel='';
       var socDef2=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
-      var martDef2=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+      var martDef2=['Tecno','Inversiones','Creditos','Linea 314'];
       var balOffsets=[4,9,14,19,24,29];
       var balSections=[];
       for(var bi=100;bi<dRaw.length;bi++){var br=dRaw[bi];if(!br)continue;var c2=br[2];if(c2&&typeof c2==='string'&&c2.trim()==='Balance')balSections.push(bi);}
@@ -1749,7 +1712,7 @@ async function loadAllData(){
     rebuildModulosFromDashboard(dRaw);
     populateFilters();
     renderAll();
-    // Fetch monthly investment data from DASHBOARD MARTIN section "Inversiones Mensuales de cada Vendedor / Módulo UNIFICADO EN DOLARES"
+    // Fetch monthly investment data from DASHBOARD MARTIN section "Inversiones Mensuales de cada Vendedor UNIFICADO EN DOLARES"
     try{
       var invRows=await fetchSheetRange('DASHBOARD MARTIN','C310:P345');
       window._vendorInvestments={};
@@ -1917,7 +1880,7 @@ function populateFilters(){
     var hideIds=['kpis','kpiCardsRow','secIngresosTotales','ingresosTotalesWrap',
       'secDetalleIngresos','ingresosMensualContainer',
       'secGraficosIngresos','secGraficos',
-      'secRanking','rankings','secModulos','modules','chartVendedoresWrap',
+      'secRanking','rankings','chartVendedoresWrap',
       'secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection',
       'secDashVendedores',
       'secAcumuladoAnual','acumCards'];
@@ -3360,21 +3323,11 @@ function updateDynamicTitles(){
     var el=document.getElementById('secDetalleIngresos');
     if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalles de Ingresos <em>Mensuales</em>';
   })();
-  // Dynamic: scan for "Balance y Ganancias" text in dashRaw
-  (function(){
-    var title='Control Financiero y Balance / Modulos de Negocios';
-    if(dashRaw){for(var i=100;i<dashRaw.length&&i<220;i++){
-      if(dashRaw[i]&&typeof dashRaw[i][2]==='string'&&dashRaw[i][2].indexOf('Balance y Ganancias')>=0){title=dashRaw[i][2];break;}
-    }}
-    title=toTitleCase(title);
-    var el=document.getElementById('secModulos');if(!el)return;
-    var parts=title.split(' ');var last=parts.pop();
-    el.innerHTML='<span class="dot" style="background:var(--gold)"></span>'+parts.join(' ')+' <em>'+last+'</em>';
-  })();
+  // Módulos section removed — no title update needed
   // These sections use dynamic scanning so title row positions change — use hardcoded titles
   (function(){var el=document.getElementById('secCuotasPesos');if(el)el.innerHTML='Cuotas a <em>Cobrar en Pesos</em>';})();
   (function(){var el=document.getElementById('secCuotas');if(el)el.innerHTML='Cuotas a <em>Cobrar en Dólares</em>';})();
-  (function(){var el=document.getElementById('secVendedorDash');if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalle Mensual por Vendedor / <em>Módulo</em>';})();
+  (function(){var el=document.getElementById('secVendedorDash');if(el)el.innerHTML='<span class="dot" style="background:var(--gold)"></span>Detalle Mensual por <em>Vendedor</em>';})();
   (function(){var el=document.getElementById('secEstadoCuentas');if(el){var h2=el.querySelector('h2');if(h2)h2.innerHTML='Estado de Cuentas y Comisiones <em>Vendedores</em>';}})();
 }
 
@@ -3570,7 +3523,7 @@ function renderAll(){
   renderChartPie();
   renderChartVendedores();
   renderRankings();
-  renderModules();
+  // renderModules(); — Módulos section removed
   // Cuotas: show for both global and vendor-filtered views. Inversiones: global only.
   var cuotasIds=['secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secCuotasUnif','cuotasCardsUnif'];
   cuotasIds.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='';});
@@ -3972,9 +3925,9 @@ function renderModuleKPIs(){
   var sn=window._socVendorNames||[];
   var mn=window._martVendorNames||[];
   var socDef=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
-  var martDef=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var martDef=['Tecno','Inversiones','Creditos','Linea 314'];
   var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
-  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var martIcons=['📈','💳','💰','📡','',''];
   var offsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
 
   function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
@@ -4002,7 +3955,7 @@ function renderModuleKPIs(){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
+  cards=cards.filter(function(c){return !isExcluded(c.name);});
 
   // Sort by "Ganancias Unificado en Dolares" (Dashboard Martin rows 93-103, fetched via range)
   var uniGains={};
@@ -4101,15 +4054,15 @@ function _teamVendorList(){
   if(socStart<0)socStart=125;if(martStart<0)martStart=163;
   var sn=window._socVendorNames||[],mn=window._martVendorNames||[];
   var socDef=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
-  var martDef=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var martDef=['Tecno','Inversiones','Creditos','Linea 314'];
   var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
-  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var martIcons=['📈','💳','💰','📡','',''];
   var offsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
   function normName(s){return String(s).trim().toLowerCase().replace(/\.+$/,'');}
   var cards=[];
   offsets.forEach(function(o,i){var name=(sn[o.rng]&&typeof sn[o.rng]==='string')?sn[o.rng].trim():socDef[i];cards.push({name:name,icon:socIcons[i],section:'soc',idx:i,offset:o});});
   offsets.forEach(function(o,i){var name=(mn[o.rng]&&typeof mn[o.rng]==='string')?mn[o.rng].trim():martDef[i];cards.push({name:name,icon:martIcons[i],section:'mart',idx:i,offset:o});});
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
+  cards=cards.filter(function(c){return !isExcluded(c.name);});
   var cmIdx=_mesActualIdx;var uniG={};var ugR=window._uniGainsRows||[];
   for(var ui=0;ui<ugR.length;ui++){var ur=ugR[ui];if(!ur||!ur[0])continue;var ugv=ur[2+cmIdx];if(typeof ugv==='number')uniG[normName(ur[0])]=Math.abs(ugv);else if(typeof ugv==='string'){var neg=ugv.includes('-')?-1:1;var cl=ugv.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);uniG[normName(ur[0])]=isNaN(n)?0:Math.abs(n*neg);}}
   cards.sort(function(a,b){return(uniG[normName(b.name)]||0)-(uniG[normName(a.name)]||0);});
@@ -4357,9 +4310,9 @@ function renderResumenRange(containerId,mode){
   var sn=window._socVendorNames||[];
   var mn=window._martVendorNames||[];
   var socDef=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
-  var martDef=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var martDef=['Tecno','Inversiones','Creditos','Linea 314'];
   var socIcons=['📦','🏢','🤝','👩','🧑','💻'];
-  var martIcons=['📈','💳','💰','📡','🔧','🔩'];
+  var martIcons=['📈','💳','💰','📡','',''];
   var offsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
 
   function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
@@ -4383,7 +4336,7 @@ function renderResumenRange(containerId,mode){
     cards.push({name:name,icon:martIcons[i],usd:usd,pesos:pesos});
   });
 
-  cards=cards.filter(function(c){return c.name!=='Modulo 1'&&c.name!=='Modulo 2'&&!isExcluded(c.name);});
+  cards=cards.filter(function(c){return !isExcluded(c.name);});
 
   // Sort by unified gains (sum months)
   var ugRows=window._uniGainsRows||[];
@@ -4860,7 +4813,7 @@ function renderModules(){
   var sn=window._socVendorNames||[];
   var mn=window._martVendorNames||[];
   var defIcons=['📦','🏢','🤝','👩','🧑','💻'];
-  var defIconsM=['📈','💳','💰','📡','🔧','🔩'];
+  var defIconsM=['📈','💳','💰','📡','',''];
 
   // Sociedades: 6 vendors at offsets 0,5,10,15,20,25 in range query (cols E/F, J/K, O/P, T/U, Y/Z, AD/AE)
   var socVendors=[];
@@ -4874,7 +4827,7 @@ function renderModules(){
   // Martin: vendors at same offsets
   var martVendors=[];
   var martOffsets=[{u:4,p:5,rng:0},{u:9,p:10,rng:5},{u:14,p:15,rng:10},{u:19,p:20,rng:15},{u:24,p:25,rng:20},{u:29,p:30,rng:25}];
-  var martDefNames=['Tecno','Inversiones','Creditos','Linea 314','Modulo 1','Modulo 2'];
+  var martDefNames=['Tecno','Inversiones','Creditos','Linea 314'];
   for(var vi=0;vi<martOffsets.length;vi++){
     var vn=(mn[martOffsets[vi].rng]&&typeof mn[martOffsets[vi].rng]==='string')?mn[martOffsets[vi].rng].trim():martDefNames[vi];
     // Skip empty vendors (no name in spreadsheet and no default makes sense)
@@ -5997,7 +5950,6 @@ function renderVendorSociedadCards(container){
     'mely':'var(--pink)','gonza':'var(--teal)','patito':'#e879f9','patito s.a.':'#e879f9',
     'tobias':'var(--cyan)','tino':'var(--red)','linea 314':'var(--blue)',
     'tecno':'var(--gold)','inversiones':'var(--green)',
-    'modulo 1':'#94a3b8','módulo 1':'#94a3b8','modulo 2':'#cbd5e1','módulo 2':'#cbd5e1',
     'creditos':'var(--purple)','créditos':'var(--purple)'
   };
 
@@ -6162,7 +6114,7 @@ function printVendedores(){
   ph.style.display='flex';fi.style.display='block';
   setChartPrintMode(true);
   // Hide ALL non-vendedor sections (principal)
-  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secModulos','modules','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
+  const hideIds=['kpis','secIngresosTotales','ingresosTotalesWrap','secDetalleIngresos','ingresosMensualContainer','secAcumuladoAnual','acumCards','secGraficosIngresos','secGraficos','secRanking','rankings','secCuotas','cuotasCards','secCuotasPesos','cuotasCardsPesos','secGastosInv','gastosInvPanels','gastosYearToggle','secInvBalance','invBalanceCards','invSection','secDashEmpresas','secEmpCuotasUSD','empCuotasCardsUSD','secEmpCuotasPesos','empCuotasCardsPesos','secEmpCuotasUnif','empCuotasCardsUnif'];
   const cuotasCharts=document.getElementById('cuotasCards')?document.getElementById('cuotasCards').nextElementSibling:null;
   const cuotasPesosCharts=document.getElementById('cuotasCardsPesos')?document.getElementById('cuotasCardsPesos').nextElementSibling:null;
   const hidden=[];

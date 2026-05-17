@@ -918,7 +918,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 const SHEET_ID='1zDlBxtLibZnvce7JhIEuXMoeDebgWeuWzjbMyKBnjTc';
 const COLORS=['#d4a853','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#22d3ee','#f472b6','#2dd4bf','#e879f9'];
 const EXCLUDED_VENDORS=['Tobias','Tino','Modulo 1','Modulo 2'];
-function isExcluded(name){return EXCLUDED_VENDORS.some(function(e){return name===e||name.toLowerCase()===e.toLowerCase();});};
+function isExcluded(name){if(!name)return false;return EXCLUDED_VENDORS.some(function(e){return name===e||name.toLowerCase()===e.toLowerCase();});};
 let allData={resumen:[],vendedor:[],modulos:[],panel:[],vendedorGains:[]};
 let dashRaw=null;
 let invRaw=null;

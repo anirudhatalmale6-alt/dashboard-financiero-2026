@@ -832,7 +832,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div class="cuotas-cards" id="cuotasCardsPesos"></div>
 
-  <div class="charts">
+  <div class="charts" style="display:none">
     <div class="chart-card">
       <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Cuotas en U$D</div>
       <div class="chart-subtitle">Cobro de cuotas vs Compromisos de pago mensual</div>
@@ -857,14 +857,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="charts" style="grid-template-columns:1fr">
     <div class="chart-card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap">
-        <div class="chart-title" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas Unificadas en U$D</div>
+        <div class="chart-title" style="margin-bottom:0"><span class="dot" style="background:var(--gold)"></span>Cuotas a Cobrar — Pesos, Dólares y Unificadas</div>
         <div style="display:flex;gap:6px">
           <button class="cm-btn active" data-cyear="2026" onclick="setCuotasYearFilter('2026')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a1b2e;font-weight:700;cursor:pointer;transition:all .2s">Año 2026</button>
           <button class="cm-btn" data-cyear="2027" onclick="setCuotasYearFilter('2027')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">Año 2027</button>
           <button class="cm-btn" data-cyear="all" onclick="setCuotasYearFilter('all')" style="font-size:11px;padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-weight:600;cursor:pointer;transition:all .2s">2026 + 2027</button>
         </div>
       </div>
-      <div class="chart-subtitle">Cuotas en Pesos convertidas a dólares (blue) + Cuotas en U$D</div>
+      <div class="chart-subtitle">Pesos (eje izquierdo) — Dólares y Unificadas U$D (eje derecho)</div>
       <div class="chart-container"><canvas id="chartCuotasUnif"></canvas></div>
     </div>
   </div>
@@ -5406,19 +5406,19 @@ function renderChartCuotasUnif(){
   if(charts.cuotasUnif)charts.cuotasUnif.destroy();
   var canvas=document.getElementById('chartCuotasUnif');
   if(!canvas)return;
+  var datasets=[
+    {label:'Cuotas a Cobrar $',data:q.cobrarPesos,backgroundColor:'rgba(96,165,250,.55)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6,barPercentage:.7,categoryPercentage:.8,yAxisID:'yPesos',order:3},
+    {label:'Cuotas a Cobrar U$D',data:q.cobrarUSD,backgroundColor:'rgba(52,211,153,.65)',borderColor:'#34d399',borderWidth:1,borderRadius:6,barPercentage:.7,categoryPercentage:.8,yAxisID:'yUSD',order:2},
+    {label:'Cuotas Unificadas U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.7,categoryPercentage:.8,yAxisID:'yUSD',order:1}
+  ];
+  if(filterVendedor==='all'&&compPagos.some(v=>v>0)){
+    datasets.push({label:'Compromisos de Pagos a Pagar',data:compPagos,backgroundColor:'rgba(251,146,60,.55)',borderColor:'#fb923c',borderWidth:1,borderRadius:6,barPercentage:.7,categoryPercentage:.8,yAxisID:'yUSD',order:4});
+  }
   charts.cuotasUnif=new Chart(canvas,{
     type:'bar',
-    data:{
-      labels:q.labels,
-      datasets:filterVendedor!=='all'?[
-        {label:'Cuotas Unificadas U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5}
-      ]:[
-        {label:'Cuotas a Cobrar Unif U$D',data:cobrarUnif,backgroundColor:'rgba(212,168,83,.7)',borderColor:'#d4a853',borderWidth:1,borderRadius:6,barPercentage:.5},
-        {label:'Compromisos de Pagos a Pagar U$D',data:compPagos,backgroundColor:'rgba(251,146,60,.6)',borderColor:'#fb923c',borderWidth:1,borderRadius:6,barPercentage:.5}
-      ]
-    },
+    data:{labels:q.labels,datasets:datasets},
     plugins:[ChartDataLabels],
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true}},datalabels:{color:'#e8e6e3',font:{family:'IBM Plex Mono',size:9,weight:'600'},anchor:'end',align:'top',offset:2,formatter:function(v){return v>=100?fmt(v,'U$D '):v>0?Math.round(v):'';}}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},y:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10},callback:v=>fmt(v,'U$D ')},grid:{color:'rgba(42,43,58,.3)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9a98a0',font:{family:'DM Sans',size:11},boxWidth:12,boxHeight:12,borderRadius:3,useBorderRadius:true,padding:14}},datalabels:{display:false}},scales:{x:{ticks:{color:'#5c5a65',font:{family:'DM Sans',size:10}},grid:{color:'rgba(42,43,58,.3)'}},yPesos:{type:'linear',position:'left',title:{display:true,text:'Pesos ($)',color:'var(--blue)',font:{family:'DM Sans',size:11,weight:'600'}},ticks:{color:'#60a5fa',font:{family:'DM Sans',size:9},callback:v=>fmt(v,'$ ')},grid:{color:'rgba(42,43,58,.2)'}},yUSD:{type:'linear',position:'right',title:{display:true,text:'Dólares (U$D)',color:'var(--gold)',font:{family:'DM Sans',size:11,weight:'600'}},ticks:{color:'#d4a853',font:{family:'DM Sans',size:9},callback:v=>fmt(v,'U$D ')},grid:{drawOnChartArea:false}}}}
   });
 }
 

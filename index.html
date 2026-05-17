@@ -1805,11 +1805,13 @@ async function loadAllData(){
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
       var _cronoAll=_cronoRes[2]||[];
+      console.log('CRONO_DEBUG: allLen='+_cronoAll.length);
       var _splitIdx=-1;
       for(var _ci=1;_ci<_cronoAll.length;_ci++){
         var _cr=_cronoAll[_ci];
         if(_cr&&_cr[0]&&String(_cr[0]).trim()==='CLIENTES'){_splitIdx=_ci;break;}
       }
+      console.log('CRONO_DEBUG: splitIdx='+_splitIdx);
       if(_splitIdx>0){
         cronGastosDetail=parseCronoDetail(_cronoAll.slice(0,_splitIdx));
         cronCompromisosDetail=parseCronoDetail(_cronoAll.slice(_splitIdx));
@@ -1817,8 +1819,9 @@ async function loadAllData(){
         cronGastosDetail=parseCronoDetail(_cronoAll);
         cronCompromisosDetail=[];
       }
+      console.log('CRONO_DEBUG: gastosDetail='+cronGastosDetail.length+' compromisosDetail='+cronCompromisosDetail.length);
       invDeudasMensuales=cronCompromisosAPagar;
-    }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
+    }catch(e){console.log('CRONO_DEBUG: ERROR='+e.message);cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above
     // Secondary fetches (may be slow due to gviz rate limits)
     try{await buildVendedorGains();}catch(e){}

@@ -4082,6 +4082,7 @@ function renderTeamButtons(){
 }
 function showTeamDash(name){
   _teamDashActive=name;
+  filterVendedor=name;
   var main=document.querySelector('.main');
   for(var i=0;i<main.children.length;i++){
     var el=main.children[i];
@@ -4091,17 +4092,35 @@ function showTeamDash(name){
   }
   document.getElementById('teamDashView').style.display='block';
   renderTeamDashboard(name);
+  var showIds=['secCuotas','cuotasCards','cuotasYearToggleUSD','secCuotasPesos','cuotasCardsPesos','cuotasYearTogglePesos','secCuotasUnif','cuotasCardsUnif','cuotasYearToggleUnif','secVentaDolares','panelGroups','panelSections'];
+  showIds.forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el;
+    while(cur&&cur.parentElement!==main){cur.style.display='';cur=cur.parentElement;}
+    if(cur)cur.style.display='';
+    el.style.display='';
+  });
+  var unfc=document.getElementById('cuotasCardsUnif');
+  if(unfc&&unfc.nextElementSibling)unfc.nextElementSibling.style.display='';
+  renderCuotasCards();
+  renderCuotasCardsPesos();
+  renderCuotasCardsUnif();
+  renderChartCuotasUnif();
+  buildCuotasPanels();
+  renderAllCuotasPanels();
+  var m=document.querySelector('main');if(m)m.scrollTop=0;
   window.scrollTo(0,0);
 }
 function exitTeamDash(){
   _teamDashActive=null;
+  filterVendedor='all';
   var main=document.querySelector('.main');
   for(var i=0;i<main.children.length;i++){
     var el=main.children[i];
     if(el.hasAttribute('data-td-prev')){el.style.display=el.getAttribute('data-td-prev');el.removeAttribute('data-td-prev');}
   }
   document.getElementById('teamDashView').style.display='none';
-  renderTeamButtons();
+  renderAll();
   window.scrollTo(0,0);
 }
 function renderTeamDashboard(name){

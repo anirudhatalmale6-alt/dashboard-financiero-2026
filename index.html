@@ -1313,10 +1313,23 @@ var urlVendedor=(function(){var p=new URLSearchParams(window.location.search);re
 if(urlVendedor)filterVendedor=urlVendedor;
 
 function fetchWithTimeout(url,ms){ms=ms||15000;var ctrl=new AbortController();var tid=setTimeout(function(){ctrl.abort();},ms);return fetch(url,{signal:ctrl.signal}).finally(function(){clearTimeout(tid);});}
+async function fetchWithRetry(url,retries,delay){
+  retries=retries||3;delay=delay||2000;
+  for(var attempt=0;attempt<retries;attempt++){
+    try{
+      var r=await fetchWithTimeout(url,20000);
+      var t=await r.text();
+      if(t.indexOf('google.visualization.Query.setResponse')<0)throw new Error('Invalid gviz response');
+      return t;
+    }catch(e){
+      if(attempt<retries-1){await new Promise(function(res){setTimeout(res,delay*(attempt+1));});}
+      else throw e;
+    }
+  }
+}
 async function fetchSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   const cols=j.table.cols.map(c=>c.label);
   return j.table.rows.map(row=>{
@@ -1328,23 +1341,20 @@ async function fetchSheet(name){
 
 async function fetchRawSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
 }
 
 async function fetchSheetRange(name,range){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 async function fetchSheetSQL(name,query){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&tq=${encodeURIComponent(query)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
@@ -1352,22 +1362,19 @@ async function fetchSheetSQL(name,query){
 // Generic fetch functions for any spreadsheet by ID
 async function fetchRawSheetById(sheetId,name){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
 }
 async function fetchSheetRangeById(sheetId,name,range){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?(cell.f||cell.v):null));
 }
 async function fetchRawRange(name,range){
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${encodeURIComponent(range)}&headers=0`;
-  const r=await fetchWithTimeout(url);
-  const t=await r.text();
+  const t=await fetchWithRetry(url);
   const j=JSON.parse(t.substring(t.indexOf('{'),(t.lastIndexOf('}')+1)));
   return j.table.rows.map(row=>row.c.map(cell=>cell?cell.v:null));
 }
@@ -1827,7 +1834,13 @@ async function loadAllData(){
     renderAll();
   }catch(e){
     console.error('Error loading data:',e);
-    document.querySelector('.main').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Error al cargar datos. Verificá que el Google Sheets sea público.</div></div>';
+    window._loadRetries=(window._loadRetries||0)+1;
+    if(window._loadRetries<=3){
+      document.querySelector('.main').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Reintentando cargar datos... (intento '+window._loadRetries+'/3)</div></div>';
+      setTimeout(function(){loadData();},3000*window._loadRetries);
+    }else{
+      document.querySelector('.main').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Error al cargar datos. Recargá la página con Ctrl+F5.</div><button onclick="window._loadRetries=0;loadData();" style="margin-top:16px;padding:10px 24px;background:var(--gold);color:#1a1b2e;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">Reintentar</button></div>';
+    }
   }
 }
 

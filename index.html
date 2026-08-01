@@ -2187,19 +2187,20 @@ function renderGastosInvPanels(){
         +'<span style="font-size:12px;font-weight:700;color:'+color+';letter-spacing:.3px">'+icon+' Detalle: '+title+'</span>'
         +'<span class="det-arrow" style="color:'+color+';font-size:12px">▼</span></div>';
       detHtml+='<div id="'+uid+'" style="display:none;overflow-x:auto">';
-      detHtml+='<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:700px">';
+      detHtml+='<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:820px">';
       detHtml+='<thead><tr style="background:rgba(255,255,255,.05)">'
-        +'<th style="padding:8px 10px;text-align:left;color:var(--text2);font-size:10px;font-weight:700;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border);min-width:130px">CLIENTE</th>'
-        +'<th style="padding:8px 6px;text-align:right;color:var(--text2);font-size:10px;font-weight:700;letter-spacing:.5px;border-right:1px solid var(--border);min-width:60px">CUOTA</th>';
+        +'<th style="padding:11px 12px;text-align:left;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border);min-width:150px">CLIENTE</th>'
+        +'<th style="padding:11px 8px;text-align:right;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.5px;border-right:1px solid var(--border);min-width:66px">CUOTA</th>';
       for(var hi=0;hi<12;hi++){
         var isCur=hi===cmIdx;
-        detHtml+='<th style="padding:8px 4px;text-align:center;color:'+(isCur?'var(--gold)':'var(--text3)')+';font-size:9px;font-weight:700;letter-spacing:.3px;min-width:38px;'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+mN[hi]+'</th>';
+        detHtml+='<th style="padding:11px 6px;text-align:center;color:'+(isCur?'var(--gold)':'var(--text3)')+';font-size:12px;font-weight:700;letter-spacing:.3px;min-width:48px;'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+mN[hi]+'</th>';
       }
-      detHtml+='<th style="padding:8px 6px;text-align:right;color:'+color+';font-size:10px;font-weight:700;letter-spacing:.5px;border-left:1px solid var(--border);min-width:60px">TOTAL</th>';
+      detHtml+='<th style="padding:11px 8px;text-align:center;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.5px;border-left:1px solid var(--border);min-width:90px">ESTADO</th>';
+      detHtml+='<th style="padding:11px 8px;text-align:right;color:'+color+';font-size:12px;font-weight:700;letter-spacing:.5px;border-left:1px solid var(--border);min-width:66px">TOTAL</th>';
       detHtml+='</tr></thead><tbody>';
       detailArr.forEach(function(e){
         var cuotaNum=parseFloat(String(e.cuota).replace(/[^\d.-]/g,''))||0;
-        var rowTotal=0;
+        var rowTotal=0;var paidCount=0;var pendCount=0;
         var cells='';
         for(var mi=0;mi<12;mi++){
           var isPaid=e.paid.indexOf(mi)>=0;
@@ -2207,16 +2208,19 @@ function renderGastosInvPanels(){
           var isActive=isPaid||isPend;
           var isCur=mi===cmIdx;
           if(isActive)rowTotal+=cuotaNum;
-          var bg=isCur?'rgba(212,168,83,.06)':'';
-          if(isActive&&isPaid)cells+='<td style="padding:6px 4px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:var(--green);background:'+(bg||'rgba(74,222,128,.05)')+'">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
-          else if(isActive)cells+='<td style="padding:6px 4px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:var(--red);background:'+(bg||'rgba(248,113,113,.05)')+'">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
-          else cells+='<td style="padding:6px 4px;text-align:center;color:var(--text3);font-size:9px;background:'+bg+'">-</td>';
+          if(isActive&&isPaid)paidCount++;else if(isActive)pendCount++;
+          var curB=isCur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.55);':'';
+          if(isActive&&isPaid)cells+='<td style="padding:9px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--green);background:rgba(74,222,128,.16);'+curB+'">✓ '+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
+          else if(isActive)cells+='<td style="padding:9px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--red);background:rgba(248,113,113,.15);'+curB+'">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
+          else cells+='<td style="padding:9px 6px;text-align:center;color:var(--text3);font-size:12px;'+(isCur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.35);':'')+'">–</td>';
         }
+        var estado='<span style="color:var(--green);font-weight:700">✓'+paidCount+'</span> <span style="color:var(--text3)">/</span> <span style="color:var(--red);font-weight:700">'+pendCount+'</span>';
         detHtml+='<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'
-          +'<td style="padding:8px 10px;color:var(--text);font-weight:600;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">'+e.name+(e.desc?'<div style="font-size:9px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="'+e.desc+'">'+e.desc+'</div>':'')+'</td>'
-          +'<td style="padding:6px 6px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+color+';border-right:1px solid var(--border)">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>'
+          +'<td style="padding:10px 12px;color:var(--text);font-weight:600;font-size:13px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">'+e.name+(e.desc?'<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="'+e.desc+'">'+e.desc+'</div>':'')+'</td>'
+          +'<td style="padding:9px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:'+color+';border-right:1px solid var(--border)">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>'
           +cells
-          +'<td style="padding:6px 6px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(rowTotal).toLocaleString('es-AR')+'</td>'
+          +'<td style="padding:9px 8px;text-align:center;font-size:12px;white-space:nowrap;border-left:1px solid var(--border)">'+estado+'</td>'
+          +'<td style="padding:9px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(rowTotal).toLocaleString('es-AR')+'</td>'
           +'</tr>';
       });
       var colTotals=[];var grandTotal=0;
@@ -2225,19 +2229,23 @@ function renderGastosInvPanels(){
         detailArr.forEach(function(e){var cuotaNum=parseFloat(String(e.cuota).replace(/[^\d.-]/g,''))||0;var isActive=e.paid.indexOf(ci)>=0||e.pending.indexOf(ci)>=0;if(isActive)ct+=cuotaNum;});
         colTotals.push(ct);grandTotal+=ct;
       }
+      var totPaid=0,totPend=0;
+      detailArr.forEach(function(e){totPaid+=e.paid.length;totPend+=e.pending.length;});
       detHtml+='<tr style="background:rgba(255,255,255,.04);border-top:2px solid var(--border)">'
-        +'<td style="padding:8px 10px;font-weight:700;color:var(--text);text-transform:uppercase;font-size:10px;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">TOTAL</td>'
+        +'<td style="padding:10px 12px;font-weight:700;color:var(--text);text-transform:uppercase;font-size:12px;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">TOTAL</td>'
         +'<td style="border-right:1px solid var(--border)"></td>';
       for(var ci=0;ci<12;ci++){
         var isCur=ci===cmIdx;
-        detHtml+='<td style="padding:6px 4px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:'+color+';'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+Math.round(colTotals[ci]).toLocaleString('es-AR')+'</td>';
+        detHtml+='<td style="padding:9px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+color+';'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+Math.round(colTotals[ci]).toLocaleString('es-AR')+'</td>';
       }
-      detHtml+='<td style="padding:6px 6px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(grandTotal).toLocaleString('es-AR')+'</td></tr>';
+      detHtml+='<td style="padding:9px 8px;text-align:center;font-size:12px;white-space:nowrap;border-left:1px solid var(--border)"><span style="color:var(--green);font-weight:700">✓'+totPaid+'</span> <span style="color:var(--text3)">/</span> <span style="color:var(--red);font-weight:700">'+totPend+'</span></td>';
+      detHtml+='<td style="padding:9px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(grandTotal).toLocaleString('es-AR')+'</td></tr>';
       detHtml+='</tbody></table>';
-      detHtml+='<div style="padding:8px 12px;display:flex;gap:16px;justify-content:flex-end;border-top:1px solid var(--border);font-size:10px">';
-      detHtml+='<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(74,222,128,.15);vertical-align:middle;margin-right:4px"></span><span style="color:var(--green)">Pagado</span></span>';
-      detHtml+='<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,.15);vertical-align:middle;margin-right:4px"></span><span style="color:var(--red)">Pendiente</span></span>';
-      detHtml+='<span style="color:var(--text3)">- = No aplica</span></div>';
+      detHtml+='<div style="padding:10px 14px;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;align-items:center;border-top:1px solid var(--border);font-size:12px">';
+      detHtml+='<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(74,222,128,.16);vertical-align:middle;margin-right:5px"></span><span style="color:var(--green);font-weight:600">✓ Pagado</span></span>';
+      detHtml+='<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(248,113,113,.15);vertical-align:middle;margin-right:5px"></span><span style="color:var(--red);font-weight:600">Pendiente</span></span>';
+      detHtml+='<span style="color:var(--text3)">– = No aplica</span>';
+      detHtml+='<span style="color:var(--text3)">ESTADO = pagadas / pendientes</span></div>';
       detHtml+='</div></div>';
     }
     var subHtml=subtitle?'<div style="font-size:9px;color:var(--text3);margin-top:2px">('+subtitle+')</div>':'';

@@ -934,7 +934,94 @@ let ventaDolaresRaw=null;
 let ventaDolaresMonths=null;
 // Estado de Cuentas: module balance data layout in DASHBOARD raw (gviz rows)
 // Each group has 3 vendors in positions: pos1(col2/4/5), pos2(col7/9/10), pos3(col12/14/15)
-const EC_GROUPS=[
+// Localiza dinamicamente los bloques "Balance y Ganancias por Modulo de Negocio".
+// El cliente reordena filas seguido, asi que las posiciones fijas de mas abajo quedan
+// como ultimo recurso: si encontramos los bloques en la planilla, EC_GROUPS se reemplaza.
+// Layout actual: bloque Sociedad (6 modulos) + bloque Martin (4 modulos), cada modulo
+// ocupa 5 columnas -> U$D en 4,9,14,19,24,29 y pesos en la siguiente.
+// Escribe en dashRaw las ganancias e inversiones de TECNO y CREDITOS tomadas de las
+// solapas PANEL DE CONTROL, para que todas las vistas (tarjetas, graficos, detalle por
+// modulo) usen la misma fuente sin tener que tocar cada render por separado.
+function applyPanelControlToRaw(raw,panel){
+  if(!raw||!panel)return;
+  var MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function lbl(i){var r=raw[i];var v=r&&r[2];return typeof v==='string'?v.trim():'';}
+  function setCell(i,c,v){if(!raw[i])return;while(raw[i].length<=c)raw[i].push(null);raw[i][c]=v;}
+  // Cotizacion por mes: columna 6 de las filas de meses del bloque de modulos de Martin
+  var cotiz=[];
+  var g=computeECGroups(raw);
+  if(g&&g[1]){for(var m=0;m<12;m++){var rr=raw[g[1].eneR+m];var c=rr?rr[6]:null;cotiz.push(typeof c==='number'?c:parseFloat(String(c||'').replace(/[^\d.]/g,''))||0);}}
+  function unif(key,m){
+    var d=panel[key];if(!d)return 0;
+    var ct=cotiz[m]||0;
+    return d.ganUSD[m]+(ct?d.ganPesos[m]/ct:0);
+  }
+  // 1) Secciones verticales "Ganancia en Dolares" / "Ganancia en Pesos" /
+  //    "Ganancias Unificado en Dolares" / "Inversiones Mensuales ..." (meses en cols 4..15)
+  var SECS=[
+    {match:'ganancia en dolares',pick:function(k,m){return panel[k]?panel[k].ganUSD[m]:0;}},
+    {match:'ganancia en pesos',pick:function(k,m){return panel[k]?panel[k].ganPesos[m]:0;}},
+    {match:'ganancias unificado en dolares',pick:unif},
+    {match:'ganancias unifiado en dolares',pick:unif},
+    {match:'inversiones mensuales de cada vendedor',pick:function(k,m){return panel[k]?panel[k].invUnif[m]:0;}}
+  ];
+  SECS.forEach(function(sec){
+    for(var i=0;i<raw.length;i++){
+      if(lbl(i).toLowerCase().indexOf(sec.match)<0)continue;
+      for(var j=i+1;j<Math.min(i+16,raw.length);j++){
+        var nm=lbl(j).toLowerCase().replace(/\.+$/,'');
+        if(nm.indexOf('total')===0)break;
+        var key=nm==='tecno'?'tecno':(nm==='creditos'||nm==='créditos'?'creditos':null);
+        if(!key||!panel[key])continue;
+        for(var m=0;m<12;m++)setCell(j,4+m,sec.pick(key,m));
+      }
+      break;
+    }
+  });
+  // 2) Bloque "Balance y Ganancias por Modulo": Tecno cols 4/5, Creditos cols 14/15
+  if(g&&g[1]){
+    var mb=g[1];
+    mb.vendors.forEach(function(v){
+      var key=v.name.toLowerCase()==='tecno'?'tecno':(v.name.toLowerCase()==='creditos'?'creditos':null);
+      if(!key||!panel[key])return;
+      for(var m=0;m<12;m++){
+        setCell(mb.eneR+m,v.uc,panel[key].ganUSD[m]);
+        setCell(mb.eneR+m,v.pc,panel[key].ganPesos[m]);
+      }
+    });
+  }
+}
+function computeECGroups(raw){
+  if(!raw||raw.length<140)return null;
+  function lbl(i){var r=raw[i];var v=r&&r[2];return typeof v==='string'?v.trim():'';}
+  var hdr=-1;
+  for(var i=0;i<raw.length;i++){if(lbl(i).toLowerCase().indexOf('balance y ganancias por modulo')>=0){hdr=i;break;}}
+  if(hdr<0)return null;
+  var anios=[];
+  for(var i=hdr;i<raw.length;i++){if(lbl(i).toLowerCase().replace(/\s+/g,' ')==='año 2026'&&lbl(i+1).toLowerCase()==='enero')anios.push(i+1);}
+  if(anios.length<2)return null;
+  var SOC=['Osito S.r.l.','Patito S.A.','Gonza','Mely','Tobias','Tino'];
+  var MART=['Tecno','Inversiones','Creditos','Linea 314'];
+  var groups=[];
+  for(var b=0;b<2;b++){
+    var ene=anios[b];
+    var totalR=ene+12;
+    var stop=(b===0&&anios[1])?anios[1]:totalR+30;
+    var invR=-1,restaR=-1,cajaR=-1;
+    for(var i=totalR;i<Math.min(stop,raw.length);i++){
+      var l=lbl(i).toLowerCase();
+      if(invR<0&&l.indexOf('recupero de inversi')>=0)invR=i;
+      else if(restaR<0&&l.indexOf('resta cobrar')>=0)restaR=i;
+      else if(cajaR<0&&l.indexOf('caja actual')>=0)cajaR=i;
+    }
+    if(invR<0||restaR<0||cajaR<0)return null;
+    var names=b===0?SOC:MART;
+    groups.push({totalR:totalR,invR:invR,restaR:restaR,cajaR:cajaR,eneR:ene,
+      vendors:names.map(function(n,vi){return{name:n,lc:2+vi*5,uc:4+vi*5,pc:5+vi*5};})});
+  }
+  return groups;
+}
+let EC_GROUPS=[
   {totalR:59,invR:60,restaR:61,cajaR:62,vendors:[
     {name:'Osito S.r.l.',lc:2,uc:4,pc:5},
     {name:'Patito S.A.',lc:7,uc:9,pc:10},
@@ -1506,18 +1593,13 @@ function enrichVendedorFromRaw(raw){
 function enrichModulesWithPesos(raw){
   // gviz row/col mapping (1-indexed) - found by scanning raw data for markers
   // gviz rows differ from Excel rows due to hidden/merged rows
-  const modMap={
-    'Osito S.r.l.':{invP:[61,6],resP:[62,6]},
-    'Patito S.A.':{invP:[61,11],resP:[62,11]},
-    'Gonza':{invP:[61,16],resP:[62,16]},
-    'Mely':{invP:[78,6],resP:[79,6]},
-    'Tobias':{invP:[78,16],resP:[79,16]},
-    'Tecno':{invP:[95,6],resP:[96,6]},
-    'Inversiones':{invP:[95,11],resP:[96,11]},
-    'Creditos':{invP:[95,16],resP:[96,16]},
-    'Tino':{invP:[112,6],resP:[113,6]},
-    'Linea 314':{invP:[112,11],resP:[113,11]}
-  };
+  // Derivado de EC_GROUPS (que se reubica solo segun la planilla). cellVal es 1-indexado.
+  const modMap={};
+  EC_GROUPS.forEach(function(g){
+    g.vendors.forEach(function(v){
+      modMap[v.name]={invP:[g.invR+1,v.pc+1],resP:[g.restaR+1,v.pc+1]};
+    });
+  });
   allData.modulos.forEach(r=>{
     const cfg=modMap[r.Modulo];
     if(cfg){
@@ -1714,6 +1796,47 @@ async function loadAllData(){
         if(brl==='tecno'&&bri>210){window._martVendorNames=dRaw[bri].slice(2);break;}
       }
     }catch(e){}
+    // Reubicar los bloques de "Balance y Ganancias por Modulo" segun la planilla actual
+    try{var _ecg=computeECGroups(dRaw);if(_ecg)EC_GROUPS=_ecg;window._ecGroupsAuto=!!_ecg;}catch(e){window._ecGroupsAuto=false;}
+    // TECNO y CREDITOS: inversiones Y ganancias salen de las solapas PANEL DE CONTROL.
+    // Columnas del panel (rango B..H): B=mes, D=ganancia en pesos, E=ganancia en dolares,
+    // F=inversion en dolares, G=inversion en pesos, H=inversion unificada en dolares.
+    // gviz ignora la fila inicial de un rango, asi que cada mes se ubica por su nombre
+    // (el primer bloque de meses es el del Año 2026).
+    try{
+      var PANEL_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      function pNum(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
+      var PANELES=[{key:'tecno',tab:'PANEL DE CONTROL TECNO'},{key:'creditos',tab:'PANEL DE CONTROL CREDITOS'}];
+      var _panRes=await Promise.all(PANELES.map(function(p){
+        return fetchSheetRange(p.tab,'B1:H16').catch(function(){return null;});
+      }));
+      var _panel={};
+      PANELES.forEach(function(p,pi){
+        var rows=_panRes[pi];if(!rows||!rows.length)return;
+        var z=function(){return[0,0,0,0,0,0,0,0,0,0,0,0];};
+        var d={ganPesos:z(),ganUSD:z(),invUSD:z(),invPesos:z(),invUnif:z()},seen={};
+        for(var ri=0;ri<rows.length;ri++){
+          var r=rows[ri];if(!r||!r[0])continue;
+          var mIdx=PANEL_MESES.indexOf(String(r[0]).trim().toLowerCase());
+          if(mIdx<0||seen[mIdx])continue;
+          seen[mIdx]=1;
+          d.ganPesos[mIdx]=pNum(r[2]);
+          d.ganUSD[mIdx]=pNum(r[3]);
+          d.invUSD[mIdx]=pNum(r[4]);
+          d.invPesos[mIdx]=pNum(r[5]);
+          d.invUnif[mIdx]=pNum(r[6]);
+        }
+        _panel[p.key]=d;
+      });
+      window._panelControl=_panel;
+      applyPanelControlToRaw(dRaw,_panel);
+      window._vendorInvestments=window._vendorInvestments||{};
+      window._vendorInvestmentsDetail=window._vendorInvestmentsDetail||{};
+      Object.keys(_panel).forEach(function(k){
+        window._vendorInvestments[k]=_panel[k].invUnif;
+        window._vendorInvestmentsDetail[k]={usd:_panel[k].invUSD,pesos:_panel[k].invPesos,unif:_panel[k].invUnif};
+      });
+    }catch(e){window._panelInvError=e.message||String(e);}
     // Immediate first render with core data + KPI data
     addNewModulesFromRaw(dRaw);
     enrichModulesWithPesos(dRaw);
@@ -1745,39 +1868,11 @@ async function loadAllData(){
           window._vendorInvestments[vnKey]=monthly;
         }
       }
+      // TECNO y CREDITOS mandan desde las solapas PANEL DE CONTROL: se reaplican porque
+      // esas filas quedaron vacias en DASHBOARD MARTIN y el bloque de arriba las pisa con 0.
+      var _pc=window._panelControl||{};
+      Object.keys(_pc).forEach(function(k){window._vendorInvestments[k]=_pc[k].invUnif;});
     }catch(e){window._invError=e.message||String(e);}
-    // Inversiones mensuales de TECNO y CREDITOS: ahora vienen de las solapas
-    // "PANEL DE CONTROL TECNO" y "PANEL DE CONTROL CREDITOS" de la planilla ADMIN.
-    // Columnas (rango B..H): B=mes, F=inversion en dolares, G=inversion en pesos,
-    // H=inversion unificada en dolares (= F + G/cotizacion del mes).
-    // gviz ignora la fila inicial del rango, asi que ubicamos cada mes por su nombre
-    // (el primer bloque de meses es el del Año 2026).
-    try{
-      window._vendorInvestmentsDetail=window._vendorInvestmentsDetail||{};
-      var PANEL_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      function pNum(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
-      var PANELES=[{key:'tecno',tab:'PANEL DE CONTROL TECNO'},{key:'creditos',tab:'PANEL DE CONTROL CREDITOS'}];
-      var _panRes=await Promise.all(PANELES.map(function(p){
-        return fetchSheetRange(p.tab,'B1:H16').catch(function(){return null;});
-      }));
-      PANELES.forEach(function(p,pi){
-        var rows=_panRes[pi];if(!rows||!rows.length)return;
-        var unif=[0,0,0,0,0,0,0,0,0,0,0,0],pesos=unif.slice(),usd=unif.slice();
-        var seen={};
-        for(var ri=0;ri<rows.length;ri++){
-          var r=rows[ri];if(!r||!r[0])continue;
-          var mIdx=PANEL_MESES.indexOf(String(r[0]).trim().toLowerCase());
-          if(mIdx<0||seen[mIdx])continue;
-          seen[mIdx]=1;
-          usd[mIdx]=pNum(r[4]);
-          pesos[mIdx]=pNum(r[5]);
-          unif[mIdx]=pNum(r[6]);
-        }
-        window._vendorInvestments=window._vendorInvestments||{};
-        window._vendorInvestments[p.key]=unif;
-        window._vendorInvestmentsDetail[p.key]={usd:usd,pesos:pesos,unif:unif};
-      });
-    }catch(e){window._panelInvError=e.message||String(e);}
     // Fetch monthly data from "Cronograma de Inversiones": row 151 (gastos a pagar) and row 189 (compromisos a pagar), cols R-AC = Jan-Dec 2026
     function parseCronoRow(rangeData){
       if(!rangeData||!rangeData[0])return null;

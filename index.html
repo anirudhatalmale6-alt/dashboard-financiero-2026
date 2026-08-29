@@ -187,8 +187,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ranking-card .chart-subtitle{font-size:10px}
 
 /* Module Cards */
-.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:48px;align-items:stretch}
-.sidebar.collapsed~.main .modules{grid-template-columns:repeat(4,1fr)}
+.modules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px;align-items:stretch}
+.sidebar.collapsed~.main .modules{grid-template-columns:repeat(3,1fr)}
 .module-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;transition:.3s;display:flex;flex-direction:column;overflow:hidden}
 .module-card>div:nth-child(2){flex:1}
 .module-card:hover{border-color:var(--gold);transform:translateY(-2px)}
@@ -501,7 +501,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .rankings{grid-template-columns:1fr 1fr!important}
   .ranking-card{border:1px solid #d1d5db!important;break-inside:avoid}
   .rank-item{background:#f0f1f3!important}
-  .modules{grid-template-columns:repeat(4,1fr)!important}
+  .modules{grid-template-columns:repeat(3,1fr)!important}
   .module-card{border:1px solid #d1d5db!important;break-inside:avoid}
   .module-card:hover{transform:none!important}
   .module-details-grid{grid-template-columns:repeat(2,1fr)!important}
@@ -1878,20 +1878,57 @@ async function loadAllData(){
       if(!rangeData||!rangeData[0])return null;
       return rangeData[0].map(function(v){if(typeof v==='number')return Math.round(Math.abs(v));if(typeof v==='string'){var n=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var p=parseFloat(n);return isNaN(p)?0:Math.round(Math.abs(p));}return 0;});
     }
+    // Columnas de la solapa (el rango arranca en C): 0=C cliente, 1=D descripcion,
+    // 2=E fecha de inicio, 6=I cantidad de cuotas, 7=J cuota, 9=L total,
+    // 39=AP saldo pendiente, 41=AR pagado, 42=AS estado. Los meses de 2026 son
+    // las columnas R..AC (15..26) de la fila de tildes que va debajo de cada fila.
     function parseCronoDetail(rangeData){
       if(!rangeData||!rangeData.length)return[];
+      function num(v){
+        if(v==null)return null;
+        if(typeof v==='number')return v;
+        var s=String(v).trim();if(!s)return null;
+        var neg=s.indexOf('-')>=0||s.indexOf('(')>=0;
+        s=s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+        var n=parseFloat(s);
+        return isNaN(n)?null:(neg?-n:n);
+      }
       var entries=[];
       for(var i=0;i<rangeData.length-1;i++){
         var row=rangeData[i];if(!row)continue;
         var name=row[0]?String(row[0]).trim():'';
         if(!name||name==='CLIENTES')continue;
         var desc=row[1]?String(row[1]).trim():'';
-        var cuota='';
-        if(row[7]!=null){var cv=row[7];cuota=typeof cv==='number'?String(Math.round(cv)):String(cv).trim();}
+        var fecha=row[2]?String(row[2]).trim():'';
+        var nCuotas=Math.round(num(row[6])||0);
+        var cuotaNum=num(row[7])||0;
+        var totalNum=num(row[9]);
+        var pendNum=num(row[39]);
+        var pagNum=num(row[41]);
+        var estado=row[42]?String(row[42]).trim():'';
         var checks=rangeData[i+1]||[];
-        var pending=[];var paid=[];
-        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);else pending.push(m);}
-        entries.push({name:name,desc:desc,cuota:cuota,paid:paid,pending:pending});
+        var paid=[];
+        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);}
+        // Meses que realmente corresponden en 2026: arrancan en la fecha de inicio y
+        // duran la cantidad de cuotas. Antes de esa fecha la planilla no tiene nada,
+        // asi que esas celdas quedan vacias en vez de figurar como deuda.
+        var months=[];
+        var dm=fecha.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if(dm&&nCuotas>0){
+          var p1=parseInt(dm[1],10),p2=parseInt(dm[2],10),sy=parseInt(dm[3],10);
+          var sm=(p1>12?p2:p2>12?p1:p2)-1; // formato dd/mm/aaaa
+          for(var k=0;k<nCuotas;k++){
+            var idx=(sy-2026)*12+sm+k;
+            if(idx>=0&&idx<12)months.push(idx);
+          }
+        }
+        paid.forEach(function(m){if(months.indexOf(m)<0)months.push(m);});
+        months.sort(function(a,b){return a-b;});
+        var pending=months.filter(function(m){return paid.indexOf(m)<0;});
+        entries.push({name:name,desc:desc,fecha:fecha,nCuotas:nCuotas,
+          cuota:cuotaNum?String(Math.round(cuotaNum)):'',cuotaNum:cuotaNum,
+          totalNum:totalNum,pagadoNum:pagNum,pendienteNum:pendNum,estado:estado,
+          months:months,paid:paid,pending:pending});
         i++;
       }
       return entries;
@@ -1899,7 +1936,7 @@ async function loadAllData(){
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
       var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
-      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C100:AC200').catch(function(){return null;});
+      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C100:AS200').catch(function(){return null;});
       var _cronoRes=await Promise.all([_cgP,_ccP,_cronoAllP]);
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
@@ -1916,6 +1953,17 @@ async function loadAllData(){
         cronGastosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[0]));
         cronCompromisosDetail=[];
       }
+      // El total mes a mes se arma sumando las cuotas que caen en cada mes segun el
+      // detalle. Las filas fijas 151 y 189 de la solapa se corrieron al moverse la
+      // planilla (hoy vienen vacias), asi que solo se usan como respaldo.
+      function cronoMonthly(det){
+        if(!det||!det.length)return null;
+        var a=[0,0,0,0,0,0,0,0,0,0,0,0],any=false;
+        det.forEach(function(e){e.months.forEach(function(m){if(e.cuotaNum){a[m]+=e.cuotaNum;any=true;}});});
+        return any?a:null;
+      }
+      cronGastosAPagar=cronoMonthly(cronGastosDetail)||cronGastosAPagar;
+      cronCompromisosAPagar=cronoMonthly(cronCompromisosDetail)||cronCompromisosAPagar;
       invDeudasMensuales=cronCompromisosAPagar;
     }catch(e){cronGastosAPagar=null;cronCompromisosAPagar=null;}
     // Balance and cuotas data already extracted from dashRaw above
@@ -2088,6 +2136,7 @@ function fmt(n,prefix='$'){
 }
 
 function fmtUSD(n){return fmtFullP(n,'U\u0024D ');}
+function cronoView(uid,v,color){['res','cal','tl'].forEach(function(k){var el=document.getElementById(uid+'_'+k);if(el)el.style.display=(k===v?'block':'none');var b=document.getElementById(uid+'_b'+k);if(b){var on=k===v;b.style.borderColor=on?color:'var(--border)';b.style.background=on?'rgba(212,168,83,.14)':'transparent';b.style.color=on?color:'var(--text3)';}});}
 function fmtPesos(n){return fmtFullP(n,'$ ');}
 function fmtFullP(n,prefix){
   if(n===undefined||n===null||isNaN(n))return'—';
@@ -2292,6 +2341,177 @@ function renderGastosInvPanels(){
       +'<div style="padding:0;max-height:400px;overflow-y:auto">'+tbl+'</div></div>';
   }
 
+  // ─── Detalle de compromisos: tres formatos de lectura sobre los mismos datos ───
+  // Los importes, el total, el pagado, el saldo y el estado salen tal cual de la
+  // solapa Cronograma de Inversiones. Los meses que no corresponden (anteriores a
+  // la fecha de inicio o posteriores a la ultima cuota) quedan vacios.
+  function buildCronoDetail(title,icon,color,arr){
+    var uid='det_'+Math.random().toString(36).substr(2,6);
+    var mN=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    var GR='#4ade80',RD='#f87171',DIM='#4a4956';
+    function nf(n){return Math.round(n||0).toLocaleString('es-AR');}
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function badge(e){
+      var st=(e.estado||'').toUpperCase();
+      if(!st)return '';
+      var c=st.indexOf('CANCEL')>=0?GR:'var(--gold)';
+      var bg=st.indexOf('CANCEL')>=0?'rgba(74,222,128,.12)':'rgba(212,168,83,.12)';
+      return '<span style="font-size:10px;font-weight:700;letter-spacing:.6px;padding:3px 9px;border-radius:20px;color:'+c+';background:'+bg+';border:1px solid '+c+'33;white-space:nowrap">'+esc(st)+'</span>';
+    }
+    var tTotal=0,tPag=0,tPend=0,tCP=0,tCD=0;
+    arr.forEach(function(e){
+      tTotal+=e.totalNum||0;tPag+=e.pagadoNum||0;tPend+=e.pendienteNum||0;
+      tCP+=e.paid.length;tCD+=e.pending.length;
+    });
+
+    // ── Vista 1: RESUMEN (una tarjeta por compromiso) ──
+    var res='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px;padding:16px">';
+    arr.forEach(function(e){
+      var tot=e.totalNum||0,pag=e.pagadoNum||0,pen=e.pendienteNum!=null?e.pendienteNum:Math.max(tot-pag,0);
+      var pct=tot>0?Math.max(0,Math.min(100,Math.round(pag/tot*100))):(e.months.length?Math.round(e.paid.length/e.months.length*100):0);
+      var strip='';
+      for(var m=0;m<12;m++){
+        var on=e.months.indexOf(m)>=0,pd=e.paid.indexOf(m)>=0,cur=m===cmIdx;
+        var bg=!on?'transparent':(pd?'rgba(74,222,128,.9)':'rgba(248,113,113,.75)');
+        var bd=!on?'1px dashed rgba(255,255,255,.10)':'1px solid transparent';
+        strip+='<div style="text-align:center">'
+          +'<div style="font-size:9px;font-weight:700;letter-spacing:.3px;color:'+(cur?'var(--gold)':'var(--text3)')+';margin-bottom:4px">'+mN[m].charAt(0)+mN[m].substr(1).toLowerCase()+'</div>'
+          +'<div style="height:22px;border-radius:5px;background:'+bg+';border:'+bd+';'+(cur?'box-shadow:0 0 0 2px rgba(212,168,83,.6)':'')+'"></div></div>';
+      }
+      res+='<div style="background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:12px;padding:16px 18px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px">'
+        +'<div style="font-size:16px;font-weight:700;color:var(--text);line-height:1.25">'+esc(e.name)+'</div>'+badge(e)+'</div>'
+        +(e.desc&&e.desc!==e.name?'<div style="font-size:12px;color:var(--text3);line-height:1.4;margin-bottom:12px">'+esc(e.desc)+'</div>':'<div style="margin-bottom:12px"></div>')
+        +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">'
+        +'<div><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin-bottom:3px">CUOTA</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:17px;font-weight:700;color:'+color+'">'+(e.cuotaNum?nf(e.cuotaNum):'—')+'</div></div>'
+        +'<div><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin-bottom:3px">TOTAL</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:17px;font-weight:700;color:var(--text)">'+nf(tot)+'</div></div>'
+        +'<div><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin-bottom:3px">PAGADO</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:17px;font-weight:700;color:'+GR+'">'+nf(pag)+'</div></div>'
+        +'<div><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin-bottom:3px">PENDIENTE</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:17px;font-weight:700;color:'+(pen>0?RD:DIM)+'">'+nf(pen)+'</div></div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+        +'<div style="flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden"><div style="height:100%;width:'+pct+'%;border-radius:4px;background:linear-gradient(90deg,'+GR+',#22c55e)"></div></div>'
+        +'<div style="font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">'+e.paid.length+(e.nCuotas?' de '+e.nCuotas:'')+' cuotas · '+pct+'%</div></div>'
+        +'<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px">'+strip+'</div>'
+        +'</div>';
+    });
+    res+='</div>';
+
+    // ── Vista 2: CALENDARIO (grilla mes a mes) ──
+    var cal='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:15px;min-width:1240px">';
+    cal+='<thead><tr style="background:rgba(255,255,255,.04)">'
+      +'<th style="padding:12px 14px;text-align:left;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.6px;position:sticky;left:0;background:#16161c;z-index:2;border-right:1px solid var(--border);min-width:210px">CLIENTE</th>'
+      +'<th style="padding:12px 10px;text-align:right;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.6px;border-right:1px solid var(--border);min-width:80px">CUOTA</th>';
+    for(var hi=0;hi<12;hi++){
+      var isCur=hi===cmIdx;
+      cal+='<th style="padding:12px 6px;text-align:center;color:'+(isCur?'var(--gold)':'var(--text3)')+';font-size:12px;font-weight:700;letter-spacing:.3px;min-width:70px;'+(isCur?'background:rgba(212,168,83,.10)':'')+'">'+mN[hi]+'</th>';
+    }
+    cal+='<th style="padding:12px 10px;text-align:right;color:'+GR+';font-size:12px;font-weight:700;letter-spacing:.6px;border-left:1px solid var(--border);min-width:92px">PAGADO</th>'
+      +'<th style="padding:12px 10px;text-align:right;color:'+RD+';font-size:12px;font-weight:700;letter-spacing:.6px;min-width:92px">PENDIENTE</th>'
+      +'<th style="padding:12px 10px;text-align:right;color:'+color+';font-size:12px;font-weight:700;letter-spacing:.6px;min-width:92px">TOTAL</th>'
+      +'<th style="padding:12px 10px;text-align:center;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.6px;min-width:104px">ESTADO</th>';
+    cal+='</tr></thead><tbody>';
+    arr.forEach(function(e){
+      var cells='';
+      for(var mi=0;mi<12;mi++){
+        var on=e.months.indexOf(mi)>=0,pd=e.paid.indexOf(mi)>=0,cur=mi===cmIdx;
+        var curB=cur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.45);':'';
+        if(!on){
+          cells+='<td style="padding:11px 6px;text-align:center;color:'+DIM+';font-size:14px;'+curB+'">·</td>';
+        }else if(pd){
+          cells+='<td style="padding:11px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+GR+';background:rgba(74,222,128,.10);'+curB+'">'+(e.cuotaNum?'✓ '+nf(e.cuotaNum):'✓')+'</td>';
+        }else{
+          cells+='<td style="padding:11px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+RD+';background:rgba(248,113,113,.07);'+curB+'">'+(e.cuotaNum?nf(e.cuotaNum):'—')+'</td>';
+        }
+      }
+      var tot=e.totalNum||0,pag=e.pagadoNum||0,pen=e.pendienteNum!=null?e.pendienteNum:Math.max(tot-pag,0);
+      cal+='<tr style="border-bottom:1px solid rgba(255,255,255,.05)">'
+        +'<td style="padding:11px 14px;position:sticky;left:0;background:#16161c;z-index:1;border-right:1px solid var(--border)">'
+          +'<div style="color:var(--text);font-weight:600;font-size:14px">'+esc(e.name)+'</div>'
+          +(e.desc&&e.desc!==e.name?'<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="'+esc(e.desc)+'">'+esc(e.desc)+'</div>':'')
+        +'</td>'
+        +'<td style="padding:11px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+color+';border-right:1px solid var(--border)">'+(e.cuotaNum?nf(e.cuotaNum):'—')+'</td>'
+        +cells
+        +'<td style="padding:11px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+GR+';border-left:1px solid var(--border)">'+nf(pag)+'</td>'
+        +'<td style="padding:11px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+(pen>0?RD:DIM)+'">'+nf(pen)+'</td>'
+        +'<td style="padding:11px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--text)">'+nf(tot)+'</td>'
+        +'<td style="padding:11px 10px;text-align:center">'+badge(e)+'</td>'
+        +'</tr>';
+    });
+    var colT=[],grand=0;
+    for(var ci=0;ci<12;ci++){
+      var ct=0;
+      arr.forEach(function(e){if(e.months.indexOf(ci)>=0)ct+=e.cuotaNum||0;});
+      colT.push(ct);grand+=ct;
+    }
+    cal+='<tr style="background:rgba(255,255,255,.045);border-top:2px solid var(--border)">'
+      +'<td style="padding:12px 14px;font-weight:700;color:var(--text);font-size:13px;letter-spacing:.6px;position:sticky;left:0;background:#16161c;z-index:1;border-right:1px solid var(--border)">TOTAL</td>'
+      +'<td style="border-right:1px solid var(--border)"></td>';
+    for(var ci2=0;ci2<12;ci2++){
+      var isC=ci2===cmIdx;
+      cal+='<td style="padding:12px 6px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+color+';'+(isC?'background:rgba(212,168,83,.10)':'')+'">'+(colT[ci2]?nf(colT[ci2]):'·')+'</td>';
+    }
+    cal+='<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+GR+';border-left:1px solid var(--border)">'+nf(tPag)+'</td>'
+      +'<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+RD+'">'+nf(tPend)+'</td>'
+      +'<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:'+color+'">'+nf(tTotal)+'</td>'
+      +'<td style="padding:12px 10px;text-align:center;font-size:12px;color:var(--text3);white-space:nowrap"><span style="color:'+GR+';font-weight:700">✓'+tCP+'</span> / <span style="color:'+RD+';font-weight:700">'+tCD+'</span></td>'
+      +'</tr>';
+    cal+='</tbody></table></div>';
+
+    // ── Vista 3: LINEA DE TIEMPO ──
+    var tl='<div style="padding:16px 18px">';
+    tl+='<div style="display:grid;grid-template-columns:230px 1fr 150px;gap:12px;align-items:center;margin-bottom:10px">'
+      +'<div></div><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px">';
+    for(var th=0;th<12;th++)tl+='<div style="text-align:center;font-size:10px;font-weight:700;letter-spacing:.3px;color:'+(th===cmIdx?'var(--gold)':'var(--text3)')+'">'+mN[th]+'</div>';
+    tl+='</div><div></div></div>';
+    arr.forEach(function(e){
+      var track='';
+      for(var m=0;m<12;m++){
+        var on=e.months.indexOf(m)>=0,pd=e.paid.indexOf(m)>=0,cur=m===cmIdx;
+        var first=on&&e.months.indexOf(m-1)<0,last=on&&e.months.indexOf(m+1)<0;
+        var rad=(first?'6px':'0')+' '+(last?'6px':'0')+' '+(last?'6px':'0')+' '+(first?'6px':'0');
+        var bg=!on?'rgba(255,255,255,.035)':(pd?'linear-gradient(180deg,#4ade80,#22c55e)':'rgba(248,113,113,.55)');
+        track+='<div title="'+mN[m]+(on?(pd?' · pagado':' · pendiente'):' · no corresponde')+'" style="height:26px;border-radius:'+rad+';background:'+bg+';'+(cur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.7);':'')+'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+(on?'#0d0d12':'transparent')+'">'+(on&&e.cuotaNum?nf(e.cuotaNum):'')+'</div>';
+      }
+      var tot=e.totalNum||0,pag=e.pagadoNum||0,pen=e.pendienteNum!=null?e.pendienteNum:Math.max(tot-pag,0);
+      tl+='<div style="display:grid;grid-template-columns:230px 1fr 150px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<div style="min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(e.name)+'">'+esc(e.name)+'</div>'
+          +'<div style="font-size:10px;color:var(--text3);margin-top:1px">'+(e.fecha?'desde '+esc(e.fecha)+' · ':'')+(e.nCuotas?e.nCuotas+' cuotas':'')+'</div></div>'
+        +'<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px">'+track+'</div>'
+        +'<div style="text-align:right"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:'+GR+'">'+nf(pag)+'</div>'
+          +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+(pen>0?RD:DIM)+'">resta '+nf(pen)+'</div></div>'
+        +'</div>';
+    });
+    tl+='</div>';
+
+    // ── Cabecera + selector de vista ──
+    function btn(k,label,active){
+      return '<button id="'+uid+'_b'+k+'" onclick="event.stopPropagation();cronoView(\''+uid+'\',\''+k+'\',\''+color+'\')" style="padding:6px 14px;border-radius:8px;border:1px solid '+(active?color:'var(--border)')+';background:'+(active?'rgba(212,168,83,.14)':'transparent')+';color:'+(active?color:'var(--text3)')+';font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.3px;cursor:pointer">'+label+'</button>';
+    }
+    var h='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:16px">';
+    h+='<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);cursor:pointer" onclick="var d=document.getElementById(\''+uid+'\');var a=d.style.display===\'none\';d.style.display=a?\'block\':\'none\';this.querySelector(\'.det-arrow\').textContent=a?\'▲\':\'▼\'">'
+      +'<span style="font-size:14px;font-weight:700;color:'+color+';letter-spacing:.3px">'+icon+' Detalle: '+title+'</span>'
+      +'<span class="det-arrow" style="color:'+color+';font-size:12px">▼</span></div>';
+    h+='<div id="'+uid+'" style="display:none">';
+    h+='<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;gap:8px">'+btn('res','Resumen',true)+btn('cal','Calendario',false)+btn('tl','Línea de tiempo',false)+'</div>'
+      +'<div style="display:flex;gap:22px;flex-wrap:wrap">'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">TOTAL DEL PLAN</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+'">'+nf(tTotal)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">PAGADO</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+GR+'">'+nf(tPag)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">PENDIENTE</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+RD+'">'+nf(tPend)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">CUOTAS</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:var(--text)"><span style="color:'+GR+'">'+tCP+'</span> / <span style="color:'+RD+'">'+tCD+'</span></div></div>'
+      +'</div></div>';
+    h+='<div id="'+uid+'_res">'+res+'</div>';
+    h+='<div id="'+uid+'_cal" style="display:none">'+cal+'</div>';
+    h+='<div id="'+uid+'_tl" style="display:none">'+tl+'</div>';
+    h+='<div style="padding:10px 16px;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;align-items:center;border-top:1px solid var(--border);font-size:12px">'
+      +'<span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+GR+';vertical-align:middle;margin-right:5px"></span><span style="color:'+GR+';font-weight:600">Pagado</span></span>'
+      +'<span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(248,113,113,.6);vertical-align:middle;margin-right:5px"></span><span style="color:'+RD+';font-weight:600">Pendiente</span></span>'
+      +'<span style="color:var(--text3)"><span style="display:inline-block;width:11px;height:11px;border-radius:3px;border:1px dashed rgba(255,255,255,.18);vertical-align:middle;margin-right:5px"></span>No corresponde (fuera del plan de cuotas)</span>'
+      +'</div>';
+    h+='</div></div>';
+    return h;
+  }
+
   function buildCronoPanel(title,icon,color,monthlyArr,subtitle,detailArr){
     if(!monthlyArr||!monthlyArr.length)return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Cargando...</div>';
     var total=0;
@@ -2306,75 +2526,7 @@ function renderGastosInvPanels(){
     tbl+='<tr class="total-row"><td>TOTAL</td><td style="color:'+color+'">'+fmtUSD(total)+'</td></tr>';
     tbl+='</tbody></table>';
     var detHtml='';
-    if(detailArr&&detailArr.length){
-      var uid='det_'+Math.random().toString(36).substr(2,6);
-      var mN=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-      detHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:16px">';
-      detHtml+='<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);cursor:pointer" onclick="var d=document.getElementById(\''+uid+'\');var a=d.style.display===\'none\';d.style.display=a?\'block\':\'none\';this.querySelector(\'.det-arrow\').textContent=a?\'▲\':\'▼\'">'
-        +'<span style="font-size:14px;font-weight:700;color:'+color+';letter-spacing:.3px">'+icon+' Detalle: '+title+'</span>'
-        +'<span class="det-arrow" style="color:'+color+';font-size:12px">▼</span></div>';
-      detHtml+='<div id="'+uid+'" style="display:none;overflow-x:auto">';
-      detHtml+='<table style="width:100%;border-collapse:collapse;font-size:16px;min-width:1180px">';
-      detHtml+='<thead><tr style="background:rgba(255,255,255,.05)">'
-        +'<th style="padding:13px 14px;text-align:left;color:var(--text2);font-size:14px;font-weight:700;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border);min-width:180px">CLIENTE</th>'
-        +'<th style="padding:13px 10px;text-align:right;color:var(--text2);font-size:14px;font-weight:700;letter-spacing:.5px;border-right:1px solid var(--border);min-width:86px">CUOTA</th>';
-      for(var hi=0;hi<12;hi++){
-        var isCur=hi===cmIdx;
-        detHtml+='<th style="padding:13px 8px;text-align:center;color:'+(isCur?'var(--gold)':'var(--text3)')+';font-size:14px;font-weight:700;letter-spacing:.3px;min-width:72px;'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+mN[hi]+'</th>';
-      }
-      detHtml+='<th style="padding:13px 10px;text-align:center;color:var(--text2);font-size:14px;font-weight:700;letter-spacing:.5px;border-left:1px solid var(--border);min-width:100px">ESTADO</th>';
-      detHtml+='<th style="padding:13px 10px;text-align:right;color:'+color+';font-size:14px;font-weight:700;letter-spacing:.5px;border-left:1px solid var(--border);min-width:92px">TOTAL</th>';
-      detHtml+='</tr></thead><tbody>';
-      detailArr.forEach(function(e){
-        var cuotaNum=parseFloat(String(e.cuota).replace(/[^\d.-]/g,''))||0;
-        var rowTotal=0;var paidCount=0;var pendCount=0;
-        var cells='';
-        for(var mi=0;mi<12;mi++){
-          var isPaid=e.paid.indexOf(mi)>=0;
-          var isPend=e.pending.indexOf(mi)>=0;
-          var isActive=isPaid||isPend;
-          var isCur=mi===cmIdx;
-          if(isActive)rowTotal+=cuotaNum;
-          if(isActive&&isPaid)paidCount++;else if(isActive)pendCount++;
-          var curB=isCur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.55);':'';
-          if(isActive&&isPaid)cells+='<td style="padding:12px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:var(--green);background:rgba(74,222,128,.16);'+curB+'">✓ '+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
-          else if(isActive)cells+='<td style="padding:12px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:var(--red);background:rgba(248,113,113,.15);'+curB+'">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>';
-          else cells+='<td style="padding:12px 8px;text-align:center;color:var(--text3);font-size:16px;'+(isCur?'box-shadow:inset 0 0 0 2px rgba(212,168,83,.35);':'')+'">–</td>';
-        }
-        var estado='<span style="color:var(--green);font-weight:700">✓'+paidCount+'</span> <span style="color:var(--text3)">/</span> <span style="color:var(--red);font-weight:700">'+pendCount+'</span>';
-        detHtml+='<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'
-          +'<td style="padding:12px 14px;color:var(--text);font-weight:600;font-size:15px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">'+e.name+(e.desc?'<div style="font-size:12px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px" title="'+e.desc+'">'+e.desc+'</div>':'')+'</td>'
-          +'<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+';border-right:1px solid var(--border)">'+Math.round(cuotaNum).toLocaleString('es-AR')+'</td>'
-          +cells
-          +'<td style="padding:12px 10px;text-align:center;font-size:15px;white-space:nowrap;border-left:1px solid var(--border)">'+estado+'</td>'
-          +'<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(rowTotal).toLocaleString('es-AR')+'</td>'
-          +'</tr>';
-      });
-      var colTotals=[];var grandTotal=0;
-      for(var ci=0;ci<12;ci++){
-        var ct=0;
-        detailArr.forEach(function(e){var cuotaNum=parseFloat(String(e.cuota).replace(/[^\d.-]/g,''))||0;var isActive=e.paid.indexOf(ci)>=0||e.pending.indexOf(ci)>=0;if(isActive)ct+=cuotaNum;});
-        colTotals.push(ct);grandTotal+=ct;
-      }
-      var totPaid=0,totPend=0;
-      detailArr.forEach(function(e){totPaid+=e.paid.length;totPend+=e.pending.length;});
-      detHtml+='<tr style="background:rgba(255,255,255,.04);border-top:2px solid var(--border)">'
-        +'<td style="padding:12px 14px;font-weight:700;color:var(--text);text-transform:uppercase;font-size:14px;letter-spacing:.5px;position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--border)">TOTAL</td>'
-        +'<td style="border-right:1px solid var(--border)"></td>';
-      for(var ci=0;ci<12;ci++){
-        var isCur=ci===cmIdx;
-        detHtml+='<td style="padding:12px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+';'+(isCur?'background:rgba(212,168,83,.08)':'')+'">'+Math.round(colTotals[ci]).toLocaleString('es-AR')+'</td>';
-      }
-      detHtml+='<td style="padding:12px 10px;text-align:center;font-size:15px;white-space:nowrap;border-left:1px solid var(--border)"><span style="color:var(--green);font-weight:700">✓'+totPaid+'</span> <span style="color:var(--text3)">/</span> <span style="color:var(--red);font-weight:700">'+totPend+'</span></td>';
-      detHtml+='<td style="padding:12px 10px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+';border-left:1px solid var(--border)">'+Math.round(grandTotal).toLocaleString('es-AR')+'</td></tr>';
-      detHtml+='</tbody></table>';
-      detHtml+='<div style="padding:10px 14px;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;align-items:center;border-top:1px solid var(--border);font-size:13px">';
-      detHtml+='<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(74,222,128,.16);vertical-align:middle;margin-right:5px"></span><span style="color:var(--green);font-weight:600">✓ Pagado</span></span>';
-      detHtml+='<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(248,113,113,.15);vertical-align:middle;margin-right:5px"></span><span style="color:var(--red);font-weight:600">Pendiente</span></span>';
-      detHtml+='<span style="color:var(--text3)">– = No aplica</span>';
-      detHtml+='<span style="color:var(--text3)">ESTADO = pagadas / pendientes</span></div>';
-      detHtml+='</div></div>';
-    }
+    if(detailArr&&detailArr.length)detHtml=buildCronoDetail(title,icon,color,detailArr);
     var subHtml=subtitle?'<div style="font-size:9px;color:var(--text3);margin-top:2px">('+subtitle+')</div>':'';
     var cardHtml='<div class="module-card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">'
       +'<div class="module-name" style="padding:14px 16px;margin-bottom:0;border-bottom:1px solid var(--border)"><span class="icon">'+icon+'</span>'+title+subHtml+'</div>'

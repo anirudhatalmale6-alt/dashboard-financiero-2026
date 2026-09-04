@@ -1880,8 +1880,26 @@ async function loadAllData(){
     }
     // Columnas de la solapa (el rango arranca en C): 0=C cliente, 1=D descripcion,
     // 2=E fecha de inicio, 6=I cantidad de cuotas, 7=J cuota, 9=L total,
-    // 39=AP saldo pendiente, 41=AR pagado, 42=AS estado. Los meses de 2026 son
-    // las columnas R..AC (15..26) de la fila de tildes que va debajo de cada fila.
+    // 39=AP saldo pendiente, 41=AR pagado, 42=AS estado.
+    // Las tildes mensuales ocupan M..AO, o sea 29 meses corridos: el indice 10 del
+    // rango es Agosto 2025 y el 38 es Diciembre 2027 (asi Enero 2026 cae en el 15,
+    // columna R). Verificado contra la planilla: JUAN FINANCIERA arranca 16/1/2026 y
+    // tiene 4 tildes desde el indice 15 con "pagado" = 4 cuotas de 1.000; JORGE/KARI
+    // arranca 10/8/2025 y tiene 13 tildes desde el indice 10 con "pagado" = 13 x 330.
+    var CRONO_M0=10,CRONO_MESES=29;
+    function cronoAbs(year,month){return (year-2025)*12+month-7;}
+    // Proyecta un compromiso sobre los 12 meses de un año concreto.
+    function cronoProject(e,year){
+      if(!e||!e.monthsAbs)return e;
+      var off=cronoAbs(year,0),months=[],paid=[];
+      e.monthsAbs.forEach(function(a){var m=a-off;if(m>=0&&m<12)months.push(m);});
+      e.paidAbs.forEach(function(a){var m=a-off;if(m>=0&&m<12&&months.indexOf(m)>=0)paid.push(m);});
+      var pending=months.filter(function(m){return paid.indexOf(m)<0;});
+      var o={};for(var k in e){if(Object.prototype.hasOwnProperty.call(e,k))o[k]=e[k];}
+      o.months=months;o.paid=paid;o.pending=pending;o.year=year;
+      return o;
+    }
+    window.cronoProject=cronoProject;
     function parseCronoDetail(rangeData){
       if(!rangeData||!rangeData.length)return[];
       function num(v){
@@ -1897,7 +1915,7 @@ async function loadAllData(){
       for(var i=0;i<rangeData.length-1;i++){
         var row=rangeData[i];if(!row)continue;
         var name=row[0]?String(row[0]).trim():'';
-        if(!name||name==='CLIENTES')continue;
+        if(name==='CLIENTES')continue;
         var desc=row[1]?String(row[1]).trim():'';
         var fecha=row[2]?String(row[2]).trim():'';
         var nCuotas=Math.round(num(row[6])||0);
@@ -1906,29 +1924,40 @@ async function loadAllData(){
         var pendNum=num(row[39]);
         var pagNum=num(row[41]);
         var estado=row[42]?String(row[42]).trim():'';
+        // Hay filas con importes pero sin nombre de cliente (creditos ya cancelados).
+        // Se listan igual porque suman en el total del cuadro; si se saltean, el
+        // panel no cierra con lo que muestra la planilla. Las filas todas en cero
+        // son renglones vacios de la planilla y no se muestran.
+        // La fila de TOTAL de cada cuadro tampoco trae nombre, pero se distingue
+        // porque no tiene estado: solo se aceptan las que dicen VIGENTE/CANCELADO.
+        if(!name){
+          if(!estado||!(totalNum||pagNum||pendNum))continue;
+          name='(sin nombre en la planilla)';
+        }
         var checks=rangeData[i+1]||[];
-        var paid=[];
-        for(var m=0;m<12;m++){var v=checks[15+m];if(v===true||v==='TRUE')paid.push(m);}
-        // Meses que realmente corresponden en 2026: arrancan en la fecha de inicio y
-        // duran la cantidad de cuotas. Antes de esa fecha la planilla no tiene nada,
-        // asi que esas celdas quedan vacias en vez de figurar como deuda.
-        var months=[];
+        var paidAbs=[];
+        for(var a=0;a<CRONO_MESES;a++){var v=checks[CRONO_M0+a];if(v===true||v==='TRUE')paidAbs.push(a);}
+        // Meses que realmente corresponden: arrancan en la fecha de inicio y duran la
+        // cantidad de cuotas. Antes de esa fecha la planilla no tiene nada, asi que
+        // esas celdas quedan vacias en vez de figurar como deuda.
+        var monthsAbs=[];
         var dm=fecha.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
         if(dm&&nCuotas>0){
           var p1=parseInt(dm[1],10),p2=parseInt(dm[2],10),sy=parseInt(dm[3],10);
           var sm=(p1>12?p2:p2>12?p1:p2)-1; // formato dd/mm/aaaa
+          var a0=cronoAbs(sy,sm);
           for(var k=0;k<nCuotas;k++){
-            var idx=(sy-2026)*12+sm+k;
-            if(idx>=0&&idx<12)months.push(idx);
+            var ai=a0+k;
+            if(ai>=0&&ai<CRONO_MESES&&monthsAbs.indexOf(ai)<0)monthsAbs.push(ai);
           }
         }
-        paid.forEach(function(m){if(months.indexOf(m)<0)months.push(m);});
-        months.sort(function(a,b){return a-b;});
-        var pending=months.filter(function(m){return paid.indexOf(m)<0;});
-        entries.push({name:name,desc:desc,fecha:fecha,nCuotas:nCuotas,
+        paidAbs.forEach(function(ax){if(monthsAbs.indexOf(ax)<0)monthsAbs.push(ax);});
+        monthsAbs.sort(function(x,y){return x-y;});
+        var e0={name:name,desc:desc,fecha:fecha,nCuotas:nCuotas,
           cuota:cuotaNum?String(Math.round(cuotaNum)):'',cuotaNum:cuotaNum,
           totalNum:totalNum,pagadoNum:pagNum,pendienteNum:pendNum,estado:estado,
-          months:months,paid:paid,pending:pending});
+          monthsAbs:monthsAbs,paidAbs:paidAbs};
+        entries.push(cronoProject(e0,2026));
         i++;
       }
       return entries;
@@ -1936,23 +1965,40 @@ async function loadAllData(){
     try{
       var _cgP=fetchSheetRange('Cronograma de Inversiones','R151:AC151').catch(function(){return null;});
       var _ccP=fetchSheetRange('Cronograma de Inversiones','R189:AC189').catch(function(){return null;});
-      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C100:AS200').catch(function(){return null;});
+      var _cronoAllP=fetchSheetRange('Cronograma de Inversiones','C1:AS300').catch(function(){return null;});
       var _cronoRes=await Promise.all([_cgP,_ccP,_cronoAllP]);
       cronGastosAPagar=parseCronoRow(_cronoRes[0]);
       cronCompromisosAPagar=parseCronoRow(_cronoRes[1]);
       var _cronoAll=_cronoRes[2]||[];
-      var _clIdxs=[];
+      // La solapa tiene seis cuadros, no dos. Cada uno arranca en una fila rotulada
+      // CLIENTES y el titulo es lo que dice la columna D justo arriba de esa fila.
+      // Nunca se ubican por numero de fila: gviz descarta las filas vacias, asi que
+      // los indices que devuelve no son los de la planilla.
+      var _blocks=[];
       for(var _ci=0;_ci<_cronoAll.length;_ci++){
         var _cr=_cronoAll[_ci];
-        if(_cr&&_cr[0]&&String(_cr[0]).trim()==='CLIENTES')_clIdxs.push(_ci);
+        if(!(_cr&&_cr[0]&&String(_cr[0]).trim().toUpperCase()==='CLIENTES'))continue;
+        var _t='';
+        for(var _b=_ci-1;_b>=0&&_b>=_ci-4;_b--){
+          var _br=_cronoAll[_b];if(!_br)break;
+          if(_br[0]&&String(_br[0]).trim())break;
+          var _d=_br[1]?String(_br[1]).trim():'';
+          if(!_d)break;
+          _t=_d;
+        }
+        _blocks.push({title:_t||('Cuadro '+(_blocks.length+1)),start:_ci});
       }
-      if(_clIdxs.length>=2){
-        cronGastosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[0],_clIdxs[1]));
-        cronCompromisosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[1]));
-      }else if(_clIdxs.length===1){
-        cronGastosDetail=parseCronoDetail(_cronoAll.slice(_clIdxs[0]));
-        cronCompromisosDetail=[];
+      _blocks.forEach(function(_bk,_bi){
+        var _end=_bi+1<_blocks.length?_blocks[_bi+1].start:_cronoAll.length;
+        _bk.entries=parseCronoDetail(_cronoAll.slice(_bk.start,_end));
+      });
+      window._cronoBlocks=_blocks.filter(function(_bk){return _bk.entries&&_bk.entries.length;});
+      function _pickBlock(kw){
+        for(var i=0;i<_blocks.length;i++){if(String(_blocks[i].title||'').toUpperCase().indexOf(kw)>=0)return _blocks[i].entries;}
+        return null;
       }
+      cronGastosDetail=_pickBlock('GASTOS')||[];
+      cronCompromisosDetail=_pickBlock('COMPROMISO')||[];
       // El total mes a mes se arma sumando las cuotas que caen en cada mes segun el
       // detalle. Las filas fijas 151 y 189 de la solapa se corrieron al moverse la
       // planilla (hoy vienen vacias), asi que solo se usan como respaldo.
@@ -1971,7 +2017,7 @@ async function loadAllData(){
     try{await buildVendedorGains();}catch(e){}
     try{await enrichResumenFromRaw();}catch(e){}
     // Fetch Balance de Inversiones, Cronograma, and Tracking in parallel (non-blocking)
-    var _bipP=fetchSheetRange('Balance de inversiones y Patrimonios','B1:E50').catch(function(){return[];});
+    var _bipP=fetchSheetRange('Balance de inversiones y Patrimonios','B1:E200').catch(function(){return[];});
     var _ciP=fetchSheetRange('Cronograma de Inversiones','C5:AS30').catch(function(){return[];});
     var _ciSP=fetchSheetRange('Cronograma de Inversiones','AU3:AW20').catch(function(){return[];});
     var _trP=fetchRawSheet('TRACKING_PATRIMONIO').catch(function(){return null;});
@@ -2136,6 +2182,13 @@ function fmt(n,prefix='$'){
 }
 
 function fmtUSD(n){return fmtFullP(n,'U\u0024D ');}
+// Que tipo de cuadro es, segun el titulo que le puso la planilla.
+function cronoKind(t){
+  var u=String(t||'').toUpperCase();
+  if(u.indexOf('A COBRAR')>=0)return 'cobrar';
+  if(u.indexOf('A PAGAR')>=0||u.indexOf('GASTOS')>=0||u.indexOf('COMPROMISO')>=0)return 'pagar';
+  return 'ganancia';
+}
 function cronoView(uid,v,color){['res','cal','tl'].forEach(function(k){var el=document.getElementById(uid+'_'+k);if(el)el.style.display=(k===v?'block':'none');var b=document.getElementById(uid+'_b'+k);if(b){var on=k===v;b.style.borderColor=on?color:'var(--border)';b.style.background=on?'rgba(212,168,83,.14)':'transparent';b.style.color=on?color:'var(--text3)';}});}
 function fmtPesos(n){return fmtFullP(n,'$ ');}
 function fmtFullP(n,prefix){
@@ -2512,6 +2565,114 @@ function renderGastosInvPanels(){
     return h;
   }
 
+  // ─── Cuotas unificadas mes a mes ───
+  // Junta todos los cuadros de la solapa que son del mismo tipo (los que se cobran o
+  // los que se pagan) y arma un solo calendario: cuanto entra/sale cada mes, cuanto
+  // ya esta tildado en la planilla y cuanto queda. Cada cuadro mantiene su columna
+  // para poder ver de donde sale cada peso.
+  function buildCronoUnificado(blocks,kind,year){
+    var srcs=(blocks||[]).filter(function(b){return cronoKind(b.title)===kind&&b.entries&&b.entries.length;});
+    if(!srcs.length)return '';
+    var isCob=kind==='cobrar';
+    var color=isCob?'var(--green)':'var(--gold)';
+    var GR='#4ade80',RD='#f87171',DIM='#4a4956';
+    var uid='uni_'+Math.random().toString(36).substr(2,6);
+    var mN=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    function nf(n){return Math.round(n||0).toLocaleString('es-AR');}
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    var cols=srcs.map(function(b){
+      var pag=[],pen=[];
+      for(var m=0;m<12;m++){pag.push(0);pen.push(0);}
+      b.entries.forEach(function(e0){
+        var e=window.cronoProject?window.cronoProject(e0,year):e0;
+        if(!e.cuotaNum)return;
+        e.months.forEach(function(m){
+          if(e.paid.indexOf(m)>=0)pag[m]+=e.cuotaNum;else pen[m]+=e.cuotaNum;
+        });
+      });
+      return {title:b.title,pag:pag,pen:pen};
+    });
+    var totPag=[],totPen=[],gPag=0,gPen=0,maxMes=0;
+    for(var m=0;m<12;m++){
+      var sp=0,sd=0;
+      cols.forEach(function(c){sp+=c.pag[m];sd+=c.pen[m];});
+      totPag.push(sp);totPen.push(sd);gPag+=sp;gPen+=sd;
+      if(sp+sd>maxMes)maxMes=sp+sd;
+    }
+    var verboA=isCob?'COBRADO':'PAGADO',verboB=isCob?'A COBRAR':'A PAGAR';
+    // Barras mes a mes
+    var bars='<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px;padding:18px 18px 6px">';
+    for(var bm=0;bm<12;bm++){
+      var tot=totPag[bm]+totPen[bm];
+      var hPag=maxMes?Math.round(totPag[bm]/maxMes*120):0;
+      var hPen=maxMes?Math.round(totPen[bm]/maxMes*120):0;
+      var cur=bm===cmIdx&&year===2026;
+      bars+='<div style="text-align:center">'
+        +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+(tot?'var(--text2)':DIM)+';margin-bottom:5px">'+(tot?nf(tot):'·')+'</div>'
+        +'<div style="height:120px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:6px;background:rgba(255,255,255,.03);overflow:hidden">'
+          +'<div style="height:'+hPen+'px;background:rgba(248,113,113,.55)"></div>'
+          +'<div style="height:'+hPag+'px;background:linear-gradient(180deg,'+GR+',#22c55e)"></div>'
+        +'</div>'
+        +'<div style="font-size:10px;font-weight:700;letter-spacing:.3px;margin-top:6px;color:'+(cur?'var(--gold)':'var(--text3)')+'">'+mN[bm]+'</div>'
+        +'</div>';
+    }
+    bars+='</div>';
+    // Tabla mes x cuadro
+    var tb='<div style="overflow-x:auto;padding:0 0 4px"><table style="width:100%;border-collapse:collapse;font-size:14px;min-width:'+(320+cols.length*180)+'px">';
+    tb+='<thead><tr style="background:rgba(255,255,255,.04)">'
+      +'<th style="padding:12px 14px;text-align:left;color:var(--text2);font-size:12px;font-weight:700;letter-spacing:.6px;position:sticky;left:0;background:#16161c;z-index:2;border-right:1px solid var(--border);min-width:96px">MES</th>';
+    cols.forEach(function(c){
+      tb+='<th style="padding:12px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.4px;min-width:170px">'+esc(c.title)+'</th>';
+    });
+    tb+='<th style="padding:12px 12px;text-align:right;color:'+GR+';font-size:12px;font-weight:700;letter-spacing:.6px;border-left:1px solid var(--border);min-width:100px">'+verboA+'</th>'
+      +'<th style="padding:12px 12px;text-align:right;color:'+RD+';font-size:12px;font-weight:700;letter-spacing:.6px;min-width:100px">'+verboB+'</th>'
+      +'<th style="padding:12px 12px;text-align:right;color:'+color+';font-size:12px;font-weight:700;letter-spacing:.6px;min-width:100px">TOTAL MES</th></tr></thead><tbody>';
+    for(var rm=0;rm<12;rm++){
+      var curR=rm===cmIdx&&year===2026;
+      tb+='<tr style="border-bottom:1px solid rgba(255,255,255,.05);'+(curR?'background:rgba(212,168,83,.07)':'')+'">'
+        +'<td style="padding:11px 14px;position:sticky;left:0;background:'+(curR?'#1d1b18':'#16161c')+';z-index:1;border-right:1px solid var(--border);font-weight:600;color:'+(curR?'var(--gold)':'var(--text)')+'">'+mN[rm].charAt(0)+mN[rm].substr(1).toLowerCase()+' '+String(year).substr(2)+'</td>';
+      cols.forEach(function(c){
+        var v=c.pag[rm]+c.pen[rm];
+        tb+='<td style="padding:11px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+(v?'var(--text2)':DIM)+'">'+(v?nf(v):'·')+'</td>';
+      });
+      var tm=totPag[rm]+totPen[rm];
+      tb+='<td style="padding:11px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+(totPag[rm]?GR:DIM)+';border-left:1px solid var(--border)">'+(totPag[rm]?nf(totPag[rm]):'·')+'</td>'
+        +'<td style="padding:11px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+(totPen[rm]?RD:DIM)+'">'+(totPen[rm]?nf(totPen[rm]):'·')+'</td>'
+        +'<td style="padding:11px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+(tm?color:DIM)+'">'+(tm?nf(tm):'·')+'</td></tr>';
+    }
+    tb+='<tr style="background:rgba(255,255,255,.045);border-top:2px solid var(--border)">'
+      +'<td style="padding:12px 14px;font-weight:700;color:var(--text);letter-spacing:.6px;position:sticky;left:0;background:#16161c;z-index:1;border-right:1px solid var(--border)">TOTAL</td>';
+    cols.forEach(function(c){
+      var s=0;for(var i=0;i<12;i++)s+=c.pag[i]+c.pen[i];
+      tb+='<td style="padding:12px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:var(--text)">'+nf(s)+'</td>';
+    });
+    tb+='<td style="padding:12px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+GR+';border-left:1px solid var(--border)">'+nf(gPag)+'</td>'
+      +'<td style="padding:12px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+RD+'">'+nf(gPen)+'</td>'
+      +'<td style="padding:12px 12px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:700;color:'+color+'">'+nf(gPag+gPen)+'</td></tr>';
+    tb+='</tbody></table></div>';
+
+    var titulo=isCob?'Cuotas que Cobro por Mes (unificado)':'Cuotas que Pago por Mes (unificado)';
+    var h='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:16px">';
+    h+='<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);cursor:pointer" onclick="var d=document.getElementById(\''+uid+'\');var a=d.style.display===\'none\';d.style.display=a?\'block\':\'none\';this.querySelector(\'.det-arrow\').textContent=a?\'▲\':\'▼\'">'
+      +'<span style="font-size:14px;font-weight:700;color:'+color+';letter-spacing:.3px">'+(isCob?'💵':'💳')+' '+titulo+' · '+year+'</span>'
+      +'<span class="det-arrow" style="color:'+color+';font-size:12px">▲</span></div>';
+    h+='<div id="'+uid+'">';
+    h+='<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:12px;color:var(--text3);max-width:520px;line-height:1.5">Suma de '+cols.length+' cuadro'+(cols.length>1?'s':'')+' de la solapa Cronograma de Inversiones: '+cols.map(function(c){return esc(c.title);}).join(' + ')+'.</div>'
+      +'<div style="display:flex;gap:22px;flex-wrap:wrap">'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">TOTAL '+year+'</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+color+'">'+nf(gPag+gPen)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">'+verboA+'</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+GR+'">'+nf(gPag)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--text3)">'+verboB+'</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+RD+'">'+nf(gPen)+'</div></div>'
+      +'</div></div>';
+    h+=bars+tb;
+    h+='<div style="padding:10px 16px;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;align-items:center;border-top:1px solid var(--border);font-size:12px">'
+      +'<span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+GR+';vertical-align:middle;margin-right:5px"></span><span style="color:'+GR+';font-weight:600">'+verboA.charAt(0)+verboA.substr(1).toLowerCase()+' (tildado en la planilla)</span></span>'
+      +'<span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(248,113,113,.6);vertical-align:middle;margin-right:5px"></span><span style="color:'+RD+';font-weight:600">'+verboB.charAt(0)+verboB.substr(1).toLowerCase()+'</span></span>'
+      +'</div>';
+    h+='</div></div>';
+    return h;
+  }
+
   function buildCronoPanel(title,icon,color,monthlyArr,subtitle,detailArr){
     if(!monthlyArr||!monthlyArr.length)return '<div class="module-card" style="padding:20px;text-align:center;color:var(--text2)">Cargando...</div>';
     var total=0;
@@ -2551,9 +2712,25 @@ function renderGastosInvPanels(){
     detContainer.id='gastosDetailBelow';
     container.parentNode.insertBefore(detContainer,container.nextSibling);
   }
+  // Todos los cuadros de la solapa Cronograma de Inversiones, con el titulo tal cual
+  // lo escribe la planilla. Antes solo se mostraban dos de los seis.
   var detHtmlAll='';
-  if(typeof gastosCrono==='object'&&gastosCrono.detail)detHtmlAll+=gastosCrono.detail;
-  if(typeof comproCrono==='object'&&comproCrono.detail)detHtmlAll+=comproCrono.detail;
+  var _blocks=window._cronoBlocks||[];
+  var detYear=(yr==='2027')?2027:2026;
+  if(_blocks.length){
+    detHtmlAll+=buildCronoUnificado(_blocks,'cobrar',detYear);
+    detHtmlAll+=buildCronoUnificado(_blocks,'pagar',detYear);
+    _blocks.forEach(function(b){
+      var k=cronoKind(b.title);
+      var ico=k==='cobrar'?'💵':(k==='pagar'?'💳':'📈');
+      var col=k==='cobrar'?'var(--green)':(k==='pagar'?'var(--gold)':'var(--cyan)');
+      var arr=b.entries.map(function(e){return window.cronoProject?window.cronoProject(e,detYear):e;});
+      detHtmlAll+=buildCronoDetail(b.title+' · '+detYear,ico,col,arr);
+    });
+  }else{
+    if(typeof gastosCrono==='object'&&gastosCrono.detail)detHtmlAll+=gastosCrono.detail;
+    if(typeof comproCrono==='object'&&comproCrono.detail)detHtmlAll+=comproCrono.detail;
+  }
   detContainer.innerHTML=detHtmlAll;
 }
 
@@ -2615,12 +2792,13 @@ function renderInvBalanceCards(){
     html+='<div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)">';
     html+='<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:'+cat.color+'">'+(cat.icon?cat.icon+' ':'')+cat.title+'</span>';
     html+='<span style="font-size:12px;font-weight:700;color:'+cat.color+'">'+fvClean(catTotal)+'</span></div>';
+    // Las filas sin importe tambien se listan: la planilla las tiene y esconderlas
+    // hacia parecer que faltaban datos.
     cat.items.forEach(function(item){
-      if(!item.usd)return;
       var vc=item.usd<0?'var(--red)':cat.color;
       html+='<div style="padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.04)">';
-      html+='<span style="color:var(--text);font-size:12px">'+item.name+'</span>';
-      html+='<span style="font-size:12px;font-weight:700;color:'+vc+'">'+fvClean(item.usd)+'</span></div>';
+      html+='<span style="color:'+(item.usd?'var(--text)':'var(--text3)')+';font-size:12px">'+item.name+'</span>';
+      html+='<span style="font-size:12px;font-weight:700;color:'+(item.usd?vc:'var(--text3)')+'">'+(item.usd?fvClean(item.usd):'—')+'</span></div>';
     });
     html+='</div>';
   });

@@ -2745,7 +2745,19 @@ function renderInvBalanceCards(){
   function fp(v){return v<0?'-$ '+Math.abs(Math.round(v)).toLocaleString('es-AR'):'$ '+Math.round(v).toLocaleString('es-AR');}
 
   var categories=[],curCat=null;
-  var totalUSD=0,totalPesos=0,cotiz=1410;
+  var totalUSD=0,totalPesos=0,cotiz=0,nItems=0;
+  // El rotulo "Cotización Dolar" esta en D5, pero gviz tipa esa columna como
+  // numerica y devuelve null en las celdas de texto, asi que no se puede buscar
+  // por nombre. Se deduce del cociente pesos/dolares de cualquier fila que traiga
+  // los dos importes (ej. Acumulado en Pesos: 95.983.304 / 62.327 = 1.540).
+  for(var ci=0;ci<rows.length;ci++){
+    var cr=rows[ci];if(!cr)continue;
+    var cl=cr[0]?String(cr[0]).trim().toLowerCase():'';
+    if(cl==='total'||cl==='totales')continue; // esa fila mezcla conceptos, el cociente no es la cotizacion
+    var cu=cr[2]?pv(String(cr[2])):0,cp=cr[3]?pv(String(cr[3])):0;
+    if(cu>0&&cp>0){var rt=cp/cu;if(rt>500&&rt<50000){cotiz=rt;break;}}
+  }
+  if(!cotiz)cotiz=1410;
   for(var i=0;i<rows.length;i++){
     var r=rows[i];if(!r)continue;
     var label=r[0]?String(r[0]).trim():'';
@@ -2754,9 +2766,9 @@ function renderInvBalanceCards(){
     if(!label)continue;
     var ll=label.toLowerCase();
     if(ll.indexOf('balance de inversiones')>=0)continue;
-    if(ll.indexOf('cotización')>=0||ll.indexOf('cotizacion')>=0){cotiz=r[1]?pv(String(r[1])):1410;continue;}
+    if(ll.indexOf('cotización')>=0||ll.indexOf('cotizacion')>=0)continue;
     if(ll==='totales'||ll==='total'){totalUSD=valUSD;totalPesos=valPesos;continue;}
-    if(ll==='inversión'||ll==='resta cobrar'||ll==='caja actual')continue;
+    if((ll==='inversión'||ll==='resta cobrar'||ll==='caja actual')&&!valUSD&&!valPesos)continue;
     if(label===label.toUpperCase()&&label.length>3&&!valUSD){
       curCat={title:label,items:[],color:'var(--gold)',icon:'📋'};
       if(ll.indexOf('propiedad')>=0){curCat.color='var(--gold)';curCat.icon='🏠';}
@@ -2768,7 +2780,11 @@ function renderInvBalanceCards(){
       categories.push(curCat);
       continue;
     }
-    if(curCat){curCat.items.push({name:label,usd:valUSD,pesos:valPesos});}
+    // Nunca se descarta una fila con rotulo: si aparece antes del primer titulo
+    // de la planilla, se abre una categoria OTROS para que igual se vea.
+    if(!curCat){curCat={title:'OTROS',items:[],color:'var(--text2)',icon:'📋'};categories.push(curCat);}
+    curCat.items.push({name:label,usd:valUSD,pesos:valPesos});
+    nItems++;
   }
 
   // Format USD with clean typography
@@ -2782,7 +2798,8 @@ function renderInvBalanceCards(){
   // Total KPI
   html+='<div style="background:var(--surface);border:2px solid var(--gold);border-radius:14px;padding:18px 24px;text-align:center;margin-bottom:20px">';
   html+='<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Total Patrimonio</div>';
-  html+='<div style="font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.5px">'+fvClean(totalUSD)+'</div></div>';
+  html+='<div style="font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.5px">'+fvClean(totalUSD)+'</div>';
+  html+='<div style="font-size:10px;color:var(--text3);margin-top:6px">Cotización dólar de la planilla: $ '+Math.round(cotiz).toLocaleString('es-AR')+'</div></div>';
 
   // Categories
   categories.forEach(function(cat){
@@ -2798,10 +2815,21 @@ function renderInvBalanceCards(){
       var vc=item.usd<0?'var(--red)':cat.color;
       html+='<div style="padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.04)">';
       html+='<span style="color:'+(item.usd?'var(--text)':'var(--text3)')+';font-size:12px">'+item.name+'</span>';
-      html+='<span style="font-size:12px;font-weight:700;color:'+(item.usd?vc:'var(--text3)')+'">'+(item.usd?fvClean(item.usd):'—')+'</span></div>';
+      html+='<span style="text-align:right"><span style="font-size:12px;font-weight:700;color:'+(item.usd?vc:'var(--text3)')+'">'+(item.usd?fvClean(item.usd):'—')+'</span>';
+      if(item.pesos)html+='<span style="display:block;font-size:10px;color:var(--text3)">'+fp(item.pesos)+'</span>';
+      html+='</span></div>';
     });
     html+='</div>';
   });
+  // Control de completitud: cuantos conceptos se leyeron y si la suma cierra con
+  // el Total que trae la propia planilla. Si algun dia falta una fila, se ve aca.
+  var sumaItems=0;
+  categories.forEach(function(c){c.items.forEach(function(it){sumaItems+=it.usd;});});
+  var dif=Math.round(sumaItems-totalUSD);
+  html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:4px;font-size:10px;color:var(--text3);line-height:1.6">';
+  html+='<b style="color:var(--text2)">'+nItems+'</b> conceptos leídos de la solapa · Suma <b style="color:var(--text2)">'+fvClean(sumaItems)+'</b> · Total de la planilla <b style="color:var(--text2)">'+fvClean(totalUSD)+'</b>';
+  html+=' · '+(Math.abs(dif)<2?'<span style="color:var(--green);font-weight:700">✓ coincide</span>':'<span style="color:var(--red);font-weight:700">⚠ diferencia '+fvClean(dif)+'</span>');
+  html+='</div>';
   html+='</div>';
   el.innerHTML=html;
 }

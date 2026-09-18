@@ -1346,18 +1346,32 @@ function renderCuotasPanel(panelKey){
   // el tilde de la fila booleana que va debajo de cada venta.
   // Se guarda por panel y se agrupa por modulo en cobradasPorModulo().
   try{
+    // A que mes corresponde cada columna de tildes. Sale de los encabezados reales
+    // (M2:AO2, fechas tipo 01/08/2025), no se asume que la primera sea Agosto 2025.
+    var _absOf=[];
+    for(var _mi=0;_mi<COB_MESES;_mi++){
+      var _hv=d.months&&d.months[_mi];
+      var _pm=_hv?String(_hv).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/):null;
+      _absOf.push(_pm?cobAbs(parseInt(_pm[3],10),parseInt(_pm[2],10)-1):_mi);
+    }
+    var _cobM=new Array(COB_MESES),_cobNM=new Array(COB_MESES);
+    for(var _z=0;_z<COB_MESES;_z++){_cobM[_z]=0;_cobNM[_z]=0;}
     var _cobTot=0,_cobN=0,_cobSheet=0;
     rows.forEach(function(rr){
       if(rr.payments){
-        for(var _pi=0;_pi<rr.payments.length;_pi++){
-          if(rr.payments[_pi]==='paid'){_cobTot+=(rr.paymentAmts[_pi]||0);_cobN++;}
+        for(var _pi=0;_pi<rr.payments.length&&_pi<COB_MESES;_pi++){
+          if(rr.payments[_pi]!=='paid')continue;
+          var _amt=rr.paymentAmts[_pi]||0,_a=_absOf[_pi];
+          _cobTot+=_amt;_cobN++;
+          if(_a>=0&&_a<COB_MESES){_cobM[_a]+=_amt;_cobNM[_a]++;}
         }
       }
       _cobSheet+=(rr.rawCobrado||0);
     });
     window._cuotasCobradas=window._cuotasCobradas||{};
     window._cuotasCobradas[panelKey]={vendor:cfg.vendor,currency:cfg.currency,
-      total:_cobTot,n:_cobN,sheet:Math.round(_cobSheet),filas:rows.length};
+      total:_cobTot,n:_cobN,sheet:Math.round(_cobSheet),filas:rows.length,
+      months:_cobM,monthsN:_cobNM};
     if(window.refreshCobradasCards)window.refreshCobradasCards();
   }catch(e){}
   // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
@@ -2048,17 +2062,21 @@ async function loadAllData(){
       // Cronograma de Inversiones, todos los meses. Los de pagar no se suman.
       try{
         var _invCob=0,_invN=0;
+        var _invM=new Array(COB_MESES),_invNM=new Array(COB_MESES);
+        for(var _z=0;_z<COB_MESES;_z++){_invM[_z]=0;_invNM[_z]=0;}
         window._cronoBlocks.forEach(function(_bk){
           if(cronoKind(_bk.title)!=='cobrar')return;
           _bk.entries.forEach(function(_e){
             var _q=_e.cuotaNum||0;
-            var _t=(_e.paidAbs&&_e.paidAbs.length)||0;
-            _invCob+=_q*_t;_invN+=_t;
+            (_e.paidAbs||[]).forEach(function(_a){
+              _invCob+=_q;_invN++;
+              if(_a>=0&&_a<COB_MESES){_invM[_a]+=_q;_invNM[_a]++;}
+            });
           });
         });
         window._cuotasCobradas=window._cuotasCobradas||{};
         window._cuotasCobradas.cronogramaInversiones={vendor:'INVERSIONES',currency:'U$D',
-          total:Math.round(_invCob),n:_invN,sheet:0,filas:0};
+          total:Math.round(_invCob),n:_invN,sheet:0,filas:0,months:_invM,monthsN:_invNM};
         if(window.refreshCobradasCards)window.refreshCobradasCards();
       }catch(e){}
       // El total mes a mes se arma sumando las cuotas que caen en cada mes segun el
@@ -4521,40 +4539,124 @@ var CUOTAS_VENDOR_A_MODULO={'TECNO':'Tecno','CRÉDITOS':'Creditos','CREDITOS':'C
   'INVERSIONES':'Inversiones','LINEA 314':'Linea 314','OSITO':'Osito S.r.l.',
   'MELY':'Mely','GONZA':'Gonza','PATITO':'Patito S.A.','TOBIAS':'Tobias','TINO':'Tino'};
 function cobNorm(s){return String(s||'').trim().toLowerCase().replace(/\.+$/,'');}
-// Junta los paneles de cada modulo (dolares + pesos + creditos) en un solo total.
-function cobradasPorModulo(){
-  var out={},src=window._cuotasCobradas||{};
+// Los 29 meses de las planillas: indice 0 = Agosto 2025 ... indice 28 = Diciembre 2027.
+var COB_MESES=29;
+function cobAbs(year,month0){return (year-2025)*12+month0-7;}
+// Cotizacion del dolar blue de cada mes, para unificar lo cobrado en pesos.
+// 2026 y 2027 salen de la columna "Cotización Dolar" de DASHBOARD MARTIN (los valores
+// que vos ya congelaste). Agosto a Diciembre 2025 no estan en la planilla y son pasado,
+// asi que van fijos con el blue VENTA del ultimo dia de cada mes (api.argentinadatos.com).
+var COB_BLUE_2025=[1320,1445,1445,1435,1530]; // ago, sep, oct, nov, dic 2025
+function cobRates(){
+  if(window._cobRates)return window._cobRates;
+  var r=new Array(COB_MESES);
+  for(var i=0;i<5;i++)r[i]=COB_BLUE_2025[i];
+  // Las filas de meses se ubican por rotulo, nunca por numero de fila.
+  if(dashRaw&&dashRaw.length>20){
+    for(var i2=0;i2<Math.min(60,dashRaw.length);i2++){
+      var lb=dashRaw[i2]&&dashRaw[i2][2];
+      if(typeof lb!=='string')continue;
+      var m=lb.trim().match(/^Año\s+(\d{4})$/i);
+      if(!m)continue;
+      var yr=parseInt(m[1],10);
+      var nx=dashRaw[i2+1]&&dashRaw[i2+1][2];
+      if(typeof nx!=='string'||nx.trim().toLowerCase().indexOf('enero')!==0)continue;
+      for(var mo=0;mo<12;mo++){
+        var row=dashRaw[i2+1+mo];if(!row)continue;
+        var v=row[6],n=0;
+        if(typeof v==='number')n=v;
+        else if(typeof v==='string'){var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');n=parseFloat(cl)||0;}
+        var a=cobAbs(yr,mo);
+        if(a>=0&&a<COB_MESES&&n>1)r[a]=n;
+      }
+    }
+  }
+  // Si algun mes quedo sin cotizacion se usa la del mes conocido mas cercano.
+  var last=0;
+  for(var j=0;j<COB_MESES;j++){if(r[j])last=r[j];else r[j]=last;}
+  for(var j2=COB_MESES-1;j2>=0;j2--){if(!r[j2]&&r[j2+1])r[j2]=r[j2+1];}
+  window._cobRates=r;
+  return r;
+}
+// Junta los paneles de cada modulo (dolares + pesos + creditos) y suma solo los meses
+// del periodo pedido. from/to son indices absolutos inclusive (0 = Ago 2025).
+// El unificado se calcula mes por mes con la cotizacion de ESE mes, no con una sola.
+function cobradasPorModulo(from,to){
+  if(from==null)from=0;
+  if(to==null)to=COB_MESES-1;
+  var out={},src=window._cuotasCobradas||{},rates=cobRates();
   for(var k in src){
     var e=src[k];if(!e)continue;
     var mod=CUOTAS_VENDOR_A_MODULO[String(e.vendor).toUpperCase()]||e.vendor;
     var key=cobNorm(mod);
-    if(!out[key])out[key]={pesos:0,usd:0,n:0,sheetPesos:0,sheetUsd:0,paneles:0};
-    if(e.currency==='U$D'){out[key].usd+=e.total;out[key].sheetUsd+=e.sheet;}
-    else{out[key].pesos+=e.total;out[key].sheetPesos+=e.sheet;}
-    out[key].n+=e.n;out[key].paneles++;
+    if(!out[key])out[key]={pesos:0,usd:0,unif:0,n:0};
+    var mm=e.months||[],nn=e.monthsN||[];
+    for(var a=from;a<=to&&a<COB_MESES;a++){
+      var v=mm[a]||0;if(!v&&!nn[a])continue;
+      if(e.currency==='U$D'){out[key].usd+=v;out[key].unif+=v;}
+      else{out[key].pesos+=v;out[key].unif+=rates[a]?v/rates[a]:0;}
+      out[key].n+=(nn[a]||0);
+    }
   }
   return out;
 }
 // Las planillas llegan de a una y despues de que se dibujaron las tarjetas, asi que
 // en vez de re-renderizar todo se actualizan los numeros que ya estan en pantalla.
 window.refreshCobradasCards=function(){
-  var data=cobradasPorModulo();
-  var nodes=document.querySelectorAll('#kpiModulesRow [data-cobmod]');
-  var totP=0,totU=0,totN=0;
+  // Cada seccion pide su propio periodo y lo declara en el nodo (data-cobfrom/to).
+  var cache={},totals={};
+  var nodes=document.querySelectorAll('[data-cobmod]');
   for(var i=0;i<nodes.length;i++){
-    var el=nodes[i],d=data[el.getAttribute('data-cobmod')]||{pesos:0,usd:0,n:0};
-    var p=el.querySelector('.vc-cobp'),u=el.querySelector('.vc-cobu');
+    var el=nodes[i];
+    var from=parseInt(el.getAttribute('data-cobfrom'),10),to=parseInt(el.getAttribute('data-cobto'),10);
+    if(isNaN(from))from=0;
+    if(isNaN(to))to=COB_MESES-1;
+    var ck=from+'_'+to;
+    if(!cache[ck])cache[ck]=cobradasPorModulo(from,to);
+    var d=cache[ck][el.getAttribute('data-cobmod')]||{pesos:0,usd:0,unif:0,n:0};
+    var p=el.querySelector('.vc-cobp'),u=el.querySelector('.vc-cobu'),un=el.querySelector('.vc-cobuni');
     if(p)p.textContent=fmtPesos(d.pesos);
     if(u)u.textContent=fmtUSD(d.usd);
-    el.setAttribute('title','Cuotas cobradas (tildadas) en la planilla del modulo: '+(d.n||0)+' cuotas');
-    totP+=d.pesos;totU+=d.usd;totN+=(d.n||0);
+    if(un)un.textContent=fmtUSD(d.unif);
+    el.setAttribute('title',(d.n||0)+' cuotas tildadas en la planilla del modulo');
+    var tid=el.getAttribute('data-cobtot')||'';
+    if(!totals[tid])totals[tid]={p:0,u:0,uni:0,n:0};
+    totals[tid].p+=d.pesos;totals[tid].u+=d.usd;totals[tid].uni+=d.unif;totals[tid].n+=(d.n||0);
   }
-  var tp=document.getElementById('totCobradasPesos'),tu=document.getElementById('totCobradasUSD');
-  if(tp)tp.textContent=fmtPesos(totP);
-  if(tu)tu.textContent=fmtUSD(totU);
-  var tn=document.getElementById('totCobradasN');
-  if(tn)tn.textContent=totN+' cuotas tildadas en las planillas';
+  for(var tid2 in totals){
+    if(!tid2)continue;
+    var t=totals[tid2];
+    var ep=document.getElementById(tid2+'_p'),eu=document.getElementById(tid2+'_u'),
+        eun=document.getElementById(tid2+'_uni'),en=document.getElementById(tid2+'_n');
+    if(ep)ep.textContent=fmtPesos(t.p);
+    if(eu)eu.textContent=fmtUSD(t.u);
+    if(eun)eun.textContent=fmtUSD(t.uni);
+    if(en)en.textContent=t.n+' cuotas tildadas';
+  }
 };
+// El bloque HTML de la tarjeta, igual en las tres secciones.
+function cobradasCardHtml(modKey,from,to,totId){
+  var h='<div data-cobmod="'+modKey+'" data-cobfrom="'+from+'" data-cobto="'+to+'" data-cobtot="'+totId+'"';
+  h+=' style="background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:7px 8px;text-align:center">';
+  h+='<div class="vc-label-cobrada" style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas Cobradas</div>';
+  h+='<div class="vc-cobp" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(0)+'</div>';
+  h+='<div class="vc-cobu" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(0)+'</div>';
+  h+='<div class="vc-cobuni" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(0)+'</div>';
+  h+='</div>';
+  return h;
+}
+// La tarjeta grande de total que va abajo de cada seccion.
+function cobradasTotalCard(totId,label){
+  var c=document.createElement('div');
+  c.style.cssText='background:var(--surface);border:2px solid var(--green);border-radius:12px;padding:12px 24px;text-align:center;min-width:180px';
+  c.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+label+'</div>'
+    +'<div id="'+totId+'_p" style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--blue);line-height:1.3">'+fmtPesos(0)+'</div>'
+    +'<div id="'+totId+'_u" style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(0)+'</div>'
+    +'<div id="'+totId+'_uni" style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:800;color:var(--gold);line-height:1.3">'+fmtUSD(0)+'</div>'
+    +'<div style="font-size:9px;color:var(--text3);margin-top:3px">unificado a U$D</div>'
+    +'<div id="'+totId+'_n" style="font-size:9px;color:var(--text3)"></div>';
+  return c;
+}
 function renderModuleKPIs(){
   var container=document.getElementById('kpiModulesRow');
   if(!container||!dashRaw||dashRaw.length<200)return;
@@ -4632,9 +4734,9 @@ function renderModuleKPIs(){
 
   // Get investment data for current month
   var invData=window._vendorInvestments||{};
-  // Cuotas ya cobradas (tildadas) por modulo — puede estar vacio todavia: las planillas
-  // de cada modulo se bajan aparte y refreshCobradasCards() completa los numeros al llegar.
-  var cobData=cobradasPorModulo();
+  // Cuotas ya cobradas (tildadas) del mes que esta elegido arriba. Los numeros los
+  // completa refreshCobradasCards() cuando llegan las planillas de cada modulo.
+  var _cobAbsMes=cobAbs(2026,cmIdx);
 
   // Render sorted cards: ganancia card + investment card below each + accumulate totals
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0,totRecupero=0;
@@ -4676,13 +4778,8 @@ function renderModuleKPIs(){
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
     colHtml+='</div>';
-    // CUOTAS COBRADAS card (acumulado de todos los meses tildados en la planilla)
-    var _cbm=cobData[normName(c.name)]||{pesos:0,usd:0};
-    colHtml+='<div data-cobmod="'+normName(c.name)+'" style="background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div class="vc-label-cobrada" style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas Cobradas</div>';
-    colHtml+='<div class="vc-cobp" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(_cbm.pesos)+'</div>';
-    colHtml+='<div class="vc-cobu" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(_cbm.usd)+'</div>';
-    colHtml+='</div>';
+    // CUOTAS COBRADAS del mes elegido arriba (un solo mes).
+    colHtml+=cobradasCardHtml(normName(c.name),_cobAbsMes,_cobAbsMes,'totCobMes');
     // Recupero de Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
     colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Recupero Inversión</div>';
@@ -4711,15 +4808,8 @@ function renderModuleKPIs(){
       +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+(tc.fmt==='pesos'?fmtPesos(tc.val):fmtUSD(tc.val))+'</div>';
     totRow.appendChild(card);
   });
-  // Total de cuotas cobradas de los 8 modulos. Se llena/actualiza en
-  // refreshCobradasCards() a medida que van llegando las planillas.
-  var cobCard=document.createElement('div');
-  cobCard.style.cssText='background:var(--surface);border:2px solid var(--green);border-radius:12px;padding:12px 24px;text-align:center;min-width:180px';
-  cobCard.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Cuotas Cobradas Total</div>'
-    +'<div id="totCobradasPesos" style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--blue);line-height:1.3">'+fmtPesos(0)+'</div>'
-    +'<div id="totCobradasUSD" style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(0)+'</div>'
-    +'<div id="totCobradasN" style="font-size:9px;color:var(--text3);margin-top:4px">leyendo las planillas...</div>';
-  totRow.appendChild(cobCard);
+  // Total de cuotas cobradas del mes, de los 8 modulos.
+  totRow.appendChild(cobradasTotalCard('totCobMes','Cuotas Cobradas del Mes'));
   container.parentNode.insertBefore(totRow,container.nextSibling);
   if(window.refreshCobradasCards)window.refreshCobradasCards();
 }
@@ -5058,6 +5148,12 @@ function renderResumenRange(containerId,mode){
   // Get cuotas monthly data and balance
   var balData=window._vendorBalances||{};
 
+  // Periodo de las cuotas cobradas: en "Año 2026" va de Enero al mes en curso;
+  // en el acumulado, los 29 meses de las planillas (Ago 2025 a Dic 2027).
+  var _cobFrom=mode==='anio'?cobAbs(2026,0):0;
+  var _cobTo=mode==='anio'?cobAbs(2026,cmIdx):COB_MESES-1;
+  var _cobTotId=containerId==='kpiAnioRow'?'totCobAnio':'totCobHist';
+
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0,totBal=0;
   cards.forEach(function(c,ci){
     var invMonthly=invData[normName(c.name)]||[];
@@ -5098,6 +5194,8 @@ function renderResumenRange(containerId,mode){
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
     colHtml+='</div>';
+    // CUOTAS COBRADAS del periodo de esta seccion (año en curso o acumulado 25/26/27)
+    colHtml+=cobradasCardHtml(normName(c.name),_cobFrom,_cobTo,_cobTotId);
     // Balance de Inversión card
     var balColor=balVal>=0?'var(--purple)':'var(--red)';
     var balLabel=window._balanceLabel||'Balance de Inversión';
@@ -5129,7 +5227,10 @@ function renderResumenRange(containerId,mode){
       +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+(tc.fmt==='pesos'?fmtPesos(tc.val):fmtUSD(tc.val))+'</div>';
     totRow.appendChild(card);
   });
+  totRow.appendChild(cobradasTotalCard(_cobTotId,
+    mode==='anio'?'Cuotas Cobradas 2026':'Cuotas Cobradas Acumulado'));
   container.parentNode.insertBefore(totRow,container.nextSibling);
+  if(window.refreshCobradasCards)window.refreshCobradasCards();
 }
 
 function renderResumenAnio(){renderResumenRange('kpiAnioRow','anio');var sub=document.getElementById('subtituloResumenAnio');if(sub){var h=new Date();var d=h.getDate();var m=h.getMonth();var y=h.getFullYear();var mN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];sub.textContent='Hasta la fecha de hoy '+d+'/'+( m+1)+'/'+y;}}

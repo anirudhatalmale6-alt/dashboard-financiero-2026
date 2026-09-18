@@ -1191,6 +1191,24 @@ function renderCuotasPanel(panelKey){
     }
   }
   if(cuotasColIdx<0)cuotasColIdx=8; // Final fallback
+  // Las cuatro columnas del final (Resta Cobrar, Ganancia, Cobrado, Estado) no estan
+  // en la misma posicion en todas las planillas: ESTADO cae en la 39, 40, 44 o 45
+  // segun la hoja. Se ubica ESTADO por su texto (VIGENTE/CANCELADO) y se cuentan tres
+  // columnas para atras. Antes se asumia fija la 44 y en OSITO/MELY (45) la columna
+  // Cobrado mostraba en realidad la Ganancia.
+  var estadoColIdx=-1;
+  (function(){
+    var votes={},best=-1,bn=0;
+    for(var ri=0;ri<d.raw.length;ri++){
+      var rr=d.raw[ri];if(!rr)continue;
+      for(var cc=30;cc<50;cc++){
+        var vv=rr[cc];
+        if(typeof vv==='string'&&/^(VIGENTE|CANCELADO|COBRADO)/i.test(vv.trim()))votes[cc]=(votes[cc]||0)+1;
+      }
+    }
+    for(var k in votes){if(votes[k]>bn){bn=votes[k];best=parseInt(k,10);}}
+    if(bn>=2)estadoColIdx=best;
+  })();
   var rows=[];
   for(var i=0;i<d.raw.length;i++){
     var r=d.raw[i];
@@ -1249,7 +1267,8 @@ function renderCuotasPanel(panelKey){
     }
     // Estado detection
     var estado='';
-    if(r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
+    if(estadoColIdx>=0&&r[estadoColIdx]&&typeof r[estadoColIdx]==='string'){estado=String(r[estadoColIdx]).trim();}
+    if(!estado&&r[44]&&typeof r[44]==='string'){estado=String(r[44]).trim();}
     if(!estado&&r[39]&&typeof r[39]==='string'){estado=String(r[39]).trim();}
     if(!estado)estado='VIGENTE';
     // Cuota payment tracking using boolRow TRUE/FALSE
@@ -1303,7 +1322,10 @@ function renderCuotasPanel(panelKey){
     }
     // Auto-detect financial summary columns based on estado position
     var rcIdx=41,gnIdx=42,cbIdx=43,vtIdx=11;
-    if(r[39]&&typeof r[39]==='string'&&/VIGENTE|CANCELADO|COBRADO/i.test(r[39])){
+    if(estadoColIdx>=33){
+      rcIdx=estadoColIdx-3;gnIdx=estadoColIdx-2;cbIdx=estadoColIdx-1;
+      vtIdx=estadoColIdx<=41?9:11;
+    }else if(r[39]&&typeof r[39]==='string'&&/VIGENTE|CANCELADO|COBRADO/i.test(r[39])){
       rcIdx=36;gnIdx=37;cbIdx=38;vtIdx=9;
     }
     var displayVenta=rawVenta||r[vtIdx]||0;
@@ -1319,6 +1341,25 @@ function renderCuotasPanel(panelKey){
       rawCosto:typeof monto==='number'?monto:0,rawVenta:rawVentaNum,rawResta:rawResta,rawGanancia:rawGanancia,rawCobrado:rawCobrado
     });
   }
+  // CUOTAS COBRADAS: la suma de los importes tildados (los que la planilla pinta de
+  // verde) de TODOS los meses de esta planilla. payments[i]==='paid' es exactamente
+  // el tilde de la fila booleana que va debajo de cada venta.
+  // Se guarda por panel y se agrupa por modulo en cobradasPorModulo().
+  try{
+    var _cobTot=0,_cobN=0,_cobSheet=0;
+    rows.forEach(function(rr){
+      if(rr.payments){
+        for(var _pi=0;_pi<rr.payments.length;_pi++){
+          if(rr.payments[_pi]==='paid'){_cobTot+=(rr.paymentAmts[_pi]||0);_cobN++;}
+        }
+      }
+      _cobSheet+=(rr.rawCobrado||0);
+    });
+    window._cuotasCobradas=window._cuotasCobradas||{};
+    window._cuotasCobradas[panelKey]={vendor:cfg.vendor,currency:cfg.currency,
+      total:_cobTot,n:_cobN,sheet:Math.round(_cobSheet),filas:rows.length};
+    if(window.refreshCobradasCards)window.refreshCobradasCards();
+  }catch(e){}
   // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
   // Show empty panel if no data rows
   if(rows.length===0){if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
@@ -1472,7 +1513,9 @@ async function fetchRawRange(name,range){
 // ============================================================
 var CUOTAS_PANELS=[
   {key:'ventaDolares',vendor:'TECNO',label:'Venta en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA TECNO EN DOLARES',color:'var(--gold)'},
-  {key:'ventaPesos',vendor:'TECNO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTA TECNO EN PESOS',color:'var(--gold)'},
+  // OJO: la solapa se llama "VENTAS TECNO EN PESOS" (con S). Con el nombre mal escrito
+  // gviz no da error: devuelve la PRIMERA hoja del archivo y el panel queda vacio.
+  {key:'ventaPesos',vendor:'TECNO',label:'Venta en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTAS TECNO EN PESOS',color:'var(--gold)'},
   {key:'creditosPesos',vendor:'CRÉDITOS',label:'Créditos en Pesos',icon:'$',currency:'$',sheetId:SHEET_ID,tab:'VENTA CREDITOS EN PESOS',color:'var(--purple)'},
   {key:'creditosDolares',vendor:'CRÉDITOS',label:'Créditos en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'VENTA CREDITOS EN DOLARES',color:'var(--purple)'},
   {key:'inversionesDolares',vendor:'INVERSIONES',label:'Inversiones en Dólares',icon:'U$D',currency:'U$D',sheetId:SHEET_ID,tab:'INVERSIONES CRONOGRAMA',color:'var(--green)'},
@@ -1999,6 +2042,25 @@ async function loadAllData(){
       }
       cronGastosDetail=_pickBlock('GASTOS')||[];
       cronCompromisosDetail=_pickBlock('COMPROMISO')||[];
+      // CUOTAS COBRADAS del modulo Inversiones. El panel de cuotas apuntaba a una
+      // solapa "INVERSIONES CRONOGRAMA" que ya no existe (gviz devolvia la primera
+      // hoja), asi que el dato sale de aca: los tildes de los cuadros "a cobrar" de
+      // Cronograma de Inversiones, todos los meses. Los de pagar no se suman.
+      try{
+        var _invCob=0,_invN=0;
+        window._cronoBlocks.forEach(function(_bk){
+          if(cronoKind(_bk.title)!=='cobrar')return;
+          _bk.entries.forEach(function(_e){
+            var _q=_e.cuotaNum||0;
+            var _t=(_e.paidAbs&&_e.paidAbs.length)||0;
+            _invCob+=_q*_t;_invN+=_t;
+          });
+        });
+        window._cuotasCobradas=window._cuotasCobradas||{};
+        window._cuotasCobradas.cronogramaInversiones={vendor:'INVERSIONES',currency:'U$D',
+          total:Math.round(_invCob),n:_invN,sheet:0,filas:0};
+        if(window.refreshCobradasCards)window.refreshCobradasCards();
+      }catch(e){}
       // El total mes a mes se arma sumando las cuotas que caen en cada mes segun el
       // detalle. Las filas fijas 151 y 189 de la solapa se corrieron al moverse la
       // planilla (hoy vienen vacias), asi que solo se usan como respaldo.
@@ -4453,6 +4515,46 @@ function toggleVendorCard(id){
     setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
   }
 }
+// El nombre del vendedor en CUOTAS_PANELS no siempre es igual al del modulo que se
+// muestra en las tarjetas (CRÉDITOS vs Creditos, OSITO vs Osito S.r.l.).
+var CUOTAS_VENDOR_A_MODULO={'TECNO':'Tecno','CRÉDITOS':'Creditos','CREDITOS':'Creditos',
+  'INVERSIONES':'Inversiones','LINEA 314':'Linea 314','OSITO':'Osito S.r.l.',
+  'MELY':'Mely','GONZA':'Gonza','PATITO':'Patito S.A.','TOBIAS':'Tobias','TINO':'Tino'};
+function cobNorm(s){return String(s||'').trim().toLowerCase().replace(/\.+$/,'');}
+// Junta los paneles de cada modulo (dolares + pesos + creditos) en un solo total.
+function cobradasPorModulo(){
+  var out={},src=window._cuotasCobradas||{};
+  for(var k in src){
+    var e=src[k];if(!e)continue;
+    var mod=CUOTAS_VENDOR_A_MODULO[String(e.vendor).toUpperCase()]||e.vendor;
+    var key=cobNorm(mod);
+    if(!out[key])out[key]={pesos:0,usd:0,n:0,sheetPesos:0,sheetUsd:0,paneles:0};
+    if(e.currency==='U$D'){out[key].usd+=e.total;out[key].sheetUsd+=e.sheet;}
+    else{out[key].pesos+=e.total;out[key].sheetPesos+=e.sheet;}
+    out[key].n+=e.n;out[key].paneles++;
+  }
+  return out;
+}
+// Las planillas llegan de a una y despues de que se dibujaron las tarjetas, asi que
+// en vez de re-renderizar todo se actualizan los numeros que ya estan en pantalla.
+window.refreshCobradasCards=function(){
+  var data=cobradasPorModulo();
+  var nodes=document.querySelectorAll('#kpiModulesRow [data-cobmod]');
+  var totP=0,totU=0,totN=0;
+  for(var i=0;i<nodes.length;i++){
+    var el=nodes[i],d=data[el.getAttribute('data-cobmod')]||{pesos:0,usd:0,n:0};
+    var p=el.querySelector('.vc-cobp'),u=el.querySelector('.vc-cobu');
+    if(p)p.textContent=fmtPesos(d.pesos);
+    if(u)u.textContent=fmtUSD(d.usd);
+    el.setAttribute('title','Cuotas cobradas (tildadas) en la planilla del modulo: '+(d.n||0)+' cuotas');
+    totP+=d.pesos;totU+=d.usd;totN+=(d.n||0);
+  }
+  var tp=document.getElementById('totCobradasPesos'),tu=document.getElementById('totCobradasUSD');
+  if(tp)tp.textContent=fmtPesos(totP);
+  if(tu)tu.textContent=fmtUSD(totU);
+  var tn=document.getElementById('totCobradasN');
+  if(tn)tn.textContent=totN+' cuotas tildadas en las planillas';
+};
 function renderModuleKPIs(){
   var container=document.getElementById('kpiModulesRow');
   if(!container||!dashRaw||dashRaw.length<200)return;
@@ -4530,6 +4632,9 @@ function renderModuleKPIs(){
 
   // Get investment data for current month
   var invData=window._vendorInvestments||{};
+  // Cuotas ya cobradas (tildadas) por modulo — puede estar vacio todavia: las planillas
+  // de cada modulo se bajan aparte y refreshCobradasCards() completa los numeros al llegar.
+  var cobData=cobradasPorModulo();
 
   // Render sorted cards: ganancia card + investment card below each + accumulate totals
   var totUSD=0,totPesos=0,totUni=0,totInv=0,totCobrarPesos=0,totCobrarUSD=0,totCobrarUnif=0,totRecupero=0;
@@ -4571,6 +4676,13 @@ function renderModuleKPIs(){
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
     colHtml+='</div>';
+    // CUOTAS COBRADAS card (acumulado de todos los meses tildados en la planilla)
+    var _cbm=cobData[normName(c.name)]||{pesos:0,usd:0};
+    colHtml+='<div data-cobmod="'+normName(c.name)+'" style="background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:7px 8px;text-align:center">';
+    colHtml+='<div class="vc-label-cobrada" style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas Cobradas</div>';
+    colHtml+='<div class="vc-cobp" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(_cbm.pesos)+'</div>';
+    colHtml+='<div class="vc-cobu" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(_cbm.usd)+'</div>';
+    colHtml+='</div>';
     // Recupero de Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
     colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Recupero Inversión</div>';
@@ -4599,7 +4711,17 @@ function renderModuleKPIs(){
       +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+(tc.fmt==='pesos'?fmtPesos(tc.val):fmtUSD(tc.val))+'</div>';
     totRow.appendChild(card);
   });
+  // Total de cuotas cobradas de los 8 modulos. Se llena/actualiza en
+  // refreshCobradasCards() a medida que van llegando las planillas.
+  var cobCard=document.createElement('div');
+  cobCard.style.cssText='background:var(--surface);border:2px solid var(--green);border-radius:12px;padding:12px 24px;text-align:center;min-width:180px';
+  cobCard.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Cuotas Cobradas Total</div>'
+    +'<div id="totCobradasPesos" style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--blue);line-height:1.3">'+fmtPesos(0)+'</div>'
+    +'<div id="totCobradasUSD" style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:var(--green);line-height:1.3">'+fmtUSD(0)+'</div>'
+    +'<div id="totCobradasN" style="font-size:9px;color:var(--text3);margin-top:4px">leyendo las planillas...</div>';
+  totRow.appendChild(cobCard);
   container.parentNode.insertBefore(totRow,container.nextSibling);
+  if(window.refreshCobradasCards)window.refreshCobradasCards();
 }
 
 // ====== EQUIPOS DE NEGOCIOS — Vendor Team Dashboard ======

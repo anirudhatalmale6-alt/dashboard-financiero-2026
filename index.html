@@ -4623,6 +4623,31 @@ window.refreshCobradasCards=function(){
     if(!totals[tid])totals[tid]={p:0,u:0,uni:0,n:0};
     totals[tid].p+=d.pesos;totals[tid].u+=d.usd;totals[tid].uni+=d.unif;totals[tid].n+=(d.n||0);
   }
+  // BALANCE INVERSION: lo cobrado del periodo menos la inversion de ese mismo periodo.
+  var balTot={};
+  var bnodes=document.querySelectorAll('[data-cobbal]');
+  for(var bi=0;bi<bnodes.length;bi++){
+    var bel=bnodes[bi];
+    var bf=parseInt(bel.getAttribute('data-cobfrom'),10),bt=parseInt(bel.getAttribute('data-cobto'),10);
+    if(isNaN(bf))bf=0;
+    if(isNaN(bt))bt=COB_MESES-1;
+    var bck=bf+'_'+bt;
+    if(!cache[bck])cache[bck]=cobradasPorModulo(bf,bt);
+    var bd=cache[bck][bel.getAttribute('data-cobbal')]||{unif:0};
+    var inv=parseFloat(bel.getAttribute('data-cobinv'))||0;
+    var val=(bd.unif||0)-inv;
+    var vEl=bel.querySelector('.vc-cobbal');
+    if(vEl){vEl.textContent=fmtUSD(val);vEl.style.color=val>=0?'var(--cyan)':'var(--red)';}
+    bel.setAttribute('title','Cobrado U$D '+Math.round(bd.unif||0)+' menos inversión U$D '+Math.round(inv));
+    var btid=bel.getAttribute('data-cobbaltot')||'';
+    if(!balTot[btid])balTot[btid]=0;
+    balTot[btid]+=val;
+  }
+  for(var btid2 in balTot){
+    if(!btid2)continue;
+    var bEl=document.getElementById(btid2+'_v');
+    if(bEl){bEl.textContent=fmtUSD(balTot[btid2]);bEl.style.color=balTot[btid2]>=0?'var(--cyan)':'var(--red)';}
+  }
   for(var tid2 in totals){
     if(!tid2)continue;
     var t=totals[tid2];
@@ -4780,6 +4805,15 @@ function renderModuleKPIs(){
     colHtml+='</div>';
     // CUOTAS COBRADAS del mes elegido arriba (un solo mes).
     colHtml+=cobradasCardHtml(normName(c.name),_cobAbsMes,_cobAbsMes,'totCobMes');
+    // BALANCE INVERSION MES = cuotas cobradas del mes (unificadas a U$D) menos la
+    // inversion del mes. La inversion viaja en el nodo porque lo cobrado se completa
+    // despues, cuando terminan de llegar las planillas de cada modulo.
+    colHtml+='<div data-cobbal="'+normName(c.name)+'" data-cobinv="'+(invVal||0)+'"'
+      +' data-cobfrom="'+_cobAbsMes+'" data-cobto="'+_cobAbsMes+'" data-cobbaltot="totBalInvMes"'
+      +' style="background:var(--surface);border:1px solid var(--cyan);border-radius:10px;padding:7px 8px;text-align:center">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Balance Inversión Mes</div>'
+      +'<div class="vc-cobbal" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--cyan);line-height:1.3">'+fmtUSD(0)+'</div>'
+      +'</div>';
     // Recupero de Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
     colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Recupero Inversión</div>';
@@ -4810,6 +4844,12 @@ function renderModuleKPIs(){
   });
   // Total de cuotas cobradas del mes, de los 8 modulos.
   totRow.appendChild(cobradasTotalCard('totCobMes','Cuotas Cobradas del Mes'));
+  var balInvCard=document.createElement('div');
+  balInvCard.style.cssText='background:var(--surface);border:2px solid var(--cyan);border-radius:12px;padding:12px 24px;text-align:center;min-width:160px';
+  balInvCard.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Balance Inversión Mes</div>'
+    +'<div id="totBalInvMes_v" style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:var(--cyan);line-height:1.3">'+fmtUSD(0)+'</div>'
+    +'<div style="font-size:9px;color:var(--text3);margin-top:3px">cobrado menos inversión</div>';
+  totRow.appendChild(balInvCard);
   container.parentNode.insertBefore(totRow,container.nextSibling);
   if(window.refreshCobradasCards)window.refreshCobradasCards();
 }

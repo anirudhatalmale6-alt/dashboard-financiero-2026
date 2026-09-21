@@ -1118,7 +1118,7 @@ function buildCuotasPanels(){
     g.panels.forEach(function(p){
       var K=p.key.charAt(0).toUpperCase()+p.key.slice(1);
       grpHtml+='<button class="panel-btn" onclick="togglePanel(\''+p.key+'\')" id="btn'+K+'"><span class="pbtn-icon">'+p.icon+'</span> '+p.label+'<span class="pbtn-chevron">&#9660;</span></button>';
-      secHtml+='<div class="panel-section" id="panel'+K+'"><div class="chart-card full" id="'+p.key+'Card" style="margin-top:0"><div class="chart-subtitle" style="margin-bottom:8px">'+v+' — Cronograma de cobros en '+(p.currency==='U$D'?'dólares':'pesos')+'</div><div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="'+p.key+'Table"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando...</td></tr></tbody></table></div></div></div></div>';
+      secHtml+='<div class="panel-section" id="panel'+K+'"><div class="chart-card full" id="'+p.key+'Card" style="margin-top:0"><div class="chart-subtitle" id="'+p.key+'Sub" style="margin-bottom:8px">'+v+' — Cronograma de cobros en '+(p.currency==='U$D'?'dólares':'pesos')+'</div><div class="it-wrap" style="margin-bottom:0"><div class="it-scroll"><table class="it-table" id="'+p.key+'Table"><tbody><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">Cargando...</td></tr></tbody></table></div></div></div></div>';
     });
     grpHtml+='</div></div>';
   });
@@ -1374,9 +1374,18 @@ function renderCuotasPanel(panelKey){
       months:_cobM,monthsN:_cobNM};
     if(window.refreshCobradasCards)window.refreshCobradasCards();
   }catch(e){}
+  // Cuantas ventas se leyeron de la planilla. Si hay un filtro puesto en la solapa,
+  // Google devuelve SOLO las filas visibles y el tablero calcula con esas: este numero
+  // es la unica forma de darse cuenta desde aca.
+  var subEl=document.getElementById(panelKey+'Sub');
+  if(subEl){
+    var base=cfg.vendor+' — Cronograma de cobros en '+(cfg.currency==='U$D'?'dólares':'pesos');
+    subEl.innerHTML=base+' · <b style="color:var(--text2)">'+rows.length+'</b> ventas leídas de la planilla'
+      +(rows.length?'':' <span style="color:var(--gold)">— la solapa está vacía o tiene un filtro puesto</span>');
+  }
   // Note: panel visibility is handled by buildCuotasPanels — no need to filter rows by vendedor
   // Show empty panel if no data rows
-  if(rows.length===0){if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
+  if(rows.length===0){if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas. Si la solapa tiene un filtro aplicado, Google sólo devuelve las filas visibles.</td></tr></tbody>';return;}
   var mthHdr='';
   monthHeaders.forEach(function(h){if(h)mthHdr+='<th style="text-align:center;min-width:56px;padding:6px 3px;font-size:9px">'+h+'</th>';});
   var thead='<thead><tr><th>Vendedor</th><th>Cliente</th><th>Detalle</th><th>Fecha</th><th>Costo</th><th>Cuotas</th><th>Cuota</th><th>Venta</th>'+mthHdr+'<th>Resta Cobrar</th><th>Ganancia</th><th>Cobrado</th><th>Estado</th></tr></thead>';

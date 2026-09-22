@@ -2088,6 +2088,12 @@ async function loadAllData(){
           total:Math.round(_invCob),n:_invN,sheet:0,filas:0,months:_invM,monthsN:_invNM};
         if(window.refreshCobradasCards)window.refreshCobradasCards();
       }catch(e){}
+      // El calculo de arriba usa la cuota de la fila porque la API de Google NO devuelve
+      // los importes de las celdas de cada mes en esta solapa: esas columnas mezclan
+      // numeros (fila de datos) con casillas TRUE/FALSE (fila de abajo), y gviz tipa la
+      // columna como booleana y manda null en los numeros. La exportacion CSV de la solapa
+      // si los trae, asi que se pisa el dato con los importes reales de las celdas verdes.
+      cargarCobradasCronograma();
       // El total mes a mes se arma sumando las cuotas que caen en cada mes segun el
       // detalle. Las filas fijas 151 y 189 de la solapa se corrieron al moverse la
       // planilla (hoy vienen vacias), asi que solo se usan como respaldo.
@@ -4542,6 +4548,92 @@ function toggleVendorCard(id){
     setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},50);
   }
 }
+// ── CUOTAS COBRADAS del modulo INVERSIONES, leidas de las celdas pintadas de verde ──
+// En "Cronograma de Inversiones" cada cuadro A COBRAR tiene, por fila, un importe por mes,
+// y la fila de abajo son las casillas. La planilla pinta la celda de verde con la regla
+// INDIRECT(ADDRESS(ROW()+1,COLUMN()))=TRUE, o sea: verde = casilla de abajo tildada.
+// Se suma el IMPORTE DE LA CELDA, no la cuota, porque no siempre coinciden (hay filas sin
+// cuota cargada que igual tienen importes mensuales).
+// Se usa la exportacion CSV de la solapa y no gviz: gviz tipa esas columnas como booleanas
+// y devuelve null en los importes. El CSV ademas respeta los numeros de fila reales y no
+// se ve afectado por los filtros que haya puestos en la solapa.
+var CRONO_GID='893190371'; // solapa CRONOGRAMA DE INVERSIONES
+function csvParse(t){
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<t.length;i++){
+    var c=t.charAt(i);
+    if(q){ if(c==='"'){ if(t.charAt(i+1)==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"')q=true;
+    else if(c===','){row.push(cur);cur='';}
+    else if(c==='\n'){row.push(cur);cur='';rows.push(row);row=[];}
+    else if(c!=='\r')cur+=c;
+  }
+  row.push(cur);
+  if(row.length>1||row[0]!=='')rows.push(row);
+  return rows;
+}
+function csvNum(s){
+  s=String(s==null?'':s);
+  var neg=s.indexOf('-')>=0?-1:1;
+  var cl=s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+  var n=parseFloat(cl);
+  return isNaN(n)?0:n*neg;
+}
+function cargarCobradasCronograma(){
+  var url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+CRONO_GID+'&t='+Date.now();
+  fetch(url).then(function(r){return r.ok?r.text():Promise.reject(r.status);}).then(function(txt){
+    var rows=csvParse(txt);
+    function g(r,i){return (r&&i<r.length)?r[i]:'';}
+    // Los meses son M..AO (indices 12..40). El indice absoluto sale del encabezado de
+    // fechas, no se asume que la primera columna sea Agosto 2025.
+    var base=0;
+    for(var h=0;h<Math.min(40,rows.length);h++){
+      var hv=String(g(rows[h],12)),hm=hv.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if(hm){base=cobAbs(parseInt(hm[3],10),parseInt(hm[2],10)-1);break;}
+    }
+    var months=[],monthsN=[];
+    for(var z=0;z<COB_MESES;z++){months[z]=0;monthsN[z]=0;}
+    var tot=0,nT=0,filas=0;
+    // Los cuadros arrancan en la fila rotulada CLIENTES (columna C) y el titulo es lo que
+    // dice la columna D (o B) arriba. Solo suman los que dicen "A COBRAR".
+    var anchors=[];
+    for(var i=0;i<rows.length;i++){
+      if(String(g(rows[i],2)).trim().toUpperCase()==='CLIENTES')anchors.push(i);
+    }
+    anchors.forEach(function(start,ai){
+      var title='';
+      for(var b=start-1;b>=0&&b>=start-5;b--){
+        var d=String(g(rows[b],3)).trim()||String(g(rows[b],1)).trim();
+        if(d&&!title)title=d;
+        if(String(g(rows[b],2)).trim())break;
+      }
+      if(String(title).toUpperCase().indexOf('A COBRAR')<0)return;
+      var end=(ai+1<anchors.length?anchors[ai+1]-4:rows.length);
+      var i2=start+1;
+      while(i2<end){
+        var r=rows[i2];
+        var nm=String(g(r,2)).trim(),est=String(g(r,44)).trim();
+        if(!nm&&!est){i2++;continue;}
+        var cuota=csvNum(g(r,9)),chk=rows[i2+1]||[];
+        var usado=false;
+        for(var a=12;a<=40;a++){
+          if(String(g(chk,a)).trim().toUpperCase()!=='TRUE')continue;
+          var cell=csvNum(g(r,a)),amt=cell||cuota,abs=base+(a-12);
+          tot+=amt;nT++;usado=true;
+          if(abs>=0&&abs<COB_MESES){months[abs]+=amt;monthsN[abs]++;}
+        }
+        if(usado)filas++;
+        i2+=2;
+      }
+    });
+    if(!nT)return; // si no se pudo leer nada se deja el calculo anterior
+    window._cuotasCobradas=window._cuotasCobradas||{};
+    window._cuotasCobradas.cronogramaInversiones={vendor:'INVERSIONES',currency:'U$D',
+      total:Math.round(tot),n:nT,sheet:0,filas:filas,months:months,monthsN:monthsN};
+    if(window.refreshCobradasCards)window.refreshCobradasCards();
+  }).catch(function(e){console.log('Cronograma CSV no disponible, queda el calculo por cuota:',e);});
+}
+
 // El nombre del vendedor en CUOTAS_PANELS no siempre es igual al del modulo que se
 // muestra en las tarjetas (CRÉDITOS vs Creditos, OSITO vs Osito S.r.l.).
 var CUOTAS_VENDOR_A_MODULO={'TECNO':'Tecno','CRÉDITOS':'Creditos','CREDITOS':'Creditos',

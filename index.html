@@ -2820,7 +2820,13 @@ function renderGastosInvPanels(){
       var ico=k==='cobrar'?'💵':(k==='pagar'?'💳':'📈');
       var col=k==='cobrar'?'var(--green)':(k==='pagar'?'var(--gold)':'var(--cyan)');
       var arr=b.entries.map(function(e){return window.cronoProject?window.cronoProject(e,detYear):e;});
-      detHtmlAll+=buildCronoDetail(b.title+' · '+detYear,ico,col,arr);
+      // El primer cuadro de la planilla trae la GANANCIA de cada operacion, no el importe
+      // a cobrar, y los dos cuadros tienen los mismos clientes. Sin aclararlo en el titulo
+      // se confunde con el de cobros (ahi JORGE/KARI dice 3.630 de ganancia pendiente
+      // mientras que a cobrar son 6.500).
+      var tit=b.title;
+      if(k==='ganancia')tit+=' · GANANCIAS';
+      detHtmlAll+=buildCronoDetail(tit+' · '+detYear,ico,col,arr);
     });
   }else{
     if(typeof gastosCrono==='object'&&gastosCrono.detail)detHtmlAll+=gastosCrono.detail;
@@ -4597,9 +4603,14 @@ function cargarCobradasCronograma(){
     // Los cuadros de PAGAR se suman aparte: ahi no interesa el tilde sino el importe
     // comprometido de cada mes, este pago o no. Mismo motivo que arriba para leerlo del
     // CSV: por gviz esos importes vienen vacios y habia que estimarlos con la cuota.
-    var pagar={compromisos:[],gastos:[]};
-    for(var z2=0;z2<COB_MESES;z2++){pagar.compromisos[z2]=0;pagar.gastos[z2]=0;}
+    var pagar={compromisos:[],gastos:[],compromisosPag:[],gastosPag:[]};
+    for(var z2=0;z2<COB_MESES;z2++){pagar.compromisos[z2]=0;pagar.gastos[z2]=0;pagar.compromisosPag[z2]=0;pagar.gastosPag[z2]=0;}
     var hayPagar=false;
+    // Los cuadros se rearman enteros desde el CSV: asi cada fila usa los importes reales
+    // de cada mes (y no la cuota repetida desde la fecha de inicio, que pintaba meses que
+    // en la planilla estan vacios) y los totales salen de las columnas de la planilla:
+    // 11=VENTA, 41=Resta Cobrar, 43=Cobrado, 44=Estado.
+    var blocksCSV=[];
     // Los cuadros arrancan en la fila rotulada CLIENTES (columna C) y el titulo es lo que
     // dice la columna D (o B) arriba. Solo suman los que dicen "A COBRAR".
     var anchors=[];
@@ -4616,45 +4627,76 @@ function cargarCobradasCronograma(){
       var TT=String(title).toUpperCase();
       var esCobrar=TT.indexOf('A COBRAR')>=0;
       var esPagar=TT.indexOf('COMPROMISO')>=0?'compromisos':(TT.indexOf('GASTOS')>=0?'gastos':'');
-      if(!esCobrar&&!esPagar)return;
       var end=(ai+1<anchors.length?anchors[ai+1]-4:rows.length);
+      var entries=[];
       var i2=start+1;
       while(i2<end){
         var r=rows[i2];
         var nm=String(g(r,2)).trim(),est=String(g(r,44)).trim();
         if(!nm&&!est){i2++;continue;}
+        if(nm.toUpperCase()==='CLIENTES'){i2++;continue;}
         var cuota=csvNum(g(r,9)),chk=rows[i2+1]||[];
         var usado=false;
+        var monthsAbs=[],paidAbs=[];
         for(var a=12;a<=40;a++){
           var abs=base+(a-12);
           if(abs<0||abs>=COB_MESES)continue;
-          if(esPagar){
-            var cp=csvNum(g(r,a));
-            if(cp){pagar[esPagar][abs]+=cp;hayPagar=true;}
-            continue;
+          var cell=csvNum(g(r,a));
+          var tick=String(g(chk,a)).trim().toUpperCase()==='TRUE';
+          // Un mes existe para esta fila si la planilla tiene un importe ahi o si esta
+          // tildado. Los meses vacios quedan vacios: no son deuda.
+          if(cell||tick){
+            monthsAbs.push(abs);
+            if(tick)paidAbs.push(abs);
           }
-          if(String(g(chk,a)).trim().toUpperCase()!=='TRUE')continue;
-          var cell=csvNum(g(r,a)),amt=cell||cuota;
-          tot+=amt;nT++;usado=true;
-          months[abs]+=amt;monthsN[abs]++;
+          if(esPagar&&cell){
+            pagar[esPagar][abs]+=cell;
+            if(tick)pagar[esPagar+'Pag'][abs]+=cell;
+            hayPagar=true;
+          }
+          if(esCobrar&&tick){
+            var amt=cell||cuota;
+            tot+=amt;nT++;usado=true;
+            months[abs]+=amt;monthsN[abs]++;
+          }
         }
         if(usado)filas++;
+        var e0={name:nm||'(sin nombre en la planilla)',desc:String(g(r,3)).trim(),
+          fecha:String(g(r,4)).trim(),nCuotas:Math.round(csvNum(g(r,8))),
+          cuota:cuota?String(Math.round(cuota)):'',cuotaNum:cuota,
+          totalNum:csvNum(g(r,11)),pagadoNum:csvNum(g(r,43)),pendienteNum:csvNum(g(r,41)),
+          estado:est,monthsAbs:monthsAbs,paidAbs:paidAbs};
+        if(e0.name||e0.totalNum||e0.pagadoNum||e0.pendienteNum)entries.push(cronoProject(e0,2026));
         i2+=2;
       }
+      if(entries.length)blocksCSV.push({title:title,start:start,entries:entries});
     });
+    // Los cuadros del detalle pasan a salir del CSV (importes reales mes a mes).
+    if(blocksCSV.length){
+      window._cronoBlocks=blocksCSV;
+      for(var bi2=0;bi2<blocksCSV.length;bi2++){
+        var tk=String(blocksCSV[bi2].title).toUpperCase();
+        if(tk.indexOf('GASTOS')>=0)cronGastosDetail=blocksCSV[bi2].entries;
+        if(tk.indexOf('COMPROMISO')>=0)cronCompromisosDetail=blocksCSV[bi2].entries;
+      }
+    }
     // Compromisos y gastos del año en curso: 12 posiciones, Enero a Diciembre de 2026,
     // que es la forma que esperan las tarjetas y los graficos.
     if(hayPagar){
-      var c26=[],g26=[];
+      var c26=[],g26=[],cPag=[],cPend=[],gPag=[],gPend=[];
       for(var m26=0;m26<12;m26++){
         var ab=cobAbs(2026,m26);
-        c26.push(Math.round(pagar.compromisos[ab]||0));
-        g26.push(Math.round(pagar.gastos[ab]||0));
+        var ct=Math.round(pagar.compromisos[ab]||0),cp=Math.round(pagar.compromisosPag[ab]||0);
+        var gt=Math.round(pagar.gastos[ab]||0),gp=Math.round(pagar.gastosPag[ab]||0);
+        c26.push(ct);cPag.push(cp);cPend.push(ct-cp);
+        g26.push(gt);gPag.push(gp);gPend.push(gt-gp);
       }
       cronCompromisosAPagar=c26;
       invDeudasMensuales=c26;
       cronGastosAPagar=g26;
-      window._cronoPagarCSV={compromisos:c26,gastos:g26};
+      // pend = lo que falta pagar del mes · pag = lo que ya se pago (tildado)
+      window._cronoPagarCSV={compromisos:c26,gastos:g26,
+        compPag:cPag,compPend:cPend,gastPag:gPag,gastPend:gPend};
       if(!window._cronoPagarAplicado&&typeof renderAll==='function'){
         window._cronoPagarAplicado=true;
         try{renderAll();}catch(e){}
@@ -4963,10 +5005,15 @@ function renderModuleKPIs(){
   totRow.setAttribute('data-totrow','kpiModulesRow');
   var compVal=0;
   if(invDeudasMensuales&&invDeudasMensuales[cmIdx]!=null){compVal=invDeudasMensuales[cmIdx];}
+  // Compromisos del mes separados: lo que falta pagar y lo que ya se pago (tildado).
+  var _cp=window._cronoPagarCSV||null;
+  var compPend=_cp&&_cp.compPend?_cp.compPend[cmIdx]:compVal;
+  var compPag=_cp&&_cp.compPag?_cp.compPag[cmIdx]:0;
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
-    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'},
+    {label:'Compromisos de Pagos',val:compPend,color:'var(--rosa)'},
+    {label:'Compromisos de Pagos Cancelados',val:compPag,color:'var(--green)'},
     {label:'Recupero de Inversión',val:totRecupero,color:'var(--purple)'}
   ];
   totCards.forEach(function(tc){
@@ -5388,10 +5435,16 @@ function renderResumenRange(containerId,mode){
   totRow.setAttribute('data-totrow',containerId);
   var compVal=0;
   if(invDeudasMensuales){for(var mi=0;mi<=endMonth&&mi<invDeudasMensuales.length;mi++){compVal+=(invDeudasMensuales[mi]||0);}}
+  // Mismo corte que en el mes actual: falta pagar vs ya pagado, acumulado del periodo.
+  var _cpR=window._cronoPagarCSV||null,compPendR=0,compPagR=0;
+  if(_cpR&&_cpR.compPend){
+    for(var mp=0;mp<=endMonth&&mp<12;mp++){compPendR+=(_cpR.compPend[mp]||0);compPagR+=(_cpR.compPag[mp]||0);}
+  }else{compPendR=compVal;}
   var totCards=[
     {label:'Inversión',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
-    {label:'Compromisos de Pagos',val:compVal,color:'var(--rosa)'},
+    {label:'Compromisos de Pagos',val:compPendR,color:'var(--rosa)'},
+    {label:'Compromisos de Pagos Cancelados',val:compPagR,color:'var(--green)'},
     {label:'Recupero de Inversión',val:totBal,color:'var(--purple)'}
   ];
   totCards.forEach(function(tc){

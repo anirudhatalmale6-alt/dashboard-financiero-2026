@@ -4594,6 +4594,12 @@ function cargarCobradasCronograma(){
     var months=[],monthsN=[];
     for(var z=0;z<COB_MESES;z++){months[z]=0;monthsN[z]=0;}
     var tot=0,nT=0,filas=0;
+    // Los cuadros de PAGAR se suman aparte: ahi no interesa el tilde sino el importe
+    // comprometido de cada mes, este pago o no. Mismo motivo que arriba para leerlo del
+    // CSV: por gviz esos importes vienen vacios y habia que estimarlos con la cuota.
+    var pagar={compromisos:[],gastos:[]};
+    for(var z2=0;z2<COB_MESES;z2++){pagar.compromisos[z2]=0;pagar.gastos[z2]=0;}
+    var hayPagar=false;
     // Los cuadros arrancan en la fila rotulada CLIENTES (columna C) y el titulo es lo que
     // dice la columna D (o B) arriba. Solo suman los que dicen "A COBRAR".
     var anchors=[];
@@ -4607,7 +4613,10 @@ function cargarCobradasCronograma(){
         if(d&&!title)title=d;
         if(String(g(rows[b],2)).trim())break;
       }
-      if(String(title).toUpperCase().indexOf('A COBRAR')<0)return;
+      var TT=String(title).toUpperCase();
+      var esCobrar=TT.indexOf('A COBRAR')>=0;
+      var esPagar=TT.indexOf('COMPROMISO')>=0?'compromisos':(TT.indexOf('GASTOS')>=0?'gastos':'');
+      if(!esCobrar&&!esPagar)return;
       var end=(ai+1<anchors.length?anchors[ai+1]-4:rows.length);
       var i2=start+1;
       while(i2<end){
@@ -4617,15 +4626,40 @@ function cargarCobradasCronograma(){
         var cuota=csvNum(g(r,9)),chk=rows[i2+1]||[];
         var usado=false;
         for(var a=12;a<=40;a++){
+          var abs=base+(a-12);
+          if(abs<0||abs>=COB_MESES)continue;
+          if(esPagar){
+            var cp=csvNum(g(r,a));
+            if(cp){pagar[esPagar][abs]+=cp;hayPagar=true;}
+            continue;
+          }
           if(String(g(chk,a)).trim().toUpperCase()!=='TRUE')continue;
-          var cell=csvNum(g(r,a)),amt=cell||cuota,abs=base+(a-12);
+          var cell=csvNum(g(r,a)),amt=cell||cuota;
           tot+=amt;nT++;usado=true;
-          if(abs>=0&&abs<COB_MESES){months[abs]+=amt;monthsN[abs]++;}
+          months[abs]+=amt;monthsN[abs]++;
         }
         if(usado)filas++;
         i2+=2;
       }
     });
+    // Compromisos y gastos del año en curso: 12 posiciones, Enero a Diciembre de 2026,
+    // que es la forma que esperan las tarjetas y los graficos.
+    if(hayPagar){
+      var c26=[],g26=[];
+      for(var m26=0;m26<12;m26++){
+        var ab=cobAbs(2026,m26);
+        c26.push(Math.round(pagar.compromisos[ab]||0));
+        g26.push(Math.round(pagar.gastos[ab]||0));
+      }
+      cronCompromisosAPagar=c26;
+      invDeudasMensuales=c26;
+      cronGastosAPagar=g26;
+      window._cronoPagarCSV={compromisos:c26,gastos:g26};
+      if(!window._cronoPagarAplicado&&typeof renderAll==='function'){
+        window._cronoPagarAplicado=true;
+        try{renderAll();}catch(e){}
+      }
+    }
     if(!nT)return; // si no se pudo leer nada se deja el calculo anterior
     window._cuotasCobradas=window._cuotasCobradas||{};
     window._cuotasCobradas.cronogramaInversiones={vendor:'INVERSIONES',currency:'U$D',

@@ -1146,6 +1146,15 @@ function renderCuotasPanel(panelKey){
   var d=cuotasPanelData[panelKey];
   if(!d||!d.raw||d.raw.length<2){if(card)card.style.display='';if(btn)btn.style.display='';if(table)table.innerHTML='<tbody><tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Sin ventas registradas</td></tr></tbody>';return;}
   if(card)card.style.display='';if(btn)btn.style.display='';
+  // Primera columna de meses y a que mes corresponde. Cada planilla arranca donde
+  // quiere: la de LINEA 314 en la columna 10 y con Noviembre 2025 como primer mes.
+  var M0=(d.monthsStart!=null&&d.monthsStart>=6&&d.monthsStart<=20)?d.monthsStart:12;
+  var mesBase=0;
+  (function(){
+    var h=d.months&&d.months[0];
+    var mm=h?String(h).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/):null;
+    if(mm)mesBase=(parseInt(mm[3],10)-2025)*12+(parseInt(mm[2],10)-1)-7;
+  })();
   var MESES_ES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   var monthHeaders=[];
   if(d.months&&d.months.length>0){
@@ -1284,26 +1293,29 @@ function renderCuotasPanel(panelKey){
     // monthHeaders are fetched from M2:AO2 (cols 12-40 in the sheet)
     // Boolean data may start at col 10,11,12 etc — we need to align with month headers
     // monthHeaders[idx] corresponds to sheet col 12+idx
+    // M0 = primera columna de meses de ESTA planilla (sale del encabezado de fechas).
+    // No es 12 en todas: en LINEA 314 los meses arrancan en la 10, y asumir 12 corria
+    // los tildes dos meses respecto del mes que dice el encabezado.
     var boolOffset=0;
-    if(hasBoolData&&boolStart>=0&&boolStart<12){boolOffset=12-boolStart;}
+    if(hasBoolData&&boolStart>=0&&boolStart<M0){boolOffset=M0-boolStart;}
     // Mirror the Excel: determine cuota range from first TRUE + extend beyond numCContract if refinanced
     // Find first and last TRUE in boolean row to detect actual cuota range
     var firstTrue=-1,lastTrue=-1;
     if(hasBoolData){
-      for(var c=12;c<=40;c++){
+      for(var c=M0;c<=M0+28;c++){
         var bc=c-boolOffset;
         if(boolRow[bc]===true){if(firstTrue<0)firstTrue=c;lastTrue=c;}
       }
     }
     // Cuota range: starts at first TRUE, or at sale date month if no TRUEs yet
-    var dateStartCol=12;
-    if(fecha){var dm=String(fecha).match(/Date\((\d+),(\d+),/);if(dm){dateStartCol=12+(parseInt(dm[1])-2025)*12+(parseInt(dm[2])-7);if(dateStartCol<12)dateStartCol=12;if(dateStartCol>40)dateStartCol=40;}}
+    var dateStartCol=M0;
+    if(fecha){var dm=String(fecha).match(/Date\((\d+),(\d+),/);if(dm){dateStartCol=M0+(parseInt(dm[1])-2025)*12+(parseInt(dm[2])-7)-mesBase;if(dateStartCol<M0)dateStartCol=M0;if(dateStartCol>M0+28)dateStartCol=M0+28;}}
     var cuotaStart=firstTrue>=0?firstTrue:dateStartCol;
     var rangeFromTrues=lastTrue>=cuotaStart?(lastTrue-cuotaStart+1):0;
     var cuotaCount=numCContract>0?Math.max(numCContract,rangeFromTrues):(rangeFromTrues>0?rangeFromTrues:0);
     actualCuotaCount=cuotaCount;
     if(hasBoolData){
-      for(var c=12;c<=40;c++){
+      for(var c=M0;c<=M0+28;c++){
         var cellAmt=rawCuota;
         if(typeof r[c]==='number'&&r[c]>0)cellAmt=Math.round(r[c]);
         var bc=c-boolOffset;
@@ -1318,7 +1330,7 @@ function renderCuotasPanel(panelKey){
         }
       }
     }else{
-      for(var c=12;c<=40;c++){payments.push('none');paymentAmts.push(0);}
+      for(var c=M0;c<=M0+28;c++){payments.push('none');paymentAmts.push(0);}
     }
     // Auto-detect financial summary columns based on estado position
     var rcIdx=41,gnIdx=42,cbIdx=43,vtIdx=11;
@@ -1511,6 +1523,85 @@ async function fetchSheetSQL(name,query){
 }
 
 // Generic fetch functions for any spreadsheet by ID
+// ── Lectura inmune a los filtros de la planilla ──────────────────────────────
+// gviz entrega SOLO las filas visibles: si hay un filtro puesto en la solapa, los
+// paneles calculan con una parte de las ventas y nada avisa. La exportacion CSV de la
+// solapa (por gid) ignora los filtros y trae todas las filas.
+// El CSV devuelve todo como texto, asi que se convierte a los mismos tipos que daba
+// gviz (true/false, "Date(a,m,d)", numeros) y el resto del codigo no se entera.
+var _gidCache={};
+function gidsDeSheet(sheetId){
+  if(_gidCache[sheetId])return _gidCache[sheetId];
+  _gidCache[sheetId]=fetch('https://docs.google.com/spreadsheets/d/'+sheetId+'/htmlview')
+    .then(function(r){return r.ok?r.text():Promise.reject(r.status);})
+    .then(function(h){
+      var map={},re=/name:\s*"([^"]+)",\s*pageUrl:[\s\S]*?gid:\s*"(\d+)"/g,m;
+      while((m=re.exec(h))!==null)map[m[1]]=m[2];
+      return map;
+    }).catch(function(){return {};});
+  return _gidCache[sheetId];
+}
+function csvCell(s){
+  if(s==null)return null;
+  var t=String(s).trim();
+  if(t==='')return null;
+  var u=t.toUpperCase();
+  if(u==='TRUE')return true;
+  if(u==='FALSE')return false;
+  // dd/mm/aaaa -> el mismo formato Date(a,m,d) que devolvia gviz.
+  // El año puede venir de dos digitos ("28/07/25"): pasa en las planillas de OSITO y
+  // LINEA 314 y si no se contempla esas ventas se pierden enteras.
+  var d=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if(d){
+    var yy=parseInt(d[3],10);
+    if(d[3].length===2)yy+=2000;
+    return 'Date('+yy+','+(parseInt(d[2],10)-1)+','+parseInt(d[1],10)+')';
+  }
+  var d2=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(d2)return 'Date('+d2[1]+','+(parseInt(d2[2],10)-1)+','+parseInt(d2[3],10)+')';
+  // importes: "U$D 1.234", "$ 89.000", "-U$D 45", "1234.5"
+  if(/^-?[\s$uUsSdD ]*[\d.,]+$/.test(t)){
+    var neg=t.indexOf('-')>=0;
+    var cl=t.replace(/[^\d.,]/g,'');
+    if(/,\d{1,2}$/.test(cl))cl=cl.replace(/\./g,'').replace(',','.');
+    else cl=cl.replace(/\./g,'').replace(/,/g,'');
+    var n=parseFloat(cl);
+    if(!isNaN(n))return neg?-n:n;
+  }
+  return t;
+}
+async function fetchRawSheetCSV(sheetId,name){
+  var gids=await gidsDeSheet(sheetId);
+  var gid=gids[name];
+  if(!gid)throw new Error('sin gid para '+name);
+  var r=await fetch('https://docs.google.com/spreadsheets/d/'+sheetId+'/export?format=csv&gid='+gid+'&t='+Date.now());
+  if(!r.ok)throw new Error('csv '+r.status);
+  return csvParse(await r.text()).map(function(row){return row.map(csvCell);});
+}
+// Los encabezados de mes (M2:AO2) salen de las mismas filas, sin otra consulta.
+// Devuelve {labels, start}: los meses NO empiezan en la misma columna en todas las
+// planillas (en LINEA 314 arrancan en la 10 y no en la 12), asi que hay que decirle al
+// panel desde donde leer. Si se asume la 12, los tildes se leen corridos dos meses.
+function mesesDesdeCSV(rows){
+  for(var i=0;i<Math.min(8,rows.length);i++){
+    var r=rows[i]||[];
+    var first=-1,hits=0;
+    for(var c=6;c<=44;c++){
+      var v=r[c];
+      if(typeof v==='string'&&/Date\(\d+,\d+,\d+\)/.test(v)){if(first<0)first=c;hits++;}
+    }
+    if(hits>5&&first>=0){
+      var out=[];
+      for(var k=0;k<29;k++){
+        var vv=r[first+k];
+        var m=(typeof vv==='string')?vv.match(/Date\((\d+),(\d+),(\d+)\)/):null;
+        out.push(m?(m[3]+'/'+(parseInt(m[2],10)+1)+'/'+m[1]):'');
+      }
+      return {labels:out,start:first};
+    }
+  }
+  return null;
+}
 async function fetchRawSheetById(sheetId,name){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=0`;
   const t=await fetchWithRetry(url);
@@ -2127,11 +2218,19 @@ async function loadAllData(){
     CUOTAS_PANELS.forEach(function(p){
       var sid=p.sheetId;
       var tab=p.tab;
-      Promise.all([
-        fetchRawSheetById(sid,tab),
-        fetchSheetRangeById(sid,tab,'M2:AO2')
-      ]).then(function(res){
-        cuotasPanelData[p.key]={raw:res[0],months:res[1][0]||[]};
+      // Primero por CSV (ignora los filtros de la solapa). Si no se puede resolver el
+      // gid o falla la descarga, se vuelve a gviz, que es lo que habia antes.
+      fetchRawSheetCSV(sid,tab).then(function(rows){
+        var mm=mesesDesdeCSV(rows);
+        return {raw:rows,months:mm?mm.labels:null,start:mm?mm.start:null,via:'csv'};
+      }).catch(function(){
+        return Promise.all([
+          fetchRawSheetById(sid,tab),
+          fetchSheetRangeById(sid,tab,'M2:AO2')
+        ]).then(function(res){return {raw:res[0],months:res[1][0]||[],start:12,via:'gviz'};});
+      }).then(function(d){
+        var res=[d.raw,[d.months||[]]];
+        cuotasPanelData[p.key]={raw:d.raw,months:d.months||[],monthsStart:d.start,via:d.via};
         // Keep legacy variables for backward compat
         if(p.key==='ventaDolares'){ventaDolaresRaw=res[0];ventaDolaresMonths=res[1][0]||[];}
         renderCuotasPanel(p.key);

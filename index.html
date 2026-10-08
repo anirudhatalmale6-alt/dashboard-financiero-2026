@@ -1962,10 +1962,33 @@ async function loadAllData(){
     // (el primer bloque de meses es el del Año 2026).
     try{
       var PANEL_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      function pNum(v){if(typeof v==='number')return Math.abs(v);if(typeof v==='string'){var neg=v.indexOf('-')>=0?-1:1;var cl=v.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:Math.abs(n*neg);}return 0;}
-      var PANELES=[{key:'tecno',tab:'PANEL DE CONTROL TECNO'},{key:'creditos',tab:'PANEL DE CONTROL CREDITOS'}];
+      // Cada planilla tiene su propio formato de numero: la de Martin usa el punto como
+      // separador de miles ("U$D 12.166") y la de LINEA 314 la coma ("U$D 1,965").
+      // Se decide por la posicion del ultimo separador: es decimal solo si deja uno o dos
+      // digitos al final; si no, es separador de miles. Antes "1,965" se leia como 1,965.
+      function pNum(v){
+        if(typeof v==='number')return Math.abs(v);
+        if(typeof v!=='string')return 0;
+        var s=v.replace(/[^0-9.,]/g,'');
+        if(!s)return 0;
+        var dec=Math.max(s.lastIndexOf('.'),s.lastIndexOf(','));
+        var frac=dec>=0?s.length-dec-1:0;
+        if(dec>=0&&frac>0&&frac<=2)s=s.slice(0,dec).replace(/[.,]/g,'')+'.'+s.slice(dec+1);
+        else s=s.replace(/[.,]/g,'');
+        var n=parseFloat(s);
+        return isNaN(n)?0:Math.abs(n);
+      }
+      // LINEA 314 lleva su inversion en el PANEL DE CONTROL de SU PROPIA planilla, igual
+      // que TECNO y CREDITOS. En DASHBOARD MARTIN su fila quedo con los importes cargados
+      // en meses salteados (feb/abr/jun/ago/oct) y en cero de junio en adelante, asi que
+      // de ahi salia U$D 0. La solapa propia tiene los meses rotulados y es la buena.
+      var PANELES=[{key:'tecno',tab:'PANEL DE CONTROL TECNO'},
+                   {key:'creditos',tab:'PANEL DE CONTROL CREDITOS'},
+                   {key:'linea 314',tab:'PANEL DE CONTROL',sheetId:'1kIO9TlRatBTWP5K1sM5KeguFXNB5qzSu80W41mQkbZw'}];
       var _panRes=await Promise.all(PANELES.map(function(p){
-        return fetchSheetRange(p.tab,'B1:H16').catch(function(){return null;});
+        var pr=p.sheetId?fetchSheetRangeById(p.sheetId,p.tab,'B1:H34')
+                        :fetchSheetRange(p.tab,'B1:H16');
+        return pr.catch(function(){return null;});
       }));
       var _panel={};
       PANELES.forEach(function(p,pi){

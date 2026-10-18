@@ -4725,7 +4725,7 @@ function cargarCobradasCronograma(){
     // Los cuadros de PAGAR se suman aparte: ahi no interesa el tilde sino el importe
     // comprometido de cada mes, este pago o no. Mismo motivo que arriba para leerlo del
     // CSV: por gviz esos importes vienen vacios y habia que estimarlos con la cuota.
-    var pagar={compromisos:[],gastos:[],compromisosPag:[],gastosPag:[]};
+    var pagar={compromisos:[],gastos:[],compromisosPag:[],gastosPag:[],compPendItems:{}};
     for(var z2=0;z2<COB_MESES;z2++){pagar.compromisos[z2]=0;pagar.gastos[z2]=0;pagar.compromisosPag[z2]=0;pagar.gastosPag[z2]=0;}
     var hayPagar=false;
     // Los cuadros se rearman enteros desde el CSV: asi cada fila usa los importes reales
@@ -4774,6 +4774,9 @@ function cargarCobradasCronograma(){
           if(esPagar&&cell){
             pagar[esPagar][abs]+=cell;
             if(tick)pagar[esPagar+'Pag'][abs]+=cell;
+            else if(esPagar==='compromisos'){
+              (pagar.compPendItems[abs]=pagar.compPendItems[abs]||[]).push({n:nm||'(sin nombre)',v:Math.round(cell)});
+            }
             hayPagar=true;
           }
           if(esCobrar&&tick){
@@ -4805,9 +4808,10 @@ function cargarCobradasCronograma(){
     // Compromisos y gastos del año en curso: 12 posiciones, Enero a Diciembre de 2026,
     // que es la forma que esperan las tarjetas y los graficos.
     if(hayPagar){
-      var c26=[],g26=[],cPag=[],cPend=[],gPag=[],gPend=[];
+      var c26=[],g26=[],cPag=[],cPend=[],gPag=[],gPend=[],cItems=[];
       for(var m26=0;m26<12;m26++){
         var ab=cobAbs(2026,m26);
+        cItems.push(pagar.compPendItems[ab]||[]);
         var ct=Math.round(pagar.compromisos[ab]||0),cp=Math.round(pagar.compromisosPag[ab]||0);
         var gt=Math.round(pagar.gastos[ab]||0),gp=Math.round(pagar.gastosPag[ab]||0);
         c26.push(ct);cPag.push(cp);cPend.push(ct-cp);
@@ -4818,7 +4822,7 @@ function cargarCobradasCronograma(){
       cronGastosAPagar=g26;
       // pend = lo que falta pagar del mes · pag = lo que ya se pago (tildado)
       window._cronoPagarCSV={compromisos:c26,gastos:g26,
-        compPag:cPag,compPend:cPend,gastPag:gPag,gastPend:gPend};
+        compPag:cPag,compPend:cPend,gastPag:gPag,gastPend:gPend,compPendItems:cItems};
       if(!window._cronoPagarAplicado&&typeof renderAll==='function'){
         window._cronoPagarAplicado=true;
         try{renderAll();}catch(e){}
@@ -5134,7 +5138,7 @@ function renderModuleKPIs(){
   var totCards=[
     {label:'Inversión Mensual',val:totInv,color:'#cbd5e1'},
     {label:'Cuotas a Cobrar Mes Unif U$D',val:totCobrarUnif,color:'var(--gold)'},
-    {label:'Compromisos de Pagos',val:compPend,color:'var(--rosa)'},
+    {label:'Compromisos de Pagos',val:compPend,color:'var(--rosa)',items:(_cp&&_cp.compPendItems)?_cp.compPendItems[cmIdx]:null},
     {label:'Compromisos de Pagos Cancelados',val:compPag,color:'var(--green)'},
     {label:'Recupero de Inversión',val:totRecupero,color:'var(--purple)'}
   ];
@@ -5142,8 +5146,18 @@ function renderModuleKPIs(){
     var valColor=tc.val>=0?tc.color:'var(--red)';
     var card=document.createElement('div');
     card.style.cssText='background:var(--surface);border:2px solid '+tc.color+';border-radius:12px;padding:12px 24px;text-align:center;min-width:160px';
+    // Debajo del total, que filas lo forman: asi se ve de un vistazo que falta pagar
+    // y se puede comparar contra la planilla sin tener que abrir el detalle.
+    var det='';
+    if(tc.items&&tc.items.length){
+      det='<div style="margin-top:6px;font-size:10px;color:var(--text3);line-height:1.45;text-align:left">';
+      tc.items.forEach(function(it){
+        det+='<div style="display:flex;justify-content:space-between;gap:10px"><span>'+String(it.n).replace(/</g,'&lt;').slice(0,28)+'</span><span style="font-family:\'IBM Plex Mono\',monospace">'+fmtUSD(it.v)+'</span></div>';
+      });
+      det+='</div>';
+    }
     card.innerHTML='<div style="font-size:10px;font-weight:700;color:'+tc.color+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+tc.label+'</div>'
-      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+(tc.fmt==='pesos'?fmtPesos(tc.val):fmtUSD(tc.val))+'</div>';
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:16px;font-weight:700;color:'+valColor+';line-height:1.3">'+(tc.fmt==='pesos'?fmtPesos(tc.val):fmtUSD(tc.val))+'</div>'+det;
     totRow.appendChild(card);
   });
   // Total de cuotas cobradas del mes, de los 8 modulos.

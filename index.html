@@ -615,7 +615,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .vd2-spark-lbl{display:flex;gap:3px;margin-top:3px}
 .vd2-spark-lbl span{flex:1;font-size:8px;color:var(--text3);text-align:center}
 .vd2-spark-lbl span.cur{color:var(--kc);font-weight:700}
-.vd2-foot{font-size:11px;color:var(--text3)}
+.vd2-foot{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
 .vd2-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 16px 10px;margin-bottom:16px;height:320px}
 .vd-kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px}
 .vd-card{background:var(--surface);border-radius:16px;padding:24px 26px;flex:1;min-width:220px}
@@ -647,8 +647,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .kpi-line>span:last-child{font-family:'IBM Plex Mono',monospace;font-weight:600;white-space:nowrap}
 .kpi-line.kpi-wrap{align-items:flex-start}
 .kpi-line.kpi-wrap>span:first-child{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;font-size:10px}
-.kpi-note{font-size:10px;color:var(--text3);margin-top:auto;padding-top:8px}
+.kpi-note{text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;color:var(--text3);margin-top:auto;padding-top:8px}
 .kpi-lines+.kpi-note{margin-top:0;padding-top:5px}
+.kpi-ico{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:var(--kc);margin:0 auto 8px;
+  background:color-mix(in srgb,var(--kc) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--kc) 28%,transparent)}
+.kpi-ico svg{width:20px;height:20px}
+.mini-ico{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:4px}
+.mini-ico svg{width:100%;height:100%}
 /* Contenido centrado (pedido del cliente): titulo, numero, detalle y nota */
 .kpi-tile{text-align:center;align-items:center}
 .kpi-head{justify-content:center}
@@ -5033,7 +5038,7 @@ window.refreshCobradasCards=function(){
 function cobradasCardHtml(modKey,from,to,totId){
   var h='<div data-cobmod="'+modKey+'" data-cobfrom="'+from+'" data-cobto="'+to+'" data-cobtot="'+totId+'"';
   h+=' style="background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:7px 8px;text-align:center">';
-  h+='<div class="vc-label-cobrada" style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas Cobradas</div>';
+  h+='<div class="vc-label-cobrada" style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">'+miniIco('cobr')+'Cuotas Cobradas</div>';
   h+='<div class="vc-cobp" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(0)+'</div>';
   h+='<div class="vc-cobu" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(0)+'</div>';
   h+='<div class="vc-cobuni" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(0)+'</div>';
@@ -5049,7 +5054,8 @@ function kpiTile(o){
   el.className='kpi-tile';
   el.style.setProperty('--kc',o.color);
   function e(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
-  var h='<div class="kpi-head"><span class="kpi-dot"></span><span class="kpi-label">'+e(o.label)+'</span></div>';
+  var h=(o.icon&&typeof VD_ICONS!=='undefined'&&VD_ICONS[o.icon])?'<div class="kpi-ico">'+VD_ICONS[o.icon]+'</div>':'';
+  h+='<div class="kpi-head">'+(o.icon?'':'<span class="kpi-dot"></span>')+'<span class="kpi-label">'+e(o.label)+'</span></div>';
   h+='<div class="kpi-value"'+(o.idValue?' id="'+o.idValue+'"':'')+' style="color:'+(o.valueColor||o.color)+'">'+o.value+'</div>';
   if(o.lines&&o.lines.length){
     h+='<div class="kpi-lines">';
@@ -5063,9 +5069,11 @@ function kpiTile(o){
   return el;
 }
 function kpiMoney(v){return fmtUSD(v);}
+// Icono chico al lado del rotulo de las tarjetas angostas de cada modulo.
+function miniIco(k){return (typeof VD_ICONS!=='undefined'&&VD_ICONS[k])?'<span class="mini-ico">'+VD_ICONS[k]+'</span>':'';}
 function kpiColor(v,c){return v>=0?c:'var(--red)';}
 function cobradasTotalCard(totId,label){
-  return kpiTile({label:label,color:'var(--green)',value:fmtUSD(0),valueColor:'var(--gold)',idValue:totId+'_uni',
+  return kpiTile({icon:'cobr',label:label,color:'var(--green)',value:fmtUSD(0),valueColor:'var(--gold)',idValue:totId+'_uni',
     lines:[{k:'Pesos',v:fmtPesos(0),c:'var(--blue)',id:totId+'_p'},
            {k:'Dólares',v:fmtUSD(0),c:'var(--green)',id:totId+'_u'}],
     note:'',idNote:totId+'_n'});
@@ -5192,12 +5200,12 @@ function renderModuleKPIs(){
     colHtml+='</div>';
     // Investment card below
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div class="vc-label-inv" style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión Mes</div>';
+    colHtml+='<div class="vc-label-inv" style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+miniIco('inv')+'Inversión Mes</div>';
     colHtml+='<div class="vc-inv" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
     // A COBRAR card (current month)
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div class="vc-label-cob" style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas a Cobrar Mes</div>';
+    colHtml+='<div class="vc-label-cob" style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">'+miniIco('cob')+'Cuotas a Cobrar Mes</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(cobPesos)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
@@ -5210,12 +5218,12 @@ function renderModuleKPIs(){
     colHtml+='<div data-cobbal="'+normName(c.name)+'" data-cobinv="'+(invVal||0)+'"'
       +' data-cobfrom="'+_cobAbsMes+'" data-cobto="'+_cobAbsMes+'" data-cobbaltot="totBalInvMes"'
       +' style="background:var(--surface);border:1px solid var(--cyan);border-radius:10px;padding:7px 8px;text-align:center">'
-      +'<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Balance Inversión Mes</div>'
+      +'<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+miniIco('bal')+'Balance Inversión Mes</div>'
       +'<div class="vc-cobbal" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:var(--cyan);line-height:1.3">'+fmtUSD(0)+'</div>'
       +'</div>';
     // Recupero de Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Recupero Inversión</div>';
+    colHtml+='<div style="font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+miniIco('rec')+'Recupero Inversión</div>';
     colHtml+='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+(recuperoVal>=0?'var(--purple)':'var(--red)')+';line-height:1.3">'+fmtUSD(recuperoVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
@@ -5235,21 +5243,44 @@ function renderModuleKPIs(){
   // Orden: primero lo que entra (a cobrar, cobrado, recupero), despues lo que sale
   // (inversion, compromisos pendientes y pagados) y al final el balance del mes.
   var pendItems=(_cp&&_cp.compPendItems)?(_cp.compPendItems[cmIdx]||[]):[];
-  totRow.appendChild(kpiTile({label:'Cuotas a Cobrar del Mes',color:'var(--gold)',
+  totRow.appendChild(kpiTile({icon:'cob',label:'Cuotas a Cobrar del Mes',color:'var(--gold)',
     value:fmtUSD(totCobrarUnif),note:'unificado a U$D'}));
   totRow.appendChild(cobradasTotalCard('totCobMes','Cuotas Cobradas del Mes'));
-  totRow.appendChild(kpiTile({label:'Recupero de Inversión',color:'var(--purple)',
+  totRow.appendChild(kpiTile({icon:'rec',label:'Recupero de Inversión',color:'var(--purple)',
     value:fmtUSD(totRecupero),valueColor:kpiColor(totRecupero,'var(--purple)'),note:'acumulado de los módulos'}));
-  totRow.appendChild(kpiTile({label:'Inversión del Mes',color:'#cbd5e1',value:fmtUSD(totInv),note:'suma de los 8 módulos'}));
-  totRow.appendChild(kpiTile({label:'Compromisos de Pagos',color:'var(--rosa)',
+  totRow.appendChild(kpiTile({icon:'inv',label:'Inversión del Mes',color:'#cbd5e1',value:fmtUSD(totInv),note:'suma de los 8 módulos'}));
+  totRow.appendChild(kpiTile({icon:'fact',label:'Compromisos de Pagos',color:'var(--rosa)',
     value:fmtUSD(compPend),valueColor:kpiColor(compPend,'var(--rosa)'),
     lines:pendItems.slice(0,4).map(function(it){return {k:it.n,v:fmtUSD(it.v),c:'var(--rosa)',wrap:true};}),
     note:pendItems.length>4?('y '+(pendItems.length-4)+' más'):(pendItems.length?null:'nada pendiente este mes')}));
-  totRow.appendChild(kpiTile({label:'Compromisos Cancelados',color:'var(--green)',
+  totRow.appendChild(kpiTile({icon:'factok',label:'Compromisos Cancelados',color:'var(--green)',
     value:fmtUSD(compPag),note:'ya pagado este mes'}));
-  totRow.appendChild(kpiTile({label:'Balance Inversión Mes',color:'var(--cyan)',value:fmtUSD(0),idValue:'totBalInvMes_v',
+  totRow.appendChild(kpiTile({icon:'bal',label:'Balance Inversión Mes',color:'var(--cyan)',value:fmtUSD(0),idValue:'totBalInvMes_v',
     note:'cobrado menos inversión'}));
+  // Segunda fila: GASTOS MENSUALES (cuadro "GASTOS MENSUALES PARA MANTENER LA EMPRESA" de
+  // Cronograma de Inversiones, el que arranca en B123) e INGRESOS NETOS = ganancia
+  // unificada del mes menos esos gastos. Es lo mismo que la columna TOTAL NETO de la
+  // tabla Ingresos Generales de DASHBOARD MARTIN, y se usa para controlarlo.
+  var _cpG=window._cronoPagarCSV||null;
+  var gasTot=_cpG&&_cpG.gastos?(_cpG.gastos[cmIdx]||0):((cronGastosAPagar&&cronGastosAPagar[cmIdx])||0);
+  var gasPag=_cpG&&_cpG.gastPag?(_cpG.gastPag[cmIdx]||0):0;
+  var gasPend=_cpG&&_cpG.gastPend?(_cpG.gastPend[cmIdx]||0):gasTot;
+  var uniP=dashNum(3+cmIdx,7),uniU=dashNum(3+cmIdx,8),cotM=dashNum(3+cmIdx,6);
+  var netU=uniU-gasTot,netP=uniP-gasTot*(cotM||0);
+  var totRow2=document.createElement('div');
+  totRow2.className='kpi-grid';
+  totRow2.style.setProperty('--kpi-n','2');
+  totRow2.style.marginTop='-14px';
+  totRow2.setAttribute('data-totrow','kpiModulesRow');
+  totRow2.appendChild(kpiTile({icon:'gas',label:'Gastos Mensuales',color:'var(--rosa)',value:fmtUSD(gasTot),
+    lines:[{k:'Ya pagado',v:fmtUSD(gasPag),c:'var(--green)'},{k:'Falta pagar',v:fmtUSD(gasPend),c:'var(--rosa)'}],
+    note:'gastos para mantener la empresa'}));
+  totRow2.appendChild(kpiTile({icon:'neta',label:'Ingresos Netos',color:'var(--green)',value:fmtUSD(netU),valueColor:kpiColor(netU,'var(--green)'),
+    lines:[{k:'Ganancia unificada',v:fmtUSD(uniU),c:'var(--gold)'},{k:'Menos gastos',v:'-'+fmtUSD(gasTot),c:'var(--rosa)'},
+           {k:'En pesos',v:fmtPesos(netP),c:'var(--blue)'}],
+    note:'ganancia unificada menos gastos'}));
   container.parentNode.insertBefore(totRow,container.nextSibling);
+  container.parentNode.insertBefore(totRow2,totRow.nextSibling);
   if(window.refreshCobradasCards)window.refreshCobradasCards();
 }
 
@@ -5353,6 +5384,9 @@ var VD_ICONS=(function(){
     cobr:sv('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><polyline points="22 4 12 14 9 11"/>'),
     rec:sv('<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>'),
     pend:sv('<path d="M6 2h12M6 22h12"/><path d="M7 2c0 6 5 6 5 10s-5 4-5 10M17 2c0 6-5 6-5 10s5 4 5 10"/>'),
+    fact:sv('<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/>'),
+    factok:sv('<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><polyline points="9 11.5 11 13.5 15 9.5"/>'),
+    bal:sv('<path d="M12 3v18"/><path d="M6 21h12"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 2 0 0 0 6 0z"/><path d="M19 7l-3 6a3 2 0 0 0 6 0z"/>'),
     acum:sv('<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/>')
   };
 })();
@@ -5581,7 +5615,7 @@ function renderTeamDashboard(name){
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--purple)"></span>Detalle <em>Mensual</em> 2026</h2>';
   h+='<div class="vd2-chart"><canvas id="vdChart"></canvas></div>';
   h+='<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">';
-  h+='<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:1100px"><thead><tr style="background:rgba(212,168,83,.15)">';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:1200px"><thead><tr style="background:rgba(212,168,83,.15)">';
   var thS='padding:12px 10px;text-align:right;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px';
   h+='<th style="padding:12px 14px;text-align:left;font-weight:700;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Mes</th>';
   h+='<th style="'+thS+';color:var(--green)">Gan U$D</th>';
@@ -5592,7 +5626,8 @@ function renderTeamDashboard(name){
   h+='<th style="'+thS+';color:#cbd5e1">Inversión</th>';
   h+='<th style="'+thS+';color:var(--blue)">Cuotas $</th>';
   h+='<th style="'+thS+';color:var(--green)">Cuotas U$D</th>';
-  h+='<th style="'+thS+';color:var(--cyan)">Cuotas Unif</th>';
+  h+='<th style="'+thS+';color:var(--cyan)">A Cobrar Unif</th>';
+  h+='<th style="'+thS+';color:var(--green)">Cobradas Unif</th>';
   h+='</tr></thead><tbody>';
   for(var mi=0;mi<12;mi++){
     var cur=mi===cmIdx;var bg=cur?'rgba(212,168,83,.1)':(mi%2===0?'transparent':'rgba(255,255,255,.02)');var fw=cur?'700':'500';
@@ -5608,6 +5643,7 @@ function renderTeamDashboard(name){
     h+='<td style="'+tdS+';color:'+vc(mCobP[mi],'var(--blue)')+'">'+fmtPesos(mCobP[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mCobU[mi],'var(--green)')+'">'+fmtUSD(mCobU[mi])+'</td>';
     h+='<td style="'+tdS+';color:var(--cyan)">'+fmtUSD(mCobUnif[mi])+'</td>';
+    h+='<td style="'+tdS+';color:var(--green)" title="'+(cbN[mi]||0)+' cuotas tildadas">'+fmtUSD(cbUnif[mi])+'</td>';
     h+='</tr>';
   }
   var totGast=S(gUnif,11),totNeta=S(neta,11);
@@ -5623,6 +5659,7 @@ function renderTeamDashboard(name){
   h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totCobP)+'</td>';
   h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(totCobU)+'</td>';
   h+='<td style="'+tfS+';color:var(--cyan)">'+fmtUSD(totCobUnif)+'</td>';
+  h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(S(cbUnif,11))+'</td>';
   h+='</tr></tbody></table></div>';
   container.innerHTML=h;
   // Grafico de barras del año: ganancia, gastos, inversion y cuotas cobradas por mes.
@@ -5635,7 +5672,8 @@ function renderTeamDashboard(name){
       var lbl=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       var ds=[
         {label:'Ganancia',data:mUnif,backgroundColor:cvar('--gold','#d4a853'),borderRadius:5},
-        {label:'Cuotas cobradas',data:cbUnif,backgroundColor:cvar('--green','#4ade80'),borderRadius:5},
+        {label:'Cuotas cobradas unif U$D',data:cbUnif,backgroundColor:cvar('--green','#4ade80'),borderRadius:5},
+        {label:'Cuotas a cobrar unif U$D',data:mCobUnif,backgroundColor:cvar('--cyan','#22d3ee'),borderRadius:5},
         {label:'Inversión',data:mInv,backgroundColor:'#94a3b8',borderRadius:5}
       ];
       if(hasG)ds.splice(1,0,{label:'Gastos',data:gUnif,backgroundColor:cvar('--rosa','#f472b6'),borderRadius:5});
@@ -5797,12 +5835,12 @@ function renderResumenRange(containerId,mode){
     colHtml+='</div>';
     // Inversión card
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div class="vc-label-inv" style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Inversión</div>';
+    colHtml+='<div class="vc-label-inv" style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+miniIco('inv')+'Inversión</div>';
     colHtml+='<div class="vc-inv" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#cbd5e1;line-height:1.3">'+(invVal?fmtUSD(invVal):'U$D 0')+'</div>';
     colHtml+='</div>';
     // Cuotas a Cobrar card (24-month totals)
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 8px;text-align:center">';
-    colHtml+='<div class="vc-label-cob" style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Cuotas a Cobrar Total</div>';
+    colHtml+='<div class="vc-label-cob" style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">'+miniIco('cob')+'Cuotas a Cobrar Total</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--blue);line-height:1.4">'+fmtPesos(cobPesos)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--green);line-height:1.4">'+fmtUSD(cobUSD)+'</div>';
     colHtml+='<div class="vc-cob" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:var(--gold);line-height:1.4">'+fmtUSD(cobUnif)+'</div>';
@@ -5813,7 +5851,7 @@ function renderResumenRange(containerId,mode){
     var balColor=balVal>=0?'var(--purple)':'var(--red)';
     var balLabel=window._balanceLabel||'Balance de Inversión';
     colHtml+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;text-align:center">';
-    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+balLabel+'</div>';
+    colHtml+='<div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+miniIco('rec')+balLabel+'</div>';
     colHtml+='<div class="vc-bal" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;color:'+balColor+';line-height:1.3">'+fmtUSD(balVal)+'</div>';
     colHtml+='</div>';
     colHtml+='</div>';
@@ -5833,15 +5871,15 @@ function renderResumenRange(containerId,mode){
     for(var mp=0;mp<=endMonth&&mp<12;mp++){compPendR+=(_cpR.compPend[mp]||0);compPagR+=(_cpR.compPag[mp]||0);}
   }else{compPendR=compVal;}
   var perTxt=mode==='anio'?'enero a hoy':'2025 + 2026 + 2027';
-  totRow.appendChild(kpiTile({label:'Cuotas a Cobrar',color:'var(--gold)',value:fmtUSD(totCobrarUnif),note:'unificado a U$D'}));
+  totRow.appendChild(kpiTile({icon:'cob',label:'Cuotas a Cobrar',color:'var(--gold)',value:fmtUSD(totCobrarUnif),note:'unificado a U$D'}));
   totRow.appendChild(cobradasTotalCard(_cobTotId,
     mode==='anio'?'Cuotas Cobradas 2026':'Cuotas Cobradas Acumulado'));
-  totRow.appendChild(kpiTile({label:'Recupero de Inversión',color:'var(--purple)',
+  totRow.appendChild(kpiTile({icon:'rec',label:'Recupero de Inversión',color:'var(--purple)',
     value:fmtUSD(totBal),valueColor:kpiColor(totBal,'var(--purple)'),note:'acumulado de los módulos'}));
-  totRow.appendChild(kpiTile({label:'Inversión',color:'#cbd5e1',value:fmtUSD(totInv),note:perTxt}));
-  totRow.appendChild(kpiTile({label:'Compromisos de Pagos',color:'var(--rosa)',
+  totRow.appendChild(kpiTile({icon:'inv',label:'Inversión',color:'#cbd5e1',value:fmtUSD(totInv),note:perTxt}));
+  totRow.appendChild(kpiTile({icon:'fact',label:'Compromisos de Pagos',color:'var(--rosa)',
     value:fmtUSD(compPendR),valueColor:kpiColor(compPendR,'var(--rosa)'),note:'pendiente · '+perTxt}));
-  totRow.appendChild(kpiTile({label:'Compromisos Cancelados',color:'var(--green)',value:fmtUSD(compPagR),note:'pagado · '+perTxt}));
+  totRow.appendChild(kpiTile({icon:'factok',label:'Compromisos Cancelados',color:'var(--green)',value:fmtUSD(compPagR),note:'pagado · '+perTxt}));
   container.parentNode.insertBefore(totRow,container.nextSibling);
   if(window.refreshCobradasCards)window.refreshCobradasCards();
 }

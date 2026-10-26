@@ -5292,7 +5292,12 @@ function renderTeamButtons(){
   h+='</div>';
   container.innerHTML=h;
 }
+var _vdMesIdx=null;
+// Selector de mes del Dashboard Individual: se recuerda mientras se pasa de un modulo a
+// otro y vuelve al mes en curso cada vez que se entra desde la home.
+function setVdMes(i){_vdMesIdx=i;if(_teamDashActive)renderTeamDashboard(_teamDashActive);}
 function showTeamDash(name){
+  if(!_teamDashActive)_vdMesIdx=new Date().getMonth();
   _teamDashActive=name;
   filterVendedor=name;
   var main=document.querySelector('.main');
@@ -5439,7 +5444,11 @@ function renderTeamDashboard(name){
   var o=vendor.offset,isSoc=vendor.section==='soc';
   var socStart=cards._socStart,martStart=cards._martStart;
   var sectionStart=isSoc?socStart:martStart;
-  var cmIdx=_mesActualIdx;
+  // Mes elegido en el selector de esta vista (por defecto el mes en curso). El bloque
+  // Año va siempre de enero al mes en curso real, igual que en la home.
+  var curReal=new Date().getMonth();
+  var cmIdx=(_vdMesIdx!=null)?_vdMesIdx:curReal;
+  var anioIdx=curReal;
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   function dv(row,col){if(!dashRaw[row])return 0;var v=dashRaw[row][col];if(typeof v==='number')return v;if(typeof v==='string'){var neg=v.includes('-')?-1:1;var cl=v.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');var n=parseFloat(cl);return isNaN(n)?0:n*neg;}return 0;}
   function vc(val,c){return val<0?'var(--red)':c;}
@@ -5479,7 +5488,7 @@ function renderTeamDashboard(name){
   var cajaU=bR.caja>=0?dv(bR.caja,o.u):0;
   // Sums
   var sumGU=0,sumGP=0,sumUnif=0,sumInv=0,sumCobP=0,sumCobU=0,sumCobUnif=0;
-  for(var mi=0;mi<=cmIdx;mi++){sumGU+=mGU[mi];sumGP+=mGP[mi];sumUnif+=mUnif[mi];sumInv+=mInv[mi];sumCobP+=mCobP[mi];sumCobU+=mCobU[mi];sumCobUnif+=mCobUnif[mi];}
+  for(var mi=0;mi<=anioIdx;mi++){sumGU+=mGU[mi];sumGP+=mGP[mi];sumUnif+=mUnif[mi];sumInv+=mInv[mi];sumCobP+=mCobP[mi];sumCobU+=mCobU[mi];sumCobUnif+=mCobUnif[mi];}
   var totGU=0,totGP=0,totUnif=0,totInv=0,totCobP=0,totCobU=0,totCobUnif=0;
   for(var mi=0;mi<12;mi++){totGU+=mGU[mi];totGP+=mGP[mi];totUnif+=mUnif[mi];totInv+=mInv[mi];totCobP+=mCobP[mi];totCobU+=mCobU[mi];totCobUnif+=mCobUnif[mi];}
   // ── Gastos del modulo (solapa del vendedor) ──
@@ -5502,8 +5511,8 @@ function renderTeamDashboard(name){
     cbP.push(cc.pesos);cbU.push(cc.usd);cbUnif.push(cc.unif);cbN.push(cc.n);
   }
   function S(a,to){var t=0;for(var i=0;i<=to&&i<a.length;i++)t+=(a[i]||0);return t;}
-  var sumGastP=S(gP,cmIdx),sumGastU=S(gU,cmIdx),sumGastUnif=S(gUnif,cmIdx),sumNeta=S(neta,cmIdx);
-  var sumCbP=S(cbP,cmIdx),sumCbU=S(cbU,cmIdx),sumCbUnif=S(cbUnif,cmIdx),sumCbN=S(cbN,cmIdx);
+  var sumGastP=S(gP,anioIdx),sumGastU=S(gU,anioIdx),sumGastUnif=S(gUnif,anioIdx),sumNeta=S(neta,anioIdx);
+  var sumCbP=S(cbP,anioIdx),sumCbU=S(cbU,anioIdx),sumCbUnif=S(cbUnif,anioIdx),sumCbN=S(cbN,anioIdx);
   var GOLD='var(--gold)',BLUE='var(--blue)',GREEN='var(--green)',ROSA='var(--rosa)',CYAN='var(--cyan)',PURP='var(--purple)',SLATE='#cbd5e1';
   function pz(v){return {k:'Pesos',v:fmtPesos(v),c:BLUE};}
   function pu(v){return {k:'Dólares',v:fmtUSD(v),c:GREEN};}
@@ -5511,6 +5520,7 @@ function renderTeamDashboard(name){
   // Tarjetas de un periodo (mes o año): mismas seis, en el mismo orden.
   function seis(per){
     var m=per==='mes';
+    var hl=m?cmIdx:anioIdx;
     var gan=m?mUnif[cmIdx]:sumUnif,ganP=m?mGP[cmIdx]:sumGP,ganU=m?mGU[cmIdx]:sumGU;
     var gas=m?gUnif[cmIdx]:sumGastUnif,gasP=m?gP[cmIdx]:sumGastP,gasU=m?gU[cmIdx]:sumGastU;
     var net=m?neta[cmIdx]:sumNeta,inv=m?mInv[cmIdx]:sumInv;
@@ -5518,16 +5528,16 @@ function renderTeamDashboard(name){
     var cbr=m?cbUnif[cmIdx]:sumCbUnif,cbrP=m?cbP[cmIdx]:sumCbP,cbrU=m?cbU[cmIdx]:sumCbU,cbrN=m?cbN[cmIdx]:sumCbN;
     var r='<div class="vd2-row">';
     r+=vdCard({icon:'gan',title:m?'Ganancia del Mes':'Ganancia del Año',color:GOLD,main:fmtUSD(gan),mainColor:vc(gan,GOLD),
-      pills:[pz(ganP),pu(ganU)],spark:mUnif,cur:cmIdx});
+      pills:[pz(ganP),pu(ganU)],spark:mUnif,cur:hl});
     r+=vdCard({icon:'gas',title:m?'Gastos del Mes':'Gastos del Año',color:ROSA,main:fmtUSD(gas),
-      pills:hasG?[pz(gasP),pu(gasU)]:[],spark:hasG?gUnif:null,cur:cmIdx,foot:gastNota});
+      pills:hasG?[pz(gasP),pu(gasU)]:[],spark:hasG?gUnif:null,cur:hl,foot:gastNota});
     r+=vdCard({icon:'neta',title:m?'Ganancia Neta del Mes':'Ganancia Neta del Año',color:GREEN,main:fmtUSD(net),mainColor:vc(net,GREEN),
-      spark:neta,cur:cmIdx,foot:'ganancia menos gastos'});
-    r+=vdCard({icon:'inv',title:m?'Inversión del Mes':'Inversión del Año',color:SLATE,main:fmtUSD(inv),spark:mInv,cur:cmIdx});
+      spark:neta,cur:hl,foot:'ganancia menos gastos'});
+    r+=vdCard({icon:'inv',title:m?'Inversión del Mes':'Inversión del Año',color:SLATE,main:fmtUSD(inv),spark:mInv,cur:hl});
     r+=vdCard({icon:'cob',title:m?'Cuotas a Cobrar del Mes':'Cuotas a Cobrar del Año',color:CYAN,main:fmtUSD(cob),
-      pills:[pz(cobP),pu(cobU)],spark:mCobUnif,cur:cmIdx});
+      pills:[pz(cobP),pu(cobU)],spark:mCobUnif,cur:hl});
     r+=vdCard({icon:'cobr',title:m?'Cuotas Cobradas del Mes':'Cuotas Cobradas del Año',color:GREEN,main:fmtUSD(cbr),
-      pills:[pz(cbrP),pu(cbrU)],spark:cbUnif,cur:cmIdx,foot:cbrN+' cuotas tildadas'});
+      pills:[pz(cbrP),pu(cbrU)],spark:cbUnif,cur:hl,foot:cbrN+' cuotas tildadas'});
     return r+'</div>';
   }
   var h='';
@@ -5545,10 +5555,14 @@ function renderTeamDashboard(name){
   });
   h+='</div>';
   // 1) Mes actual
-  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--gold)"></span>Mes Actual — <em>'+meses[cmIdx]+' 2026</em></h2>';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">';
+  h+='<h2 class="section-title" style="margin:0"><span class="dot" style="background:var(--gold)"></span>'+(cmIdx===curReal?'Mes Actual':'Mes')+' — <em>'+meses[cmIdx]+' 2026</em></h2>';
+  h+='<select id="vdMesSelect" onchange="setVdMes(parseInt(this.value))" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;outline:none">';
+  for(var so=0;so<12;so++)h+='<option value="'+so+'"'+(so===cmIdx?' selected':'')+'>'+meses[so]+(so===curReal?' (actual)':'')+'</option>';
+  h+='</select></div>';
   h+=seis('mes');
   // 2) Año
-  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--blue)"></span>Año <em>2026</em> <span style="font-size:11px;color:var(--text3);font-weight:400">(Ene - '+meses[cmIdx]+')</span></h2>';
+  h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--blue)"></span>Año <em>2026</em> <span style="font-size:11px;color:var(--text3);font-weight:400">(Ene - '+meses[anioIdx]+')</span></h2>';
   h+=seis('anio');
   // 3) Balance acumulado
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--green)"></span>Balance <em>Acumulado</em></h2>';

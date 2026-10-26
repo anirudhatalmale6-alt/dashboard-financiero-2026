@@ -584,6 +584,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .team-btn{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px 22px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;white-space:nowrap;min-width:130px}
 .team-btn:hover{border-color:var(--gold);transform:translateY(-1px)}
 .team-btn.active{background:var(--gold);color:#1a1b2e;border-color:var(--gold)}
+
+/* ── Dashboard Individual (rediseño): tarjetas con icono, numero grande centrado,
+   chips de pesos/dolares y barritas de los 12 meses ── */
+.vd2-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:34px}
+@media (max-width:1000px){.vd2-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.vd2-row{grid-template-columns:1fr}}
+.vd2-card{--kc:var(--gold);position:relative;overflow:hidden;border-radius:18px;padding:20px 20px 16px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
+  background:linear-gradient(165deg,color-mix(in srgb,var(--kc) 10%,var(--surface)) 0%,var(--surface) 60%);
+  border:1px solid color-mix(in srgb,var(--kc) 32%,var(--border));transition:transform .2s,box-shadow .2s}
+.vd2-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px -14px color-mix(in srgb,var(--kc) 60%,transparent)}
+.vd2-ico{width:50px;height:50px;border-radius:15px;display:grid;place-items:center;color:var(--kc);
+  background:color-mix(in srgb,var(--kc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--kc) 30%,transparent)}
+.vd2-ico svg{width:26px;height:26px}
+.vd2-title{font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text2);margin-top:2px}
+.vd2-main{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;line-height:1.1;letter-spacing:-.5px;white-space:nowrap}
+.vd2-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.vd2-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:4px 10px;border-radius:20px;
+  background:color-mix(in srgb,var(--text) 5%,transparent);border:1px solid var(--border)}
+.vd2-pill b{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px}
+.vd2-bar{width:100%;height:9px;border-radius:6px;background:color-mix(in srgb,var(--text) 8%,transparent);overflow:hidden;margin-top:4px}
+.vd2-bar>span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--kc) 60%,transparent),var(--kc))}
+.vd2-barlbl{font-size:11px;color:var(--text3)}
+.vd2-spark{width:100%;margin-top:auto;padding-top:8px}
+.vd2-spark-bars{display:flex;align-items:flex-end;gap:3px;height:40px}
+.vd2-spark-bars i{flex:1;border-radius:3px 3px 0 0;min-height:2px;background:color-mix(in srgb,var(--kc) 32%,transparent)}
+.vd2-spark-bars i.cur{background:var(--kc)}
+.vd2-spark-bars i.neg{background:color-mix(in srgb,var(--red) 55%,transparent)}
+.vd2-spark-lbl{display:flex;gap:3px;margin-top:3px}
+.vd2-spark-lbl span{flex:1;font-size:8px;color:var(--text3);text-align:center}
+.vd2-spark-lbl span.cur{color:var(--kc);font-weight:700}
+.vd2-foot{font-size:11px;color:var(--text3)}
+.vd2-chart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 16px 10px;margin-bottom:16px;height:320px}
 .vd-kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px}
 .vd-card{background:var(--surface);border-radius:16px;padding:24px 26px;flex:1;min-width:220px}
 .vd-card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
@@ -4936,6 +4969,10 @@ function cobradasPorModulo(from,to){
 // Las planillas llegan de a una y despues de que se dibujaron las tarjetas, asi que
 // en vez de re-renderizar todo se actualizan los numeros que ya estan en pantalla.
 window.refreshCobradasCards=function(){
+  if(window._teamDashActive||_teamDashActive){
+    clearTimeout(window._vdRefreshT);
+    window._vdRefreshT=setTimeout(function(){if(_teamDashActive)renderTeamDashboard(_teamDashActive);},400);
+  }
   // Cada seccion pide su propio periodo y lo declara en el nodo (data-cobfrom/to).
   var cache={},totals={};
   var nodes=document.querySelectorAll('[data-cobmod]');
@@ -5298,6 +5335,99 @@ function exitTeamDash(){
   renderAll();
   window.scrollTo(0,0);
 }
+
+// Iconos de linea (SVG propio, sin librerias) para las tarjetas del Dashboard Individual.
+var VD_ICONS=(function(){
+  function sv(b){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+b+'</svg>';}
+  return {
+    gan:sv('<polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/>'),
+    gas:sv('<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10.5h20"/><path d="M6 15.5h5"/>'),
+    neta:sv('<path d="M12 2v20"/><path d="M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
+    inv:sv('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>'),
+    cob:sv('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18.5h.01M12 18.5h.01"/>'),
+    cobr:sv('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><polyline points="22 4 12 14 9 11"/>'),
+    rec:sv('<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>'),
+    pend:sv('<path d="M6 2h12M6 22h12"/><path d="M7 2c0 6 5 6 5 10s-5 4-5 10M17 2c0 6-5 6-5 10s5 4 5 10"/>'),
+    acum:sv('<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/>')
+  };
+})();
+// o = {icon,title,color,main,mainColor,pills:[{k,v,c}],bar:{pct,label},spark:[12],cur,foot}
+function vdCard(o){
+  var h='<div class="vd2-card" style="--kc:'+o.color+'">';
+  h+='<div class="vd2-ico">'+(VD_ICONS[o.icon]||'')+'</div>';
+  h+='<div class="vd2-title">'+o.title+'</div>';
+  h+='<div class="vd2-main" style="color:'+(o.mainColor||o.color)+'">'+o.main+'</div>';
+  if(o.pills&&o.pills.length){
+    h+='<div class="vd2-pills">';
+    o.pills.forEach(function(p){h+='<span class="vd2-pill">'+p.k+' <b style="color:'+(p.c||'var(--text2)')+'">'+p.v+'</b></span>';});
+    h+='</div>';
+  }
+  if(o.bar){
+    var pc=Math.max(0,Math.min(100,Math.round(o.bar.pct||0)));
+    h+='<div class="vd2-bar"><span style="width:'+pc+'%"></span></div><div class="vd2-barlbl">'+o.bar.label+'</div>';
+  }
+  // La nota va antes de las barritas: asi las barritas quedan todas a la misma altura
+  // en una fila, tengan o no nota las tarjetas.
+  if(o.foot)h+='<div class="vd2-foot">'+o.foot+'</div>';
+  if(o.spark){
+    var mx=0;o.spark.forEach(function(v){mx=Math.max(mx,Math.abs(v||0));});
+    var L='EFMAMJJASOND',mN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    h+='<div class="vd2-spark"><div class="vd2-spark-bars">';
+    o.spark.forEach(function(v,i){
+      var hp=mx?Math.max(4,Math.round(Math.abs(v||0)/mx*100)):4;
+      var cl=(i===o.cur?'cur ':'')+((v||0)<0?'neg':'');
+      h+='<i class="'+cl+'" style="height:'+hp+'%" title="'+mN[i]+': '+fmtUSD(v||0)+'"></i>';
+    });
+    h+='</div><div class="vd2-spark-lbl">';
+    for(var k=0;k<12;k++)h+='<span'+(k===o.cur?' class="cur"':'')+'>'+L.charAt(k)+'</span>';
+    h+='</div></div>';
+  }
+  return h+'</div>';
+}
+// ── Gastos de cada modulo ──
+// Se buscan en la solapa del vendedor de la planilla de Martin: un rotulo "GASTOS MENSU..."
+// (en MELY esta en X47), abajo la fila de meses ENERO..DICIEMBRE (2026 y despues 2027) y
+// debajo los importes. Se ubica por el rotulo, asi que si mañana se agrega el mismo cuadro
+// en OSITO o GONZA, aparece solo. Importe con "U$D" = dolares, si no = pesos.
+var VD_GASTOS_TAB={'mely':'MELY','osito s.r.l':'OSITO S.R.L.','patito s.a':'PATITO S.A.','gonza':'GONZA',
+  'linea 314':'LINEA 314','tino':'TINO','tobias':'TOBIAS'};
+window._vendorGastos=window._vendorGastos||{};
+function cargarGastosVendedor(key){
+  var tab=VD_GASTOS_TAB[key];
+  var z=function(){var a=[];for(var i=0;i<24;i++)a.push(0);return a;};
+  if(!tab){window._vendorGastos[key]={found:false,pesos:z(),usd:z()};return Promise.resolve();}
+  if(window._vendorGastos[key])return window._vendorGastos[key].promise||Promise.resolve();
+  var st={loading:true,found:false,pesos:z(),usd:z()};
+  window._vendorGastos[key]=st;
+  st.promise=gidsDeSheet(SHEET_ID).then(function(g){
+    var gid=g[tab];if(!gid)throw new Error('sin gid '+tab);
+    return fetch('https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+gid+'&t='+Date.now())
+      .then(function(r){return r.ok?r.text():Promise.reject(r.status);});
+  }).then(function(txt){
+    var rows=csvParse(txt);
+    for(var r=0;r<rows.length&&!st.found;r++){
+      var row=rows[r]||[];
+      for(var c=0;c<row.length;c++){
+        if(!/GASTOS\s+MENSU/i.test(String(row[c]||'')))continue;
+        for(var hr=r+1;hr<=r+5&&hr<rows.length;hr++){
+          var hrow=rows[hr]||[];
+          if(String(hrow[c]||'').trim().toUpperCase()!=='ENERO')continue;
+          var vrow=rows[hr+1]||[];
+          var n=String(hrow[c+12]||'').trim().toUpperCase()==='ENERO'?24:12;
+          for(var k=0;k<n;k++){
+            var raw=String(vrow[c+k]||'');
+            var amt=Math.abs(csvNum(raw));
+            if(/U\$[DS]|USD/i.test(raw))st.usd[k]+=amt;else st.pesos[k]+=amt;
+          }
+          st.found=true;st.cell=c;st.row=r+1;
+          break;
+        }
+        if(st.found)break;
+      }
+    }
+  }).catch(function(e){console.log('Gastos '+tab+':',e);}).then(function(){st.loading=false;});
+  return st.promise;
+}
 function renderTeamDashboard(name){
   var container=document.getElementById('teamDashView');
   if(!container||!dashRaw||dashRaw.length<200)return;
@@ -5352,20 +5482,60 @@ function renderTeamDashboard(name){
   for(var mi=0;mi<=cmIdx;mi++){sumGU+=mGU[mi];sumGP+=mGP[mi];sumUnif+=mUnif[mi];sumInv+=mInv[mi];sumCobP+=mCobP[mi];sumCobU+=mCobU[mi];sumCobUnif+=mCobUnif[mi];}
   var totGU=0,totGP=0,totUnif=0,totInv=0,totCobP=0,totCobU=0,totCobUnif=0;
   for(var mi=0;mi<12;mi++){totGU+=mGU[mi];totGP+=mGP[mi];totUnif+=mUnif[mi];totInv+=mInv[mi];totCobP+=mCobP[mi];totCobU+=mCobU[mi];totCobUnif+=mCobUnif[mi];}
-  // KPI card builder
-  function kc(title,items,borderColor){
-    var h='<div class="vd-card" style="border:2px solid '+borderColor+'">';
-    h+='<div class="vd-card-title" style="color:'+borderColor+'">'+title+'</div>';
-    items.forEach(function(it){h+='<div class="vd-card-item"><span>'+it.l+'</span><span style="color:'+vc(it.v,it.c)+'">'+it.f(it.v)+'</span></div>';});
-    return h+'</div>';
+  // ── Gastos del modulo (solapa del vendedor) ──
+  var GS=window._vendorGastos[nn];
+  if(!GS||GS.loading){
+    cargarGastosVendedor(nn).then(function(){if(_teamDashActive===name)renderTeamDashboard(name);});
+  }
+  var rates=cobRates();
+  var gP=[],gU=[],gUnif=[],neta=[];
+  for(var mi=0;mi<12;mi++){
+    var ab=cobAbs(2026,mi),pp=GS&&GS.pesos?GS.pesos[mi]:0,uu=GS&&GS.usd?GS.usd[mi]:0;
+    gP.push(pp);gU.push(uu);gUnif.push(uu+(rates[ab]?pp/rates[ab]:0));
+    neta.push((mUnif[mi]||0)-gUnif[mi]);
+  }
+  var hasG=!!(GS&&GS.found),gLoading=!!(GS&&GS.loading)||!GS;
+  // ── Cuotas cobradas del modulo (tildes verdes de su planilla) ──
+  var cbP=[],cbU=[],cbUnif=[],cbN=[];
+  for(var mi=0;mi<12;mi++){
+    var cc=cobradasPorModulo(cobAbs(2026,mi),cobAbs(2026,mi))[nn]||{pesos:0,usd:0,unif:0,n:0};
+    cbP.push(cc.pesos);cbU.push(cc.usd);cbUnif.push(cc.unif);cbN.push(cc.n);
+  }
+  function S(a,to){var t=0;for(var i=0;i<=to&&i<a.length;i++)t+=(a[i]||0);return t;}
+  var sumGastP=S(gP,cmIdx),sumGastU=S(gU,cmIdx),sumGastUnif=S(gUnif,cmIdx),sumNeta=S(neta,cmIdx);
+  var sumCbP=S(cbP,cmIdx),sumCbU=S(cbU,cmIdx),sumCbUnif=S(cbUnif,cmIdx),sumCbN=S(cbN,cmIdx);
+  var GOLD='var(--gold)',BLUE='var(--blue)',GREEN='var(--green)',ROSA='var(--rosa)',CYAN='var(--cyan)',PURP='var(--purple)',SLATE='#cbd5e1';
+  function pz(v){return {k:'Pesos',v:fmtPesos(v),c:BLUE};}
+  function pu(v){return {k:'Dólares',v:fmtUSD(v),c:GREEN};}
+  var gastNota=hasG?null:(gLoading?'leyendo gastos…':(VD_GASTOS_TAB[nn]?'sin gastos cargados en la solapa '+VD_GASTOS_TAB[nn]:'este módulo todavía no tiene cuadro de gastos'));
+  // Tarjetas de un periodo (mes o año): mismas seis, en el mismo orden.
+  function seis(per){
+    var m=per==='mes';
+    var gan=m?mUnif[cmIdx]:sumUnif,ganP=m?mGP[cmIdx]:sumGP,ganU=m?mGU[cmIdx]:sumGU;
+    var gas=m?gUnif[cmIdx]:sumGastUnif,gasP=m?gP[cmIdx]:sumGastP,gasU=m?gU[cmIdx]:sumGastU;
+    var net=m?neta[cmIdx]:sumNeta,inv=m?mInv[cmIdx]:sumInv;
+    var cob=m?mCobUnif[cmIdx]:sumCobUnif,cobP=m?mCobP[cmIdx]:sumCobP,cobU=m?mCobU[cmIdx]:sumCobU;
+    var cbr=m?cbUnif[cmIdx]:sumCbUnif,cbrP=m?cbP[cmIdx]:sumCbP,cbrU=m?cbU[cmIdx]:sumCbU,cbrN=m?cbN[cmIdx]:sumCbN;
+    var r='<div class="vd2-row">';
+    r+=vdCard({icon:'gan',title:m?'Ganancia del Mes':'Ganancia del Año',color:GOLD,main:fmtUSD(gan),mainColor:vc(gan,GOLD),
+      pills:[pz(ganP),pu(ganU)],spark:mUnif,cur:cmIdx});
+    r+=vdCard({icon:'gas',title:m?'Gastos del Mes':'Gastos del Año',color:ROSA,main:fmtUSD(gas),
+      pills:hasG?[pz(gasP),pu(gasU)]:[],spark:hasG?gUnif:null,cur:cmIdx,foot:gastNota});
+    r+=vdCard({icon:'neta',title:m?'Ganancia Neta del Mes':'Ganancia Neta del Año',color:GREEN,main:fmtUSD(net),mainColor:vc(net,GREEN),
+      spark:neta,cur:cmIdx,foot:'ganancia menos gastos'});
+    r+=vdCard({icon:'inv',title:m?'Inversión del Mes':'Inversión del Año',color:SLATE,main:fmtUSD(inv),spark:mInv,cur:cmIdx});
+    r+=vdCard({icon:'cob',title:m?'Cuotas a Cobrar del Mes':'Cuotas a Cobrar del Año',color:CYAN,main:fmtUSD(cob),
+      pills:[pz(cobP),pu(cobU)],spark:mCobUnif,cur:cmIdx});
+    r+=vdCard({icon:'cobr',title:m?'Cuotas Cobradas del Mes':'Cuotas Cobradas del Año',color:GREEN,main:fmtUSD(cbr),
+      pills:[pz(cbrP),pu(cbrU)],spark:cbUnif,cur:cmIdx,foot:cbrN+' cuotas tildadas'});
+    return r+'</div>';
   }
   var h='';
-  // Vendor header with icon and name
+  // Encabezado y navegacion entre modulos
   h+='<div style="text-align:center;margin-bottom:20px;padding-top:16px">';
   h+='<div style="font-size:42px;margin-bottom:8px">'+vendor.icon+'</div>';
   h+='<h2 style="font-size:26px;font-weight:800;color:var(--text);margin:0">'+name+'</h2>';
   h+='<div style="font-size:12px;color:var(--text3);margin-top:4px">Dashboard Individual — '+(isSoc?'Sociedades':'Martin')+'</div></div>';
-  // Vendor navigation bar
   h+='<div class="vd-nav-bar">';
   h+='<button onclick="exitTeamDash()" class="vd-nav-btn" style="border-color:var(--gold);color:var(--gold)">← Inicio</button>';
   cards.forEach(function(c){
@@ -5374,37 +5544,37 @@ function renderTeamDashboard(name){
     h+='<span>'+c.icon+'</span><span>'+c.name+'</span></button>';
   });
   h+='</div>';
-  // SECTION 1: MES ACTUAL
+  // 1) Mes actual
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--gold)"></span>Mes Actual — <em>'+meses[cmIdx]+' 2026</em></h2>';
-  h+='<div class="vd-kpi-row">';
-  h+=kc('Ganancia Mes',[{l:'En Pesos',v:mGP[cmIdx],c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:mGU[cmIdx],c:'var(--green)',f:fmtUSD},{l:'Unificado U$D',v:mUnif[cmIdx],c:'var(--gold)',f:fmtUSD}],'var(--gold)');
-  h+=kc('Inversión Mes',[{l:'Unif U$D',v:mInv[cmIdx],c:'#cbd5e1',f:fmtUSD}],'#cbd5e1');
-  h+=kc('Recupero de Inversión',[{l:'Unif U$D',v:recuperoU,c:'var(--purple)',f:fmtUSD}],'var(--purple)');
-  h+=kc('Cuotas a Cobrar Mes',[{l:'En Pesos',v:mCobP[cmIdx],c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:mCobU[cmIdx],c:'var(--green)',f:fmtUSD},{l:'Unif U$D',v:mCobUnif[cmIdx],c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
-  h+='</div>';
-  // SECTION 2: AÑO 2026
+  h+=seis('mes');
+  // 2) Año
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--blue)"></span>Año <em>2026</em> <span style="font-size:11px;color:var(--text3);font-weight:400">(Ene - '+meses[cmIdx]+')</span></h2>';
-  h+='<div class="vd-kpi-row">';
-  h+=kc('Ganancia Año',[{l:'En Pesos',v:sumGP,c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:sumGU,c:'var(--green)',f:fmtUSD},{l:'Unificado U$D',v:sumUnif,c:'var(--gold)',f:fmtUSD}],'var(--blue)');
-  h+=kc('Inversión Año',[{l:'Unif U$D',v:sumInv,c:'#cbd5e1',f:fmtUSD}],'#cbd5e1');
-  h+=kc('Cuotas a Cobrar Año',[{l:'En Pesos',v:sumCobP,c:'var(--blue)',f:fmtPesos},{l:'En Dólares',v:sumCobU,c:'var(--green)',f:fmtUSD},{l:'Unif U$D',v:sumCobUnif,c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
-  h+='</div>';
-  // SECTION 3: BALANCE ACUMULADO
+  h+=seis('anio');
+  // 3) Balance acumulado
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--green)"></span>Balance <em>Acumulado</em></h2>';
-  h+='<div class="vd-kpi-row">';
-  h+=kc('Ganancia Acumulada',[{l:'Año U$D',v:ganAnioU,c:'var(--green)',f:fmtUSD},{l:'Unificada U$D',v:ganUnifVal,c:'var(--gold)',f:fmtUSD},{l:'Acum. Unif U$D',v:ganAcumUnifU,c:'var(--gold)',f:fmtUSD}],'var(--green)');
-  h+=kc('Inversión y Recupero',[{l:'Inversión Total U$D',v:totInv,c:'#cbd5e1',f:fmtUSD},{l:'Recupero U$D',v:recuperoU,c:'var(--purple)',f:fmtUSD}],'var(--purple)');
-  h+=kc('Cuotas Pendientes',[{l:'Resta Cobrar $',v:restaP,c:'var(--blue)',f:fmtPesos},{l:'Resta Cobrar U$D',v:restaU,c:'var(--green)',f:fmtUSD},{l:'Caja Actual U$D',v:cajaU,c:'var(--gold)',f:fmtUSD}],'var(--cyan)');
+  h+='<div class="vd2-row">';
+  var acPills=[{k:'Año',v:fmtUSD(ganAnioU),c:GREEN},{k:'Unificada',v:fmtUSD(ganUnifVal),c:GOLD}];
+  if(hasG)acPills.push({k:'Gastos',v:fmtUSD(sumGastUnif),c:ROSA});
+  h+=vdCard({icon:'acum',title:'Ganancia Acumulada',color:GOLD,main:fmtUSD(ganAcumUnifU),mainColor:vc(ganAcumUnifU,GOLD),pills:acPills,
+    foot:hasG?('neta de gastos: '+fmtUSD(ganAcumUnifU-sumGastUnif)):null});
+  var recPct=totInv>0&&recuperoU>0?recuperoU/totInv*100:0;
+  h+=vdCard({icon:'rec',title:'Recupero de Inversión',color:PURP,main:fmtUSD(recuperoU),mainColor:vc(recuperoU,PURP),
+    pills:[{k:'Invertido',v:fmtUSD(totInv),c:SLATE}],bar:{pct:recPct,label:Math.round(recPct)+'% de lo invertido ya recuperado'}});
+  h+=vdCard({icon:'pend',title:'Cuotas Pendientes',color:CYAN,main:fmtUSD(restaU),
+    pills:[{k:'Resta $',v:fmtPesos(restaP),c:BLUE},{k:'Caja',v:fmtUSD(cajaU),c:GOLD}],foot:'resta cobrar en dólares'});
   h+='</div>';
-  // SECTION 4: MONTHLY TABLE
+  // 4) Detalle mensual: grafico + tabla
   h+='<h2 class="section-title" style="margin-bottom:16px"><span class="dot" style="background:var(--purple)"></span>Detalle <em>Mensual</em> 2026</h2>';
+  h+='<div class="vd2-chart"><canvas id="vdChart"></canvas></div>';
   h+='<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">';
-  h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(212,168,83,.15)">';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:1100px"><thead><tr style="background:rgba(212,168,83,.15)">';
   var thS='padding:12px 10px;text-align:right;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px';
   h+='<th style="padding:12px 14px;text-align:left;font-weight:700;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Mes</th>';
   h+='<th style="'+thS+';color:var(--green)">Gan U$D</th>';
   h+='<th style="'+thS+';color:var(--blue)">Gan Pesos</th>';
   h+='<th style="'+thS+';color:var(--gold)">Unificado</th>';
+  h+='<th style="'+thS+';color:var(--rosa)">Gastos</th>';
+  h+='<th style="'+thS+';color:var(--green)">Neta</th>';
   h+='<th style="'+thS+';color:#cbd5e1">Inversión</th>';
   h+='<th style="'+thS+';color:var(--blue)">Cuotas $</th>';
   h+='<th style="'+thS+';color:var(--green)">Cuotas U$D</th>';
@@ -5418,24 +5588,51 @@ function renderTeamDashboard(name){
     h+='<td style="'+tdS+';color:'+vc(mGU[mi],'var(--green)')+'">'+fmtUSD(mGU[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mGP[mi],'var(--blue)')+'">'+fmtPesos(mGP[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mUnif[mi],'var(--gold)')+'">'+fmtUSD(mUnif[mi])+'</td>';
+    h+='<td style="'+tdS+';color:var(--rosa)" title="'+fmtPesos(gP[mi])+(gU[mi]?' + '+fmtUSD(gU[mi]):'')+'">'+fmtUSD(gUnif[mi])+'</td>';
+    h+='<td style="'+tdS+';color:'+vc(neta[mi],'var(--green)')+'">'+fmtUSD(neta[mi])+'</td>';
     h+='<td style="'+tdS+';color:#cbd5e1">'+fmtUSD(mInv[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mCobP[mi],'var(--blue)')+'">'+fmtPesos(mCobP[mi])+'</td>';
     h+='<td style="'+tdS+';color:'+vc(mCobU[mi],'var(--green)')+'">'+fmtUSD(mCobU[mi])+'</td>';
     h+='<td style="'+tdS+';color:var(--cyan)">'+fmtUSD(mCobUnif[mi])+'</td>';
     h+='</tr>';
   }
+  var totGast=S(gUnif,11),totNeta=S(neta,11);
   h+='<tr style="background:rgba(212,168,83,.15);border-top:2px solid var(--gold)">';
   var tfS='padding:10px 8px;text-align:right;font-family:\'IBM Plex Mono\',monospace;font-weight:800';
   h+='<td style="padding:10px 12px;font-weight:800;color:var(--gold)">TOTAL</td>';
   h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(totGU)+'</td>';
   h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totGP)+'</td>';
   h+='<td style="'+tfS+';color:var(--gold)">'+fmtUSD(totUnif)+'</td>';
+  h+='<td style="'+tfS+';color:var(--rosa)">'+fmtUSD(totGast)+'</td>';
+  h+='<td style="'+tfS+';color:'+vc(totNeta,'var(--green)')+'">'+fmtUSD(totNeta)+'</td>';
   h+='<td style="'+tfS+';color:#cbd5e1">'+fmtUSD(totInv)+'</td>';
   h+='<td style="'+tfS+';color:var(--blue)">'+fmtPesos(totCobP)+'</td>';
   h+='<td style="'+tfS+';color:var(--green)">'+fmtUSD(totCobU)+'</td>';
   h+='<td style="'+tfS+';color:var(--cyan)">'+fmtUSD(totCobUnif)+'</td>';
   h+='</tr></tbody></table></div>';
   container.innerHTML=h;
+  // Grafico de barras del año: ganancia, gastos, inversion y cuotas cobradas por mes.
+  try{
+    if(charts.vd){charts.vd.destroy();charts.vd=null;}
+    var cv=document.getElementById('vdChart');
+    if(cv&&window.Chart){
+      var cs=getComputedStyle(document.documentElement);
+      function cvar(n,f){var v=cs.getPropertyValue(n).trim();return v||f;}
+      var lbl=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      var ds=[
+        {label:'Ganancia',data:mUnif,backgroundColor:cvar('--gold','#d4a853'),borderRadius:5},
+        {label:'Cuotas cobradas',data:cbUnif,backgroundColor:cvar('--green','#4ade80'),borderRadius:5},
+        {label:'Inversión',data:mInv,backgroundColor:'#94a3b8',borderRadius:5}
+      ];
+      if(hasG)ds.splice(1,0,{label:'Gastos',data:gUnif,backgroundColor:cvar('--rosa','#f472b6'),borderRadius:5});
+      charts.vd=new Chart(cv,{type:'bar',data:{labels:lbl,datasets:ds},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:thTick(),usePointStyle:true,pointStyle:'rectRounded'}},
+            tooltip:Object.assign({},thTooltip(),{borderWidth:1,callbacks:{label:function(c){return c.dataset.label+': '+fmtUSD(c.raw);}}})},
+          scales:{x:{ticks:{color:thTick()},grid:{display:false}},
+            y:{ticks:{color:thTick(),callback:function(v){return fmtUSD(v);}},grid:{color:thGrid()}}}}});
+    }
+  }catch(e){console.log('vdChart',e);}
 }
 
 // Generic function: Resumen General for a range of months

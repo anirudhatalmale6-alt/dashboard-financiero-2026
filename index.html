@@ -612,6 +612,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .vd2-spark-bars{display:flex;align-items:flex-end;gap:3px;height:40px}
 .vd2-spark-bars i{flex:1;border-radius:3px 3px 0 0;min-height:2px;background:color-mix(in srgb,var(--kc) 32%,transparent)}
 .vd2-spark-bars i.cur{background:var(--kc)}
+.vd2-spark-bars i{cursor:pointer;transition:filter .12s,transform .12s;transform-origin:bottom}
+.vd2-spark-bars i:hover,.vd2-spark-bars i.tip-on{filter:brightness(1.6);transform:scaleY(1.04)}
+#vdTip{position:fixed;z-index:9999;pointer-events:none;opacity:0;transform:translate(-50%,-100%) translateY(-6px);transition:opacity .1s;
+  background:#111218;color:#f3f1ec;border:1px solid rgba(255,255,255,.18);border-radius:9px;padding:6px 10px;text-align:center;
+  box-shadow:0 8px 22px rgba(0,0,0,.45);white-space:nowrap}
+#vdTip.on{opacity:1}
+#vdTip .m{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#a9a6b3}
+#vdTip .v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700}
+#vdTip::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-bottom:0;border-top-color:#111218}
 .vd2-spark-bars i.neg{background:color-mix(in srgb,var(--red) 55%,transparent)}
 .vd2-spark-lbl{display:flex;gap:3px;margin-top:3px}
 .vd2-spark-lbl span{flex:1;font-size:8px;color:var(--text3);text-align:center}
@@ -5413,11 +5422,11 @@ function vdCard(o){
     var mx=0;o.spark.forEach(function(v){mx=Math.max(mx,Math.abs(v||0));});
     var L='EFMAMJJASOND',mN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     // Rotulo chico: sin el, las barritas no se entienden (el cliente pregunto que eran).
-    h+='<div class="vd2-spark"><div class="vd2-spark-cap">Mes a mes 2026 · pasá el mouse para ver cada valor</div><div class="vd2-spark-bars">';
+    h+='<div class="vd2-spark"><div class="vd2-spark-cap">Mes a mes 2026 · apoyate en una barra para ver el valor</div><div class="vd2-spark-bars">';
     o.spark.forEach(function(v,i){
       var hp=mx?Math.max(4,Math.round(Math.abs(v||0)/mx*100)):4;
       var cl=(i===o.cur?'cur ':'')+((v||0)<0?'neg':'');
-      h+='<i class="'+cl+'" style="height:'+hp+'%" title="'+mN[i]+': '+fmtUSD(v||0)+'"></i>';
+      h+='<i class="'+cl+'" style="height:'+hp+'%" data-tm="'+mN[i]+' 2026" data-tv="'+fmtUSD(v||0)+'"></i>';
     });
     h+='</div><div class="vd2-spark-lbl">';
     for(var k=0;k<12;k++)h+='<span'+(k===o.cur?' class="cur"':'')+'>'+L.charAt(k)+'</span>';
@@ -5425,6 +5434,45 @@ function vdCard(o){
   }
   return h+'</div>';
 }
+// Etiqueta flotante de las barritas: aparece al instante al pasar el mouse o al tocar
+// con el dedo (el title del navegador tarda y en el celular no aparece).
+(function(){
+  var tip=null,cur=null,hideT=null,lastTouch=0;
+  function el(){
+    if(tip)return tip;
+    tip=document.createElement('div');tip.id='vdTip';tip.innerHTML='<div class="m"></div><div class="v"></div>';
+    document.body.appendChild(tip);return tip;
+  }
+  function show(bar){
+    var t=el();
+    if(cur&&cur!==bar)cur.classList.remove('tip-on');
+    cur=bar;bar.classList.add('tip-on');
+    t.querySelector('.m').textContent=bar.getAttribute('data-tm');
+    var v=t.querySelector('.v');v.textContent=bar.getAttribute('data-tv');
+    var card=bar.closest('.vd2-card');
+    v.style.color=card?getComputedStyle(card).getPropertyValue('--kc')||'':'';
+    var r=bar.getBoundingClientRect();
+    t.style.left=(r.left+r.width/2)+'px';t.style.top=(r.top)+'px';
+    t.classList.add('on');
+    // que no se salga de la pantalla por los costados
+    var tr=t.getBoundingClientRect();
+    if(tr.left<6)t.style.left=(r.left+r.width/2+(6-tr.left))+'px';
+    else if(tr.right>window.innerWidth-6)t.style.left=(r.left+r.width/2-(tr.right-window.innerWidth+6))+'px';
+  }
+  function hide(){if(tip)tip.classList.remove('on');if(cur){cur.classList.remove('tip-on');cur=null;}}
+  function isBar(n){return n&&n.tagName==='I'&&n.parentNode&&n.parentNode.classList&&n.parentNode.classList.contains('vd2-spark-bars');}
+  document.addEventListener('mouseover',function(e){if(isBar(e.target))show(e.target);});
+  // Despues de un toque el navegador simula eventos de mouse (y a veces un scroll
+  // minimo) que esconderian la etiqueta enseguida: se ignoran por un momento.
+  function recienTocado(){return Date.now()-lastTouch<900;}
+  document.addEventListener('mouseout',function(e){if(isBar(e.target)&&!recienTocado())hide();});
+  document.addEventListener('touchstart',function(e){
+    var t=e.target;
+    if(isBar(t)){lastTouch=Date.now();show(t);clearTimeout(hideT);hideT=setTimeout(hide,2500);}
+    else hide();
+  },{passive:true});
+  window.addEventListener('scroll',function(){if(!recienTocado())hide();},{passive:true});
+})();
 // ── Gastos de cada modulo ──
 // Se buscan en la solapa del vendedor de la planilla de Martin: un rotulo "GASTOS MENSU..."
 // (en MELY esta en X47), abajo la fila de meses ENERO..DICIEMBRE (2026 y despues 2027) y

@@ -608,6 +608,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .vd2-bar>span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--kc) 60%,transparent),var(--kc))}
 .vd2-barlbl{font-size:11px;color:var(--text3)}
 .vd2-spark{width:100%;margin-top:auto;padding-top:8px}
+.vd2-spark-cap{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;opacity:.8}
 .vd2-spark-bars{display:flex;align-items:flex-end;gap:3px;height:40px}
 .vd2-spark-bars i{flex:1;border-radius:3px 3px 0 0;min-height:2px;background:color-mix(in srgb,var(--kc) 32%,transparent)}
 .vd2-spark-bars i.cur{background:var(--kc)}
@@ -5411,7 +5412,8 @@ function vdCard(o){
   if(o.spark){
     var mx=0;o.spark.forEach(function(v){mx=Math.max(mx,Math.abs(v||0));});
     var L='EFMAMJJASOND',mN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    h+='<div class="vd2-spark"><div class="vd2-spark-bars">';
+    // Rotulo chico: sin el, las barritas no se entienden (el cliente pregunto que eran).
+    h+='<div class="vd2-spark"><div class="vd2-spark-cap">Mes a mes 2026 · pasá el mouse para ver cada valor</div><div class="vd2-spark-bars">';
     o.spark.forEach(function(v,i){
       var hp=mx?Math.max(4,Math.round(Math.abs(v||0)/mx*100)):4;
       var cl=(i===o.cur?'cur ':'')+((v||0)<0?'neg':'');
